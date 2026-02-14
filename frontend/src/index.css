@@ -1,11 +1,15 @@
 :root {
+  --bg-main: #141414;
+  --bg-blue: #010D14;
+  --accent: #00F6FF;
+  --text-light: #ffffff;
+
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  color: var(--text-light);
+  background-color: var(--bg-main);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -22,12 +26,17 @@ a:hover {
   color: #535bf2;
 }
 
-body {
+html, body, #root {
+  height: 100%;
   margin: 0;
-  display: flex;
-  place-items: center;
+}
+
+body {
   min-width: 320px;
   min-height: 100vh;
+  background: var(--bg-main);
+  color: var(--text-light);
+  display: block;
 }
 
 h1 {
@@ -36,33 +45,44 @@ h1 {
 }
 
 button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
+  background: var(--accent);
+  color: #000;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 1rem;
   cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+  transition: all 0.2s ease;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+button:hover {
+  opacity: 0.85;
+  box-shadow: 0 0 12px rgba(0, 246, 255, 0.6);
 }
+
+button:active {
+  transform: scale(0.98);
+}
+
+input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 246, 255, 0.3);
+  background: #000;
+  color: white;
+  font-size: 1rem;
+  outline: none;
+  transition: 0.2s ease;
+}
+
+input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 8px rgba(0, 246, 255, 0.4);
+}
+
