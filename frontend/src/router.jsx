@@ -22,6 +22,7 @@ const router = createBrowserRouter([
       {
         path: 'how-to-play',
         element: <HowToPlay />,
+      },
       {
         path: 'dashboard',
         element: (
