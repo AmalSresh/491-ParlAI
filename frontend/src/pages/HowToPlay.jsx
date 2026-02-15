@@ -19,46 +19,35 @@ const STEPS = [
 
 export default function HowToPlay() {
   return (
-    <main style={{ padding:24, maxWidth:900, margin: '0 auto' }}>
-      <header style={{ marginBottom:16 }}>
-        <h1 style={{marginBottom: 8}}>How To Play</h1>
-        <p style={{ margin: 0 }}>
-          Quick guide to using ParlAI predictions and reading confidence levels.
+    <main className="mx-auto max-w-3xl px-6 py-8 text-slate-100">
+      <header className="mb-6">
+        <h1 className="text-3xl font-bold tracking-tight">How to Play</h1>
+        <p className="mt-2 text-slate-300">
+          A quick guide to using ParlAI predictions and understanding confidence.
         </p>
       </header>
 
-      <section style={{ display: 'grid', gap: 14 }}>
+      <section className="grid gap-4">
         {STEPS.map((step, i) => (
           <div
             key={step.title}
-            style={{
-              border: '1px solid #e5e7eb',
-              borderRadius: 12,
-              padding: 16,
-            }}
+            className="rounded-xl border border-slate-700 bg-slate-900/60 p-5"
           >
-            <h2 style={{ marginTop: 0, marginBottom: 6 }}>
-              Step {i + 1}: {step.title}
+            <h2 className="text-lg font-semibold">
+              Step {i + 1}: <span className="text-slate-100">{step.title}</span>
             </h2>
-            <p style={{ margin: 0 }}>{step.body}</p>
+            <p className="mt-2 text-slate-300">{step.body}</p>
           </div>
         ))}
       </section>
 
-      <section
-        style={{
-          marginTop: 18,
-          padding: 14,
-          borderRadius: 12,
-          background: '#f9fafb',
-          border: '1px solid #e5e7eb',
-        }}
-      >
-        <p style={{ margin: 0 }}>
-          <strong>Disclaimer:</strong> ParlAI provides statistical insights for education and
-          entertainment. It is not financial advice, and predictions are not guarantees.
+      <div className="mt-6 rounded-xl border border-slate-700 bg-slate-900/60 p-4">
+        <p className="text-sm text-slate-300">
+          <span className="font-semibold text-slate-100">Disclaimer:</span> ParlAI provides
+          statistical insights for educational/entertainment purposes. It is not financial or
+          betting advice.
         </p>
-      </section>
+      </div>
     </main>
   );
 }
