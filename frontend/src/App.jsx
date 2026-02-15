@@ -30,7 +30,7 @@ function App() {
               </Link>
               <button
                 type="button"
-                className="bg-transparent border border-sb-white text-sb-white py-2 px-4 rounded-lg font-semibold text-[0.95rem] cursor-pointer hover:bg-sb-white hover:text-sb-dark"
+                className="bg-transparent border border-sb-white text-white py-2 px-4 rounded-lg font-semibold text-[0.95rem] cursor-pointer hover:bg-white hover:text-sb-dark"
                 onClick={logout}
               >
                 Logout
