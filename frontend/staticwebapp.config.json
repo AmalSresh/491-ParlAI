@@ -1,12 +1,20 @@
 {
-  "navigationFallback": {
-    "rewrite": "/index.html",
-    "exclude": ["/assets/*", "/*.*"]
-  },
-  "routes": [
-    {
-      "route": "/.auth/*",
-      "allowedRoles": ["anonymous"]
+  "routes": [],
+  "auth": {
+    "rolesSource": "/api/roles",
+    "identityProviders": {
+      "facebook": {
+        "registration": {
+          "clientIdSettingName": "FACEBOOK_APP_ID",
+          "clientSecretSettingName": "FACEBOOK_APP_SECRET_APP_SETTING_NAME"
+        }
+      },
+      "google": {
+        "registration": {
+          "clientIdSettingName": "GOOGLE_CLIENT_ID",
+          "clientSecretSettingName": "GOOGLE_CLIENT_SECRET_APP_SETTING_NAME"
+        }
+      }
     }
-  ]
+  }
 }
