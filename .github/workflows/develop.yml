@@ -34,3 +34,8 @@ jobs:
         run: |
           cd frontend
           npm run format
+
+      - name: Test
+        run: |
+          cd frontend
+          npm run test
