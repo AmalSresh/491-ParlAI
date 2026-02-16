@@ -18,6 +18,12 @@
           "clientIdSettingName": "GOOGLE_CLIENT_ID",
           "clientSecretSettingName": "GOOGLE_CLIENT_SECRET_APP_SETTING_NAME"
         }
+      },
+      "twitter": {
+        "registration": {
+          "consumerKeySettingName": "TWITTER_CONSUMER_KEY",
+          "consumerSecretSettingName": "TWITTER_CONSUMER_SECRET"
+        }
       }
     }
   }
