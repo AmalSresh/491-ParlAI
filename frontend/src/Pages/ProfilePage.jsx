@@ -1,12 +1,12 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState } from 'react';
 
 export default function ProfilePage() {
   const user = useMemo(
     () => ({
-      name: "Rafaan Hyder",
-      username: "rafaan",
-      tier: "Silver",
-      memberSince: "2026",
+      name: 'Rafaan Hyder',
+      username: 'rafaan',
+      tier: 'Silver',
+      memberSince: '2026',
       balance: 124.75,
       bonus: 20.0,
       winRate: 0.54,
@@ -16,573 +16,343 @@ export default function ProfilePage() {
     []
   );
 
-  const [activeTab, setActiveTab] = useState("activity");
+  const [activeTab, setActiveTab] = useState('activity');
 
   const activity = useMemo(
     () => [
       {
-        id: "a1",
-        title: "Warriors vs Lakers",
-        subtitle: "Moneyline • GSW",
+        id: 'a1',
+        title: 'Warriors vs Lakers',
+        subtitle: 'Moneyline • GSW',
         amount: -10.0,
-        status: "Settled",
-        time: "Today • 11:04 AM",
+        status: 'Settled',
+        time: 'Today • 11:04 AM',
       },
       {
-        id: "a2",
-        title: "Chelsea vs Arsenal",
-        subtitle: "Over 2.5 Goals",
+        id: 'a2',
+        title: 'Chelsea vs Arsenal',
+        subtitle: 'Over 2.5 Goals',
         amount: +18.5,
-        status: "Won",
-        time: "Yesterday • 7:22 PM",
+        status: 'Won',
+        time: 'Yesterday • 7:22 PM',
       },
       {
-        id: "a3",
-        title: "NFL Sunday Parlay",
-        subtitle: "3-leg • +420",
+        id: 'a3',
+        title: 'NFL Sunday Parlay',
+        subtitle: '3-leg • +420',
         amount: -5.0,
-        status: "Lost",
-        time: "Feb 10 • 3:11 PM",
+        status: 'Lost',
+        time: 'Feb 10 • 3:11 PM',
       },
     ],
     []
   );
 
   const formatMoney = (n) =>
-    n.toLocaleString(undefined, { style: "currency", currency: "USD" });
+    n.toLocaleString(undefined, { style: 'currency', currency: 'USD' });
 
-  const profitPill = (n) => (n >= 0 ? "pill pillGood" : "pill pillBad");
+  const initials = user.name
+    .split(' ')
+    .slice(0, 2)
+    .map((s) => s[0])
+    .join('')
+    .toUpperCase();
+
+  const netIsPositive = user.netProfit >= 0;
 
   return (
-    <div className="page">
-  <style>{styles}</style>
+    <div className="w-full">
+      {/* Page layout: thin ad columns left/right + main content */}
+      <div className="grid grid-cols-[140px_1fr_140px] gap-5">
+        {/* Left ad column */}
+        <aside className="hidden lg:flex h-full min-h-[calc(100vh-140px)] items-start justify-center pt-10 text-sm text-sb-text/35 bg-sb-nav/70 border-r border-sb-blue/10">
+          Ad Space
+        </aside>
 
-  <aside className="adColumn leftAd">
-    Ad Space
-  </aside>
-
-  <div className="mainContent">
-
-      <header className="topbar">
-        <div className="brand">
-          <div className="logo" aria-hidden />
-          <div className="brandText">
-            <div className="brandName">SPORTSBOOK</div>
-            <div className="brandSub">Profile</div>
-          </div>
-        </div>
-
-        <div className="topActions">
-          <button className="btn btnGhost" type="button">
-            Support
-          </button>
-          <button className="btn btnSolid" type="button">
-            Log out
-          </button>
-        </div>
-      </header>
-
-      <section className="hero">
-        <div className="heroCard">
-          <div className="avatar" aria-hidden>
-            <span className="avatarText">
-              {user.name
-                .split(" ")
-                .slice(0, 2)
-                .map((s) => s[0])
-                .join("")
-                .toUpperCase()}
-            </span>
-          </div>
-
-          <div className="heroInfo">
-            <div className="nameRow">
-              <h1 className="name">{user.name}</h1>
-              <span className="chip">{user.tier} Tier</span>
-            </div>
-            <div className="meta">
-              <span className="muted">@{user.username}</span>
-              <span className="dot" />
-              <span className="muted">Member since {user.memberSince}</span>
-            </div>
-
-            <div className="quickRow">
-              <div className="moneyBox">
-                <div className="moneyLabel">Balance</div>
-                <div className="moneyValue">{formatMoney(user.balance)}</div>
-              </div>
-              <div className="moneyBox">
-                <div className="moneyLabel">Bonus</div>
-                <div className="moneyValue">{formatMoney(user.bonus)}</div>
-              </div>
-
-              <div className="ctaRow">
-                <button className="btn btnSolid" type="button">
-                  Deposit
-                </button>
-                <button className="btn btnOutline" type="button">
-                  Withdraw
-                </button>
+        {/* Main content */}
+        <div className="w-full min-w-0">
+          {/* Top panel header */}
+          <header className="flex items-center justify-between gap-4 mb-5">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="h-10 w-10 rounded-xl border border-sb-blue/20 bg-white/10" aria-hidden />
+              <div className="min-w-0">
+                <div className="text-xs font-extrabold tracking-[0.18em] text-sb-text">
+                  SPORTSBOOK
+                </div>
+                <div className="text-xs text-sb-muted">Profile</div>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
 
-      <main className="grid">
-        <section className="panel">
-          <div className="panelHeader">
-            <h2 className="panelTitle">Performance</h2>
-            <span className={profitPill(user.netProfit)}>
-              {user.netProfit >= 0 ? "Net +" : "Net "}
-              {formatMoney(user.netProfit)}
-            </span>
-          </div>
+            <div className="flex items-center gap-3 shrink-0">
+              <button
+                type="button"
+                className="px-4 py-2 rounded-full border border-sb-blue/20 bg-sb-nav/90 text-sb-text font-semibold text-sm hover:border-sb-blue/50 hover:shadow-[0_0_10px_rgba(0,246,255,0.20)] transition"
+              >
+                Support
+              </button>
+              <button
+                type="button"
+                className="px-4 py-2 rounded-full bg-sb-blue text-black font-extrabold text-sm hover:opacity-90 transition"
+              >
+                Log out
+              </button>
+            </div>
+          </header>
 
-          <div className="stats">
-            <Stat label="Win rate" value={`${Math.round(user.winRate * 100)}%`} />
-            <Stat label="Total wagered" value={formatMoney(user.totalWagered)} />
-            <Stat label="Tier" value={user.tier} />
-          </div>
+          {/* Hero */}
+          <section className="rounded-2xl border border-sb-blue/15 bg-sb-dark shadow-[0_12px_28px_rgba(0,0,0,0.55)] overflow-hidden">
+            <div className="p-5 md:p-6 bg-[radial-gradient(800px_420px_at_80%_-20%,rgba(0,246,255,0.10),transparent_60%)]">
+              <div className="flex flex-col md:flex-row gap-4">
+                <div className="h-20 w-20 rounded-2xl border border-white/20 bg-white/10 flex items-center justify-center shrink-0">
+                  <span className="font-black tracking-widest">{initials}</span>
+                </div>
 
-          <div className="divider" />
-
-          <div className="sectionTitle">Quick actions</div>
-          <div className="actionsGrid">
-            <ActionCard title="Account" desc="Update info, password, 2FA" />
-            <ActionCard title="Limits" desc="Deposit & wager limits" />
-            <ActionCard title="Payment Methods" desc="Cards, bank, payout" />
-            <ActionCard title="Notifications" desc="Odds alerts & promos" />
-          </div>
-        </section>
-
-        <section className="panel">
-          <div className="tabs">
-            <Tab active={activeTab === "activity"} onClick={() => setActiveTab("activity")}>
-              Recent activity
-            </Tab>
-            <Tab active={activeTab === "rewards"} onClick={() => setActiveTab("rewards")}>
-              Rewards
-            </Tab>
-            <Tab active={activeTab === "settings"} onClick={() => setActiveTab("settings")}>
-              Settings
-            </Tab>
-          </div>
-
-          {activeTab === "activity" && (
-            <div className="list">
-              {activity.map((a) => (
-                <div key={a.id} className="listRow">
-                  <div className="listLeft">
-                    <div className="listTitle">{a.title}</div>
-                    <div className="listSub">
-                      <span className="muted">{a.subtitle}</span>
-                      <span className="dot sm" />
-                      <span className="muted">{a.status}</span>
-                      <span className="dot sm" />
-                      <span className="muted">{a.time}</span>
-                    </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <h1 className="m-0 text-2xl font-black tracking-tight text-sb-text">
+                      {user.name}
+                    </h1>
+                    <span className="text-xs font-extrabold px-3 py-1 rounded-full border border-white/20 bg-black/20 text-sb-text">
+                      {user.tier} Tier
+                    </span>
                   </div>
 
-                  <div className="listRight">
-                    <div className={a.amount >= 0 ? "amt good" : "amt bad"}>
-                      {a.amount >= 0 ? "+" : "-"}
-                      {formatMoney(Math.abs(a.amount))}
+                  <div className="mt-2 flex items-center gap-3 flex-wrap text-sm text-sb-text/70">
+                    <span>@{user.username}</span>
+                    <span className="h-1 w-1 rounded-full bg-white/35" />
+                    <span>Member since {user.memberSince}</span>
+                  </div>
+
+                  <div className="mt-4 flex flex-wrap items-stretch gap-3">
+                    <MoneyBox label="Balance" value={formatMoney(user.balance)} />
+                    <MoneyBox label="Bonus" value={formatMoney(user.bonus)} />
+
+                    <div className="ml-auto flex items-center gap-3 flex-wrap">
+                      <button
+                        type="button"
+                        className="px-5 py-2.5 rounded-full bg-sb-blue text-black font-extrabold text-sm hover:opacity-90 transition"
+                      >
+                        Deposit
+                      </button>
+                      <button
+                        type="button"
+                        className="px-5 py-2.5 rounded-full border border-sb-blue/35 text-sb-text font-extrabold text-sm hover:border-sb-blue hover:shadow-[0_0_10px_rgba(0,246,255,0.25)] transition"
+                      >
+                        Withdraw
+                      </button>
                     </div>
-                    <button className="btn btnTiny" type="button">
-                      Details
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Main grid */}
+          <main className="mt-5 grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-4">
+            {/* Performance */}
+            <section className="rounded-2xl border border-sb-blue/12 bg-sb-dark p-5 shadow-[0_12px_28px_rgba(0,0,0,0.55)]">
+              <div className="flex items-center justify-between gap-3 mb-4">
+                <h2 className="m-0 text-xs font-extrabold tracking-[0.16em] uppercase text-sb-text/90">
+                  Performance
+                </h2>
+                <span
+                  className={[
+                    'text-xs font-extrabold px-3 py-1 rounded-full border bg-black/20',
+                    netIsPositive ? 'border-sb-blue/35 text-sb-blue' : 'border-red-400/35 text-red-300',
+                  ].join(' ')}
+                >
+                  {netIsPositive ? 'Net +' : 'Net '}
+                  {formatMoney(user.netProfit)}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <Stat label="Win rate" value={`${Math.round(user.winRate * 100)}%`} />
+                <Stat label="Total wagered" value={formatMoney(user.totalWagered)} />
+                <Stat label="Tier" value={user.tier} />
+              </div>
+
+              <div className="h-px bg-white/10 my-5" />
+
+              <div className="text-xs font-extrabold tracking-[0.16em] uppercase text-sb-text/75 mb-3">
+                Quick actions
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <ActionCard title="Account" desc="Update info, password, 2FA" />
+                <ActionCard title="Limits" desc="Deposit & wager limits" />
+                <ActionCard title="Payment Methods" desc="Cards, bank, payout" />
+                <ActionCard title="Notifications" desc="Odds alerts & promos" />
+              </div>
+            </section>
+
+            {/* Tabs + content */}
+            <section className="rounded-2xl border border-sb-blue/12 bg-sb-dark p-5 shadow-[0_12px_28px_rgba(0,0,0,0.55)]">
+              <div className="flex gap-2 flex-wrap border-b border-white/10 pb-3 mb-4">
+                <TabButton active={activeTab === 'activity'} onClick={() => setActiveTab('activity')}>
+                  Recent activity
+                </TabButton>
+                <TabButton active={activeTab === 'rewards'} onClick={() => setActiveTab('rewards')}>
+                  Rewards
+                </TabButton>
+                <TabButton active={activeTab === 'settings'} onClick={() => setActiveTab('settings')}>
+                  Settings
+                </TabButton>
+              </div>
+
+              {activeTab === 'activity' && (
+                <div className="flex flex-col gap-3">
+                  {activity.map((a) => {
+                    const isPositive = a.amount >= 0;
+                    return (
+                      <div
+                        key={a.id}
+                        className="flex items-center justify-between gap-4 rounded-xl border border-white/10 bg-black/25 p-4"
+                      >
+                        <div className="min-w-0">
+                          <div className="font-extrabold text-sb-text">{a.title}</div>
+                          <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-sb-text/65">
+                            <span>{a.subtitle}</span>
+                            <span className="h-1 w-1 rounded-full bg-white/25" />
+                            <span>{a.status}</span>
+                            <span className="h-1 w-1 rounded-full bg-white/25" />
+                            <span>{a.time}</span>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col items-end gap-2 shrink-0">
+                          <div
+                            className={[
+                              'font-black tracking-wide',
+                              isPositive ? 'text-sb-blue' : 'text-red-300',
+                            ].join(' ')}
+                          >
+                            {isPositive ? '+' : '-'}
+                            {formatMoney(Math.abs(a.amount))}
+                          </div>
+                          <button
+                            type="button"
+                            className="px-3 py-1.5 rounded-full border border-sb-blue/20 bg-sb-nav/90 text-sb-text text-xs font-bold hover:border-sb-blue/50 hover:shadow-[0_0_10px_rgba(0,246,255,0.18)] transition"
+                          >
+                            Details
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {activeTab === 'rewards' && (
+                <div>
+                  <div className="font-black text-base text-sb-text mb-2">Rewards (stub)</div>
+                  <p className="text-sm text-sb-text/65 mb-4">
+                    Later you can show tier progress, points, promos, and rewards history.
+                  </p>
+
+                  <div className="rounded-xl border border-white/10 bg-black/25 p-4">
+                    <div className="text-xs text-sb-text/65">Tier Progress</div>
+                    <div className="font-black text-base text-sb-text mt-1 mb-3">Silver → Gold</div>
+
+                    <div className="h-2.5 rounded-full border border-white/10 bg-white/10 overflow-hidden">
+                      <div
+                        className="h-full bg-sb-blue shadow-[0_0_10px_rgba(0,246,255,0.35)]"
+                        style={{ width: '42%' }}
+                      />
+                    </div>
+
+                    <div className="text-xs text-sb-text/65 mt-2">42% complete</div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'settings' && (
+                <div>
+                  <div className="font-black text-base text-sb-text mb-2">Settings (stub)</div>
+                  <p className="text-sm text-sb-text/65 mb-4">Later wire this to real forms.</p>
+
+                  <div className="flex flex-col gap-3">
+                    <label className="flex flex-col gap-1">
+                      <span className="text-xs text-sb-text/65">Display name</span>
+                      <input
+                        className="w-full rounded-xl border border-sb-blue/20 bg-black/40 px-3 py-2.5 text-sb-text outline-none focus:border-sb-blue/60 focus:shadow-[0_0_10px_rgba(0,246,255,0.18)] transition"
+                        defaultValue={user.name}
+                      />
+                    </label>
+
+                    <label className="flex flex-col gap-1">
+                      <span className="text-xs text-sb-text/65">Username</span>
+                      <input
+                        className="w-full rounded-xl border border-sb-blue/20 bg-black/40 px-3 py-2.5 text-sb-text outline-none focus:border-sb-blue/60 focus:shadow-[0_0_10px_rgba(0,246,255,0.18)] transition"
+                        defaultValue={`@${user.username}`}
+                      />
+                    </label>
+
+                    <button
+                      type="button"
+                      className="mt-1 px-5 py-2.5 rounded-full bg-sb-blue text-black font-extrabold text-sm hover:opacity-90 transition self-start"
+                    >
+                      Save changes
                     </button>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
+              )}
+            </section>
+          </main>
+        </div>
 
-          {activeTab === "rewards" && (
-            <div className="empty">
-              <div className="emptyTitle">Rewards (stub)</div>
-              <p className="muted">
-                Later you can show tier progress, points, promos, and rewards history.
-              </p>
-              <div className="rewardCard">
-                <div>
-                  <div className="rewardLabel">Tier Progress</div>
-                  <div className="rewardValue">Silver → Gold</div>
-                </div>
-                <div className="bar">
-                  <div className="barFill" style={{ width: "42%" }} />
-                </div>
-                <div className="muted small">42% complete</div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === "settings" && (
-            <div className="empty">
-              <div className="emptyTitle">Settings (stub)</div>
-              <p className="muted">Later wire this to real forms.</p>
-
-              <div className="form">
-                <label className="field">
-                  <div className="label">Display name</div>
-                  <input className="input" defaultValue={user.name} />
-                </label>
-
-                <label className="field">
-                  <div className="label">Username</div>
-                  <input className="input" defaultValue={`@${user.username}`} />
-                </label>
-
-                <button className="btn btnSolid" type="button">
-                  Save changes
-                </button>
-              </div>
-            </div>
-          )}
-        </section>
-       </main>
+        {/* Right ad column */}
+        <aside className="hidden lg:flex h-full min-h-[calc(100vh-140px)] items-start justify-center pt-10 text-sm text-sb-text/35 bg-sb-nav/70 border-l border-sb-blue/10">
+          Ad Space
+        </aside>
+      </div>
     </div>
+  );
+}
 
-    <aside className="adColumn rightAd">
-      Ad Space
-    </aside>
-  </div>
-);
+function MoneyBox({ label, value }) {
+  return (
+    <div className="min-w-[160px] rounded-xl border border-white/10 bg-black/25 px-4 py-3">
+      <div className="text-xs text-sb-text/65">{label}</div>
+      <div className="mt-1 text-lg font-black text-sb-text">{value}</div>
+    </div>
+  );
 }
 
 function Stat({ label, value }) {
   return (
-    <div className="stat">
-      <div className="statLabel">{label}</div>
-      <div className="statValue">{value}</div>
+    <div className="rounded-xl border border-white/10 bg-black/25 p-4">
+      <div className="text-xs text-sb-text/65">{label}</div>
+      <div className="mt-1 text-lg font-black text-sb-text">{value}</div>
     </div>
   );
 }
 
 function ActionCard({ title, desc }) {
   return (
-    <button className="actionCard" type="button">
-      <div className="actionTitle">{title}</div>
-      <div className="actionDesc">{desc}</div>
+    <button
+      type="button"
+      className="text-left rounded-xl border border-white/10 bg-black/25 p-4 hover:border-sb-blue/30 hover:shadow-[0_0_10px_rgba(0,246,255,0.16)] transition"
+    >
+      <div className="font-black text-sb-text">{title}</div>
+      <div className="mt-1 text-xs text-sb-text/65 leading-snug">{desc}</div>
     </button>
   );
 }
 
-function Tab({ active, onClick, children }) {
+function TabButton({ active, onClick, children }) {
   return (
-    <button className={active ? "tab tabActive" : "tab"} type="button" onClick={onClick}>
+    <button
+      type="button"
+      onClick={onClick}
+      className={[
+        'px-4 py-2 rounded-full text-xs font-extrabold transition border',
+        active
+          ? 'bg-white text-black border-white'
+          : 'bg-black/25 text-sb-text/80 border-white/10 hover:border-sb-blue/30 hover:text-sb-text',
+      ].join(' ')}
+    >
       {children}
     </button>
   );
 }
-
-const styles = `
-  :root{
-    --bg:#0b0b0b;
-    --text:#fff;
-    --muted:rgba(255,255,255,.65);
-    --line:rgba(255,255,255,.12);
-    --line2:rgba(255,255,255,.18);
-    --shadow: 0 10px 30px rgba(0,0,0,.45);
-    --radius:18px;
-  }
-
-  *{ box-sizing:border-box; }
-  body{ background: var(--bg); margin:0; }
-
-  .page{
-  min-height:100vh;
-  color:var(--text);
-
-  background: radial-gradient(1200px 800px at 20% -10%, rgba(0, 246, 255, 0.06), transparent 55%),
-              radial-gradient(900px 600px at 90% 10%, rgba(0, 246, 255, 0.04), transparent 60%),
-              var(--bg);
-
-  display: grid;
-  grid-template-columns: 150px 1fr 150px;
-  gap: 20px;
-
-  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
-}
-
-.mainContent{
-  width: min(1440px, 100%);
-  margin: 0 auto;
-  padding: 24px 18px;
-}
-
-.adColumn{
-  flex: 0 0 140px; /* fixed thin width */
-  width: 140px;
-  padding-top: 40px;
-
-  background: rgba(1, 13, 20, 0.7); /* subtle dark blue */
-  border-left: 1px solid rgba(0, 246, 255, 0.08);
-  border-right: 1px solid rgba(0, 246, 255, 0.08);
-
-  color: rgba(255,255,255,.35);
-  text-align: center;
-  font-size: 14px;
-}
-
-.leftAd{
-  border-left: none;
-}
-
-.rightAd{
-  border-right: none;
-}
-
-  .topbar{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:12px;
-    max-width: 1150px;
-    margin: 0 auto;
-    padding: 10px 2px 18px;
-  }
-
-  .brand{ display:flex; align-items:center; gap:12px; }
-  .logo{
-    width:38px; height:38px;
-    border-radius: 12px;
-    border: 1px solid var(--line2);
-    background: linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,0));
-  }
-  .brandName{ font-weight:800; letter-spacing:.08em; font-size:12px; }
-  .brandSub{ font-size:12px; color:var(--muted); margin-top:2px; }
-  .topActions{ display:flex; gap:10px; }
-
-  .hero{ max-width:1150px; margin: 0 auto 16px; }
-  .heroCard{
-  display:flex;
-  gap:16px;
-  padding:16px;
-  border-radius: var(--radius);
-
-  background:
-    radial-gradient(800px 420px at 80% -20%, rgba(0,246,255,0.10), transparent 60%),
-    var(--bg-blue);
-
-  border: 1px solid rgba(0,246,255,0.15);
-
-  box-shadow:
-    0 12px 28px rgba(0,0,0,0.55),
-    inset 0 0 0 1px rgba(0,246,255,0.06);
-}
-
-  .avatar{
-    width:78px; height:78px;
-    border-radius: 22px;
-    border: 1px solid var(--line2);
-    background: rgba(255,255,255,.08);
-    display:flex; align-items:center; justify-content:center;
-    flex: 0 0 auto;
-  }
-  .avatarText{ font-weight:900; letter-spacing:.06em; }
-
-  .heroInfo{ flex:1; min-width:0; }
-  .nameRow{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-  .name{ margin:0; font-size:24px; line-height:1.1; letter-spacing:-.02em; }
-  .chip{
-    font-size:12px;
-    padding: 6px 10px;
-    border-radius: 999px;
-    border:1px solid var(--line2);
-    background: rgba(0,0,0,.25);
-  }
-  .meta{ margin-top:6px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-
-  .dot{ width:4px; height:4px; border-radius:999px; background: rgba(255,255,255,.35); display:inline-block; }
-  .dot.sm{ width:3px; height:3px; }
-  .muted{ color: var(--muted); }
-  .small{ font-size:12px; }
-
-  .quickRow{ margin-top:14px; display:flex; gap:12px; align-items:stretch; flex-wrap:wrap; }
-
-  .moneyBox{
-    padding: 12px 14px;
-    border-radius: 14px;
-    border: 1px solid var(--line);
-    background: rgba(0,0,0,.25);
-    min-width: 160px;
-  }
-  .moneyLabel{ font-size:12px; color:var(--muted); }
-  .moneyValue{ font-size:18px; font-weight:800; margin-top:4px; }
-
-  .ctaRow{ margin-left:auto; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-
-  .btn{
-  border-radius: 999px;
-  padding: 10px 14px;
-  border: 1px solid rgba(0, 246, 255, 0.25);
-  background: transparent;
-  color: var(--text-light);
-  cursor:pointer;
-  font-weight:700;
-  font-size:13px;
-  transition: all 0.2s ease;
-}
-  .btn:hover{
-  border-color: rgba(0, 246, 255, 0.55);
-  box-shadow: 0 0 10px rgba(0, 246, 255, 0.25);
-}
-  .btnSolid{
-  background: var(--accent);
-  color: #000;
-  border-color: var(--accent);
-}
-  .btnSolid:hover{ filter: brightness(.95); }
-  .btnOutline{
-  background: transparent;
-  color: var(--text-light);
-  border: 1px solid rgba(0, 246, 255, 0.35);
-}
-  .btnGhost,
-.btnTiny{
-  background: rgba(1, 13, 20, 0.9); /* your dark blue */
-  border: 1px solid rgba(0, 246, 255, 0.18);
-  color: var(--text-light);
-}
-
-  .grid{
-    max-width:1150px;
-    margin: 0 auto;
-    display:grid;
-    grid-template-columns: 1.1fr .9fr;
-    gap: 14px;
-  }
-  @media (max-width: 980px){
-    .grid{ grid-template-columns: 1fr; }
-    .ctaRow{ margin-left:0; }
-    .moneyBox{ flex: 1 1 160px; }
-  }
-
-  .panel{
-  border-radius: var(--radius);
-  background: var(--bg-blue); /* #010D14 */
-  border: 1px solid rgba(0, 246, 255, 0.12);
-  padding: 14px;
-  box-shadow:
-    0 12px 28px rgba(0,0,0,0.55),
-    inset 0 0 0 1px rgba(0,246,255,0.06);
-  overflow: hidden;
-}
-  .panelHeader{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom: 10px; }
-  .panelTitle{
-  margin: 0;
-  font-size: 14px;
-  letter-spacing: .06em;
-  text-transform: uppercase;
-  color: rgba(255,255,255,0.85); /* keep */
-}
-
-  .pill{
-    font-size:12px;
-    padding: 6px 10px;
-    border-radius: 999px;
-    border:1px solid var(--line2);
-    background: rgba(0,0,0,.25);
-  }
-
-  .stats{ display:grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-  @media (max-width: 520px){ .stats{ grid-template-columns: 1fr; } }
-  .stat{ border: 1px solid var(--line); border-radius: 14px; padding: 12px; background: rgba(0,0,0,.22); }
-  .statLabel{ font-size:12px; color:var(--muted); }
-  .statValue{ margin-top:6px; font-weight:900; font-size: 18px; }
-
-  .divider{ height:1px; background: var(--line); margin: 14px 0; }
-  .sectionTitle{ font-size: 12px; text-transform: uppercase; letter-spacing: .10em; color: rgba(255,255,255,.75); margin-bottom: 10px; }
-
-  .actionsGrid{ display:grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-  @media (max-width: 520px){ .actionsGrid{ grid-template-columns: 1fr; } }
-  .actionCard{
-    text-align:left;
-    border-radius: 14px;
-    border: 1px solid var(--line);
-    background: rgba(0,0,0,.22);
-    padding: 12px;
-    cursor:pointer;
-    color: var(--text);
-  }
-  .actionCard:hover{ border-color: rgba(255,255,255,.24); }
-  .actionTitle{ font-weight:900; }
-  .actionDesc{ margin-top:6px; color:var(--muted); font-size:12px; line-height:1.35; }
-
-  .tabs{
-    display:flex; gap:8px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid var(--line);
-    margin-bottom: 10px;
-    flex-wrap:wrap;
-  }
-  .tab{
-    padding: 9px 12px;
-    border-radius: 999px;
-    border: 1px solid var(--line);
-    background: rgba(0,0,0,.18);
-    color: rgba(255,255,255,.85);
-    cursor:pointer;
-    font-weight:800;
-    font-size: 12px;
-  }
-  .tabActive{ background:#fff; color:#000; border-color:#fff; }
-
-  .list{ display:flex; flex-direction:column; gap:10px; }
-  .listRow{
-    display:flex; gap:12px;
-    align-items:center; justify-content:space-between;
-    border:1px solid var(--line);
-    background: rgba(0,0,0,.22);
-    border-radius: 14px;
-    padding: 12px;
-  }
-  .listTitle{ font-weight:900; }
-  .listSub{ margin-top:6px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-  .listRight{ display:flex; align-items:flex-end; gap:10px; flex-direction:column; flex: 0 0 auto; }
-  .amt{ font-weight:1000; font-size: 14px; letter-spacing:.02em; }
-
-  .empty{ padding: 8px 2px; }
-  .emptyTitle{ font-weight:1000; font-size: 16px; }
-
-  .rewardCard{
-    margin-top: 12px;
-    border:1px solid var(--line);
-    border-radius: 14px;
-    padding: 12px;
-    background: rgba(0,0,0,.22);
-    display:flex; flex-direction:column; gap:10px;
-  }
-  .rewardLabel{ color: var(--muted); font-size:12px; }
-  .rewardValue{ font-weight:1000; font-size: 16px; margin-top: 4px; }
-  .bar{
-    height: 10px;
-    border-radius: 999px;
-    border: 1px solid var(--line);
-    background: rgba(255,255,255,.06);
-    overflow:hidden;
-  }
-  .barFill{
-  height: 100%;
-  background: var(--accent);
-  box-shadow: 0 0 10px rgba(0, 246, 255, 0.35);
-}
-
-  .form{ margin-top: 12px; display:flex; flex-direction:column; gap:10px; }
-  .field{ display:flex; flex-direction:column; gap:6px; }
-  .label{ font-size:12px; color: var(--muted); }
- .input{
-  border-radius: 12px;
-  border: 1px solid rgba(0, 246, 255, 0.18);
-  background: #000;              
-  padding: 10px 12px;
-  color: var(--text-light);
-  outline: none;
-}
-
-.input:focus{
-  border-color: rgba(0, 246, 255, 0.55);
-  box-shadow: 0 0 10px rgba(0, 246, 255, 0.20);
-}
-`;
