@@ -1,18 +1,28 @@
 {
+  "navigationFallback": {
+    "rewrite": "/index.html",
+    "exclude": ["/images/*", "/css/*"]
+  },
   "routes": [],
   "auth": {
     "rolesSource": "/api/roles",
     "identityProviders": {
       "facebook": {
         "registration": {
-          "clientIdSettingName": "FACEBOOK_APP_ID",
-          "clientSecretSettingName": "FACEBOOK_APP_SECRET_APP_SETTING_NAME"
+          "appIdSettingName": "FACEBOOK_APP_ID",
+          "appSecretSettingName": "FACEBOOK_APP_SECRET_APP_SETTING_NAME"
         }
       },
       "google": {
         "registration": {
           "clientIdSettingName": "GOOGLE_CLIENT_ID",
           "clientSecretSettingName": "GOOGLE_CLIENT_SECRET_APP_SETTING_NAME"
+        }
+      },
+      "twitter": {
+        "registration": {
+          "consumerKeySettingName": "TWITTER_CONSUMER_KEY",
+          "consumerSecretSettingName": "TWITTER_CONSUMER_SECRET"
         }
       }
     }
