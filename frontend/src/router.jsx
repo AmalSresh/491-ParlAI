@@ -3,7 +3,7 @@ import App from './App';
 import Login from './pages/login';
 import Home from './pages/home';
 import Dashboard from './pages/dashboard';
-import HowToPlay from './pages/howToPlay';
+import HowToPlay from './pages/HowToPlay';
 import ProtectedRoute from './components/ProtectedRoute';
 
 const router = createBrowserRouter([
