@@ -3,6 +3,7 @@ import App from './App';
 import Login from './pages/login';
 import Home from './pages/home';
 import Dashboard from './pages/dashboard';
+import HowToPlay from './pages/howToPlay';
 import ProtectedRoute from './components/ProtectedRoute';
 
 const router = createBrowserRouter([
@@ -17,6 +18,10 @@ const router = createBrowserRouter([
       {
         path: 'login',
         element: <Login />,
+      },
+      {
+        path: 'how-to-play',
+        element: <HowToPlay />,
       },
       {
         path: 'dashboard',
