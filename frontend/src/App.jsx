@@ -20,6 +20,13 @@ function App() {
           >
             Home
           </Link>
+           <Link
+            to="/how-to-play"
+            className="text-sb-text no-underline font-semibold text-[0.95rem] hover:text-sb-white"
+          >
+            How to Play
+            
+          </Link>
           {user ? (
             <>
               <Link
