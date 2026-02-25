@@ -1,6 +1,4 @@
 import { render, screen } from "@testing-library/react";
-import Header from "../src/components/Header";
-import Footer from "../src/components/Footer";
 import Homepage from "../src/pages/Homepage";
 test("renders Today's Games heading", () => {
   render(<Homepage />);
