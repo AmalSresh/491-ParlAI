@@ -1,74 +1,34 @@
-import { Outlet, Link } from 'react-router-dom';
-import { useAuth } from './context/AuthContext';
+import { Outlet, Link } from "react-router-dom";
+import Sidebar from "./components/Sidebar";
 
-// If ui-updates added Sidebar, keep it:
-import Sidebar from './components/Sidebar';
-
-function App() {
-  const { user, logout, loading } = useAuth();
-
+export default function App() {
   return (
-    <div className="min-h-screen flex flex-col bg-sb-bg">
-      <nav className="flex items-center justify-between px-6 py-3 bg-sb-nav border-b-2 border-sb-blue shrink-0">
-        <Link
-          to="/"
-          className="text-2xl font-extrabold text-sb-blue no-underline tracking-wide hover:text-sb-blue-light"
-        >
-          ParlAI
-        </Link>
+    <div className="min-h-screen flex flex-col bg-[#0d0f14] text-white">
 
-        <div className="flex items-center gap-6">
-          <Link
-            to="/"
-            className="text-sb-text no-underline font-semibold text-[0.95rem] hover:text-sb-white"
-          >
-            Home
-          </Link>
-           <Link
-            to="/how-to-play"
-            className="text-sb-text no-underline font-semibold text-[0.95rem] hover:text-sb-white"
-          >
-            How to Play
-            
-          </Link>
-          {user ? (
-            <>
-              <Link
-                to="/dashboard"
-                className="text-sb-text no-underline font-semibold text-[0.95rem] hover:text-sb-white"
-              >
-                Dashboard
-              </Link>
-              <button
-                type="button"
-                className="bg-transparent border border-sb-white text-white py-2 px-4 rounded-lg font-semibold text-[0.95rem] cursor-pointer hover:bg-white hover:text-sb-dark"
-                onClick={logout}
-              >
-                Logout
-              </button>
-            </>
-          ) : (
-            <Link
-              to="/login"
-              className="text-sb-text no-underline font-semibold text-[0.95rem] hover:text-sb-white"
-            >
-              Login
-            </Link>
-          )}
+      {/* Top Navigation */}
+      <nav className="flex items-center justify-between px-6 py-4 bg-[#11131a] border-b border-[#1f2430] shadow-md">
+        <h1 className="text-2xl font-extrabold tracking-wide text-sb-blue">
+          ParlAI Sports Betting App
+        </h1>
+
+        <div className="flex gap-6 text-lg font-medium">
+          <Link to="/" className="hover:text-sb-blue-light">Home</Link>
+          <Link to="/games" className="hover:text-sb-blue-light">Games</Link>
+          <Link to="/players" className="hover:text-sb-blue-light">Players</Link>
+          <Link to="/bets" className="hover:text-sb-blue-light">My Bets</Link>
+          <Link to="/login" className="hover:text-sb-blue-light">Login</Link>
         </div>
       </nav>
 
-      {/* Main layout: sidebar + routed page content */}
-      {!loading && (
-        <div className="flex-1 w-full max-w-7xl mx-auto py-6 px-8 box-border flex gap-6">
-          <Sidebar />
-          <main className="flex-1 min-w-0">
-            <Outlet />
-          </main>
-        </div>
-      )}
+      {/* Main Layout */}
+      <div className="flex flex-1">
+        <Sidebar />
+
+        <main className="flex-1 p-10">
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 }
 
-export default App;
