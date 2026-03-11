@@ -6,9 +6,11 @@ import Dashboard from './pages/dashboard';
 import HowToPlay from './pages/HowToPlay';
 import Support from  './pages/support';
 import Onboarding from './pages/onboarding';
+import Settings from './pages/Settings';
+import Profile from './pages/Profile';
 import ProtectedRoute from './components/ProtectedRoute';
 
-// ⭐ Add your new placeholder pages
+// ⭐ Placeholder pages
 import Games from './pages/Games';
 import Players from './pages/Players';
 import MyBets from './pages/MyBets';
@@ -25,7 +27,7 @@ const router = createBrowserRouter([
         element: <Home />,
       },
 
-      // ⭐ New pages you added
+      // Placeholder pages
       {
         path: 'games',
         element: <Games />,
@@ -72,8 +74,24 @@ const router = createBrowserRouter([
           </ProtectedRoute>
         ),
       },
+      {
+        path: 'settings',
+        element: (
+          <ProtectedRoute>
+            <Settings />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'profile',
+        element: (
+          <ProtectedRoute>
+            <Profile />
+          </ProtectedRoute>
+        ),
+      },
 
-      // ⭐ Catch-all route for unknown pages
+      // Catch-all route for unknown pages
       {
         path: '*',
         element: <NotFound />,
