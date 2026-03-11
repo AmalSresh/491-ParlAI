@@ -1,10 +1,10 @@
-import { app } from "@azure/functions";
-import sql from "mssql";
+import { app } from '@azure/functions';
+import sql from 'mssql';
 
-app.http("teams", {
-  methods: ["GET"],
-  route: "teams",
-  authLevel: "anonymous",
+app.http('teams', {
+  methods: ['GET'],
+  route: 'teams',
+  authLevel: 'anonymous',
   handler: async (request, context) => {
     try {
       const sqlConfig = {
@@ -29,8 +29,8 @@ app.http("teams", {
         jsonBody: result.recordset,
       };
     } catch (error) {
-      context.error("Error fetching teams:", error);
-      return { status: 500, jsonBody: { error: "Internal Server Error" } };
+      context.error('Error fetching teams:', error);
+      return { status: 500, jsonBody: { error: 'Internal Server Error' } };
     }
   },
 });
