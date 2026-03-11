@@ -1,6 +1,6 @@
-import dotenv from 'dotenv';
-dotenv.config();
-import sql from 'mssql';
+import dotenv from "dotenv";
+dotenv.config({ path: "../.env" });
+import sql from "mssql";
 
 async function init() {
   try {
@@ -17,24 +17,24 @@ async function init() {
 
     const pool = await sql.connect(config);
 
-    const fs = await import('fs');
-    const path = await import('path');
-    const { fileURLToPath } = await import('url');
+    const fs = await import("fs");
+    const path = await import("path");
+    const { fileURLToPath } = await import("url");
 
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
 
     const schema = fs.readFileSync(
-      path.join(__dirname, '../db/init.sql'),
-      'utf8',
+      path.join(__dirname, "../db/init.sql"),
+      "utf8",
     );
 
     await pool.request().batch(schema);
 
-    console.log('Database initialized successfully.');
+    console.log("Database initialized successfully.");
     process.exit(0);
   } catch (err) {
-    console.error('Error initializing database:', err);
+    console.error("Error initializing database:", err);
     process.exit(1);
   }
 }
