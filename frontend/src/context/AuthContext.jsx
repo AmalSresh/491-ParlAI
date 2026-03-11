@@ -72,7 +72,6 @@ export function AuthProvider({ children }) {
   }
 
   // LOGOUT
-
   function logout() {
     const base = window.location.origin.includes('localhost')
       ? 'https://lemon-bush-05638821e.1.azurestaticapps.net'
