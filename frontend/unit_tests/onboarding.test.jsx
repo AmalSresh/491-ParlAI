@@ -22,7 +22,7 @@ describe('Onboarding Component', () => {
     vi.clearAllMocks();
     useAuth.mockReturnValue({ checkAuth: mockCheckAuth });
 
-    global.fetch = vi.fn((url) => {
+    globalThis.fetch = vi.fn((url) => {
       if (url === '/.auth/me') {
         return Promise.resolve({
           ok: true,
@@ -66,7 +66,7 @@ describe('Onboarding Component', () => {
   });
 
   test('completes the full happy path successfully', async () => {
-    global.fetch.mockImplementation((url) => {
+    globalThis.fetch.mockImplementation((url) => {
       if (url === '/.auth/me')
         return Promise.resolve({
           ok: true,
@@ -111,7 +111,7 @@ describe('Onboarding Component', () => {
       expect(mockCheckAuth).toHaveBeenCalledTimes(1);
     });
 
-    expect(global.fetch).toHaveBeenCalledWith(
+    expect(globalThis.fetch).toHaveBeenCalledWith(
       '/api/complete-onboarding',
       expect.objectContaining({
         method: 'POST',
@@ -125,7 +125,7 @@ describe('Onboarding Component', () => {
   });
 
   test('displays 409 conflict error when nickname is taken', async () => {
-    global.fetch.mockImplementation((url) => {
+    globalThis.fetch.mockImplementation((url) => {
       if (url === '/.auth/me')
         return Promise.resolve({
           ok: true,
