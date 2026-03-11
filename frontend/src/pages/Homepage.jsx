@@ -34,13 +34,15 @@ export default function Homepage() {
   ];
 
   return (
-    <div>
+    <div className="w-full min-w-0">
       <Header />
 
-      <div className="container">
-        <h2>Today's Games</h2>
+      <div className="w-full">
+        <h2 className="text-2xl font-bold text-sb-blue mb-4 m-0">
+          Today's Games
+        </h2>
 
-        <div className="games-grid">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {games.map((g, i) => (
             <GameCard key={i} game={g} />
           ))}
