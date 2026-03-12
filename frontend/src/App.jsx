@@ -16,6 +16,7 @@ export default function App() {
           <Link to="/games" className="hover:text-sb-blue-light">Games</Link>
           <Link to="/players" className="hover:text-sb-blue-light">Players</Link>
           <Link to="/bets" className="hover:text-sb-blue-light">My Bets</Link>
+          <Link to="/dashboard" className="hover:text-sb-blue-light">Dashboard</Link>
           <Link to="/login" className="hover:text-sb-blue-light">Login</Link>
         </div>
       </nav>
