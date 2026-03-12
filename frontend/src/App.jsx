@@ -1,9 +1,21 @@
-import { Outlet, Link } from 'react-router-dom';
+import { Outlet, Link, useLocation, Navigate } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import { useAuth } from './context/AuthContext';
 
 export default function App() {
   const { user, logout } = useAuth();
+  const location = useLocation();
+
+  // THE MAGIC FIX: The Route Guard
+  // If a user is logged in, their onboarding stage is 0, AND they aren't already on the onboarding page...
+  if (
+    user &&
+    user.onboardingStage === 0 &&
+    location.pathname !== '/onboarding'
+  ) {
+    // ...force them to the onboarding page immediately!
+    return <Navigate to="/onboarding" replace />;
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-[#0d0f14] text-white">
