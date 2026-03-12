@@ -1,5 +1,5 @@
-import { Link } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 export default function Header() {
   const { user, logout, loading } = useAuth();
@@ -9,19 +9,34 @@ export default function Header() {
       <h1>ParlAI Sports Betting App</h1>
 
       <nav className="flex items-center gap-4">
-        <Link to="/" className="text-sb-text no-underline font-semibold text-[0.95rem] hover:text-sb-white">
+        <Link
+          to="/"
+          className="text-sb-text no-underline font-semibold text-[0.95rem] hover:text-sb-white"
+        >
           Home
         </Link>
-        <Link to="/games" className="text-sb-text no-underline font-semibold text-[0.95rem] hover:text-sb-white">
+        <Link
+          to="/games"
+          className="text-sb-text no-underline font-semibold text-[0.95rem] hover:text-sb-white"
+        >
           Games
         </Link>
-        <Link to="/players" className="text-sb-text no-underline font-semibold text-[0.95rem] hover:text-sb-white">
+        <Link
+          to="/players"
+          className="text-sb-text no-underline font-semibold text-[0.95rem] hover:text-sb-white"
+        >
           Players
         </Link>
-        <Link to="/bets" className="text-sb-text no-underline font-semibold text-[0.95rem] hover:text-sb-white">
+        <Link
+          to="/bets"
+          className="text-sb-text no-underline font-semibold text-[0.95rem] hover:text-sb-white"
+        >
           My Bets
         </Link>
-        <Link to="/how-to-play" className="text-sb-text no-underline font-semibold text-[0.95rem] hover:text-sb-white">
+        <Link
+          to="/how-to-play"
+          className="text-sb-text no-underline font-semibold text-[0.95rem] hover:text-sb-white"
+        >
           How to Play
         </Link>
 
@@ -29,7 +44,10 @@ export default function Header() {
           <>
             {user ? (
               <>
-                <Link to="/dashboard" className="text-sb-text no-underline font-semibold text-[0.95rem] hover:text-sb-white">
+                <Link
+                  to="/dashboard"
+                  className="text-sb-text no-underline font-semibold text-[0.95rem] hover:text-sb-white"
+                >
                   Dashboard
                 </Link>
                 <button
