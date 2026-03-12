@@ -18,27 +18,31 @@ export function AuthProvider({ children }) {
     try {
       const res = await fetch(AUTH_ME_URL, { cache: 'no-store' });
 
-      if (res.ok) {
-        const data = await res.json();
-        const principal = data?.clientPrincipal;
+      if (!res.ok) throw new Error();
 
-        if (principal) {
-          setUser({
-            id: principal.userId,
-            name: principal.userDetails,
-            email: principal.userDetails,
-            provider: principal.identityProvider,
-          });
-          setLoading(false);
-          return;
-        }
-      }
+      const data = await res.json();
+      const principal = data?.clientPrincipal;
+
+      if (!principal) throw new Error();
+
+      const userRes = await fetch('/api/user/me');
+      const dbUser = await userRes.json();
+
+      setUser({
+        id: dbUser.id,
+        name: dbUser.name,
+        email: dbUser.email,
+        provider: principal.identityProvider,
+        onboardingStage: dbUser.onboardingStage,
+        balance: dbUser.balance,
+      });
+
+      setLoading(false);
+      return;
     } catch {
-      // Ignore errors - treat as not authenticated
+      setUser(null);
+      setLoading(false);
     }
-
-    setUser(null);
-    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -68,7 +72,6 @@ export function AuthProvider({ children }) {
   }
 
   // LOGOUT
-
   function logout() {
     const base = window.location.origin.includes('localhost')
       ? 'https://lemon-bush-05638821e.1.azurestaticapps.net'

@@ -3,39 +3,61 @@ name: Dev CI
 on:
   push:
     branches:
-      - develop
+      - CICD-test-amal
   pull_request:
     branches:
-      - develop
+      - CICD-test-amal
 
 jobs:
-  validate:
+  frontend-validate:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 24
+          cache: "npm"
+          cache-dependency-path: ./frontend/package-lock.json
 
       - name: Install Dependencies
-        run: |
-          cd frontend
-          npm install
+        run: npm ci
 
       - name: Lint
-        run: |
-          cd frontend
-          npm run lint
+        run: npm run lint
 
-      - name: Format
-        run: |
-          cd frontend
-          npm run format
+      - name: Format Check
+        run: npm run format
 
       - name: Test
-        run: |
-          cd frontend
-          npm run test
+        run: npm run test
+
+  backend-validate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: "npm"
+          cache-dependency-path: ./backend/package-lock.json
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Format
+        run: npm run format
