@@ -7,15 +7,38 @@ import HowToPlay from './pages/HowToPlay';
 import Onboarding from './pages/onboarding';
 import ProtectedRoute from './components/ProtectedRoute';
 
+// ⭐ Add your new placeholder pages
+import Games from './pages/Games';
+import Players from './pages/Players';
+import MyBets from './pages/MyBets';
+import NotFound from './pages/NotFound';
+
 const router = createBrowserRouter([
   {
     path: '/',
     element: <App />,
     children: [
+      // Home page
       {
         index: true,
         element: <Home />,
       },
+
+      // ⭐ New pages you added
+      {
+        path: 'games',
+        element: <Games />,
+      },
+      {
+        path: 'players',
+        element: <Players />,
+      },
+      {
+        path: 'bets',
+        element: <MyBets />,
+      },
+
+      // Existing pages
       {
         path: 'login',
         element: <Login />,
@@ -39,6 +62,12 @@ const router = createBrowserRouter([
             <Dashboard />
           </ProtectedRoute>
         ),
+      },
+
+      // ⭐ Catch-all route for unknown pages
+      {
+        path: '*',
+        element: <NotFound />,
       },
     ],
   },
