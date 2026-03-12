@@ -1,7 +1,10 @@
 import { Outlet, Link } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
+import { useAuth } from "./context/AuthContext";
 
 export default function App() {
+  const { user, logout } = useAuth();
+
   return (
     <div className="min-h-screen flex flex-col bg-[#0d0f14] text-white">
 
@@ -16,8 +19,32 @@ export default function App() {
           <Link to="/games" className="hover:text-sb-blue-light">Games</Link>
           <Link to="/players" className="hover:text-sb-blue-light">Players</Link>
           <Link to="/bets" className="hover:text-sb-blue-light">My Bets</Link>
-          <Link to="/dashboard" className="hover:text-sb-blue-light">Dashboard</Link>
-          <Link to="/login" className="hover:text-sb-blue-light">Login</Link>
+          <Link to="/how-to-play" className="hover:text-sb-blue-light">How to Play</Link>
+
+          {user ? (
+            <>
+              {user.onboardingStage > 0 && (
+                <Link
+                  to="/dashboard"
+                  className="hover:text-sb-blue-light"
+                >
+                  Dashboard
+                </Link>
+              )}
+
+              <button
+                type="button"
+                onClick={logout}
+                className="bg-transparent border border-sb-white text-white py-2 px-4 rounded-lg font-semibold text-[0.95rem] cursor-pointer hover:bg-white hover:text-sb-dark"
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <Link to="/login" className="hover:text-sb-blue-light">
+              Login
+            </Link>
+          )}
         </div>
       </nav>
 
@@ -32,4 +59,3 @@ export default function App() {
     </div>
   );
 }
-
