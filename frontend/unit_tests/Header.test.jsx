@@ -5,7 +5,7 @@ import { AuthProvider } from "../src/context/AuthContext";
 import { vi } from "vitest";
 
 beforeEach(() => {
-  global.fetch = vi.fn(() =>
+  globalThis.fetch = vi.fn(() =>
     Promise.resolve({
       ok: true,
       json: () => Promise.resolve({ clientPrincipal: null }),
