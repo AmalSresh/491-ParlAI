@@ -13,6 +13,7 @@
   "type": "module",
   "dependencies": {
     "@azure/functions": "^4.11.2",
+    "axios": "^1.13.6",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "mssql": "^12.2.0",
