@@ -1,13 +1,14 @@
 import { render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import Sidebar from "../src/components/Sidebar";
 
 test("renders sidebar title", () => {
-  render(<Sidebar />);
+  render(<MemoryRouter><Sidebar /></MemoryRouter>);
   expect(screen.getByText("Leagues")).toBeInTheDocument();
 });
 
 test("renders all league items", () => {
-  render(<Sidebar />);
+  render(<MemoryRouter><Sidebar /></MemoryRouter>);
   const leagues = ["NBA", "NFL", "MLB", "NHL", "MLS", "Tennis", "UFC"];
   leagues.forEach(league => {
     expect(screen.getByText(new RegExp(league, "i"))).toBeInTheDocument();
