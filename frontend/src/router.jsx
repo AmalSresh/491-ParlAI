@@ -4,6 +4,7 @@ import Login from './pages/login';
 import Home from './pages/home';
 import Dashboard from './pages/dashboard';
 import HowToPlay from './pages/HowToPlay';
+import Onboarding from './pages/onboarding';
 import ProtectedRoute from './components/ProtectedRoute';
 
 // ⭐ Add your new placeholder pages
@@ -45,6 +46,14 @@ const router = createBrowserRouter([
       {
         path: 'how-to-play',
         element: <HowToPlay />,
+      },
+      {
+        path: 'onboarding',
+        element: (
+          <ProtectedRoute>
+            <Onboarding />
+          </ProtectedRoute>
+        ),
       },
       {
         path: 'dashboard',

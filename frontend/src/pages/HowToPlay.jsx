@@ -15,7 +15,7 @@ const STEPS = [
     title: 'The Risk of making money',
     body: 'Predictions help yo make smarter choices, but not everything in this sports world is guarenteed.',
   },
-  ];
+];
 
 export default function HowToPlay() {
   return (
@@ -23,7 +23,8 @@ export default function HowToPlay() {
       <header className="mb-6">
         <h1 className="text-3xl font-bold tracking-tight">How to Play</h1>
         <p className="mt-2 text-slate-300">
-          A quick guide to using ParlAI predictions and understanding confidence.
+          A quick guide to using ParlAI predictions and understanding
+          confidence.
         </p>
       </header>
 
@@ -43,9 +44,9 @@ export default function HowToPlay() {
 
       <div className="mt-6 rounded-xl border border-slate-700 bg-slate-900/60 p-4">
         <p className="text-sm text-slate-300">
-          <span className="font-semibold text-slate-100">Disclaimer:</span> ParlAI provides
-          statistical insights for educational/entertainment purposes. It is not financial or
-          betting advice.
+          <span className="font-semibold text-slate-100">Disclaimer:</span>{' '}
+          ParlAI provides statistical insights for educational/entertainment
+          purposes. It is not financial or betting advice.
         </p>
       </div>
     </main>
