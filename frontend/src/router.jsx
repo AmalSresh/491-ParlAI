@@ -11,6 +11,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Games from './pages/Games';
 import Players from './pages/Players';
 import MyBets from './pages/MyBets';
+import NBABets from './pages/NBABets';
 import NotFound from './pages/NotFound';
 
 const router = createBrowserRouter([
@@ -36,6 +37,10 @@ const router = createBrowserRouter([
       {
         path: 'bets',
         element: <MyBets />,
+      },
+      {
+        path: 'nba',
+        element: <NBABets />,
       },
 
       // Existing pages
