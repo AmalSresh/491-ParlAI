@@ -1,20 +1,13 @@
 import { render, screen } from "@testing-library/react";
-import Homepage from "../src/pages/Homepage";
-test("renders Today's Games heading", () => {
-  render(<Homepage />);
-  expect(screen.getByText("Today's Games")).toBeInTheDocument();
+import { MemoryRouter } from "react-router-dom";
+import Home from "../src/pages/home";
+
+test("renders welcome heading", () => {
+  render(<MemoryRouter><Home /></MemoryRouter>);
+  expect(screen.getByText("Welcome to the Home Page")).toBeInTheDocument();
 });
 
-test("renders Header and Footer", () => {
-  render(<Homepage />);
-  expect(screen.getByText("ParlAI Sports Betting App")).toBeInTheDocument();
-  expect(
-    screen.getByText("© 2026 ParlAI - AI-Powered Sports Predictions")
-  ).toBeInTheDocument();
-});
-
-test("renders exactly 3 GameCards", () => {
-  render(<Homepage />);
-  const cards = screen.getAllByText(/win probability/i);
-  expect(cards.length).toBe(3);
+test("renders welcome description", () => {
+  render(<MemoryRouter><Home /></MemoryRouter>);
+  expect(screen.getByText("This is the main landing page of the application.")).toBeInTheDocument();
 });

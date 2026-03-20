@@ -1,13 +1,7 @@
 import { useEffect, useState } from "react";
 
-// ── SLEEPER API ───────────────────────────────────────────────────────────────
-const SLEEPER_PLAYERS_URL = "https://api.sleeper.app/v1/players/nfl";
-const SLEEPER_STATS_URL   = (playerId) =>
-  `https://api.sleeper.app/stats/nfl/player/${playerId}?season_type=regular&season=2025`;
-
-// ── CACHE CONFIG ──────────────────────────────────────────────────────────────
-const CACHE_KEY    = "sleeper_nfl_players";
-const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+// ── BACKEND API ───────────────────────────────────────────────────────────────
+const API_BASE = "/api";
 
 // ── TEAM COLORS ───────────────────────────────────────────────────────────────
 const TEAM_COLORS = {
@@ -21,100 +15,15 @@ const TEAM_COLORS = {
   NYG: "#0B2265", TEN: "#0C2340", CAR: "#0085CA", CLE: "#FF3C00",
 };
 
-// ── FUTURES DATA ──────────────────────────────────────────────────────────────
-const FUTURES = {
-  superBowl: {
-    title: "🏆 Super Bowl LXI Winner",
-    subtitle: "2026–27 Projected Odds",
-    items: [
-      { label: "Kansas City Chiefs",      abbr: "KC",  odds: "+500"  },
-      { label: "Philadelphia Eagles",     abbr: "PHI", odds: "+650"  },
-      { label: "Buffalo Bills",           abbr: "BUF", odds: "+800"  },
-      { label: "Baltimore Ravens",        abbr: "BAL", odds: "+900"  },
-      { label: "San Francisco 49ers",     abbr: "SF",  odds: "+1000" },
-      { label: "Detroit Lions",           abbr: "DET", odds: "+1100" },
-      { label: "Seattle Seahawks",        abbr: "SEA", odds: "+1200" },
-      { label: "Houston Texans",          abbr: "HOU", odds: "+1400" },
-      { label: "Cincinnati Bengals",      abbr: "CIN", odds: "+1600" },
-      { label: "Dallas Cowboys",          abbr: "DAL", odds: "+1800" },
-    ],
-  },
-  mvp: {
-    title: "🎖️ NFL MVP",
-    subtitle: "2026–27 Projected Odds",
-    items: [
-      { label: "Josh Allen",          abbr: "BUF", odds: "+400"  },
-      { label: "Patrick Mahomes",     abbr: "KC",  odds: "+500"  },
-      { label: "Lamar Jackson",       abbr: "BAL", odds: "+600"  },
-      { label: "Jalen Hurts",         abbr: "PHI", odds: "+900"  },
-      { label: "Joe Burrow",          abbr: "CIN", odds: "+1000" },
-      { label: "Jayden Daniels",      abbr: "WAS", odds: "+1200" },
-      { label: "Caleb Williams",      abbr: "CHI", odds: "+1400" },
-      { label: "C.J. Stroud",         abbr: "HOU", odds: "+1600" },
-      { label: "Brock Purdy",         abbr: "SF",  odds: "+1800" },
-      { label: "Justin Herbert",      abbr: "LAC", odds: "+2000" },
-    ],
-  },
-  offensivePlayer: {
-    title: "⚡ Offensive Player of the Year",
-    subtitle: "2026–27 Projected Odds",
-    items: [
-      { label: "CeeDee Lamb",            abbr: "DAL", odds: "+500"  },
-      { label: "Ja'Marr Chase",          abbr: "CIN", odds: "+600"  },
-      { label: "Justin Jefferson",       abbr: "MIN", odds: "+700"  },
-      { label: "Tyreek Hill",            abbr: "MIA", odds: "+900"  },
-      { label: "Christian McCaffrey",    abbr: "SF",  odds: "+1000" },
-      { label: "Saquon Barkley",         abbr: "PHI", odds: "+1200" },
-      { label: "Marvin Harrison Jr.",    abbr: "ARI", odds: "+1400" },
-      { label: "Amon-Ra St. Brown",      abbr: "DET", odds: "+1600" },
-    ],
-  },
-  rushingTitle: {
-    title: "🏃 Rushing Title",
-    subtitle: "2026–27 Projected Odds",
-    items: [
-      { label: "Derrick Henry",          abbr: "NO",  odds: "+450"  },
-      { label: "Saquon Barkley",         abbr: "PHI", odds: "+600"  },
-      { label: "Christian McCaffrey",    abbr: "SF",  odds: "+700"  },
-      { label: "Bijan Robinson",         abbr: "ATL", odds: "+900"  },
-      { label: "Jahmyr Gibbs",           abbr: "DET", odds: "+1000" },
-      { label: "Breece Hall",            abbr: "NYJ", odds: "+1200" },
-      { label: "James Cook",             abbr: "BUF", odds: "+1400" },
-      { label: "Jonathan Taylor",        abbr: "IND", odds: "+1600" },
-    ],
-  },
-  receivingTitle: {
-    title: "🎯 Receiving Title",
-    subtitle: "2026–27 Projected Odds",
-    items: [
-      { label: "Tyreek Hill",            abbr: "MIA", odds: "+400"  },
-      { label: "CeeDee Lamb",            abbr: "DAL", odds: "+500"  },
-      { label: "Ja'Marr Chase",          abbr: "CIN", odds: "+650"  },
-      { label: "Justin Jefferson",       abbr: "MIN", odds: "+700"  },
-      { label: "Amon-Ra St. Brown",      abbr: "DET", odds: "+900"  },
-      { label: "A.J. Brown",             abbr: "PHI", odds: "+1100" },
-      { label: "Garrett Wilson",         abbr: "NYJ", odds: "+1300" },
-      { label: "DK Metcalf",             abbr: "SEA", odds: "+1500" },
-    ],
-  },
-};
-
-// ── TOP PLAYERS ───────────────────────────────────────────────────────────────
-const TARGET_PLAYERS = [
-  "Patrick Mahomes", "Josh Allen", "Lamar Jackson", "Joe Burrow",
-  "Jalen Hurts", "Dak Prescott", "Jared Goff", "Brock Purdy",
-  "Justin Herbert", "Tua Tagovailoa", "Jordan Love", "C.J. Stroud",
-  "Caleb Williams", "Jayden Daniels", "Trevor Lawrence", "Kyler Murray",
-  "Christian McCaffrey", "Saquon Barkley", "Derrick Henry", "Bijan Robinson",
-  "Jahmyr Gibbs", "De'Von Achane", "Breece Hall", "Jonathan Taylor",
-  "Josh Jacobs", "James Cook", "Isiah Pacheco", "Travis Etienne",
-  "Kyren Williams", "Najee Harris",
-  "Tyreek Hill", "CeeDee Lamb", "Ja'Marr Chase", "Justin Jefferson",
-  "Amon-Ra St. Brown", "A.J. Brown", "Davante Adams", "DK Metcalf",
-  "Jaylen Waddle", "Garrett Wilson", "Stefon Diggs", "Mike Evans",
-  "Tee Higgins", "Puka Nacua", "DeVonta Smith", "Marvin Harrison",
-  "George Pickens", "Rashee Rice", "Drake London", "Chris Olave",
-];
+// ── PROP LINE CALCULATOR ──────────────────────────────────────────────────────
+// Takes last season's real stat and converts it to a projected 2026 prop line
+// Applies a slight regression (95%) and adds .5 hook to avoid pushes
+// This mirrors how real sportsbooks set opening lines
+function calcPropLine(value) {
+  if (!value) return null;
+  const projected = Math.round(value * 0.95);
+  return projected + 0.5;
+}
 
 // ── FILTERS ───────────────────────────────────────────────────────────────────
 const FILTERS = [
@@ -127,52 +36,39 @@ const FILTERS = [
   { key: "receiving", label: "Rec Yards"   },
 ];
 
-// ── PAGE TABS ─────────────────────────────────────────────────────────────────
 const TABS = [
-  { key: "props",   label: "Player Props" },
+  { key: "props",   label: "Player Props"     },
   { key: "futures", label: "Futures & Awards" },
 ];
 
 // ── STAT DISPLAY HELPER ───────────────────────────────────────────────────────
-function getDisplayStat(stats, pos, filter) {
-  if (!stats) return null;
-  if (filter === "passing")   return stats.pass_yd ? { val: stats.pass_yd, lbl: "2025 Pass Yards" } : null;
-  if (filter === "rushing")   return stats.rush_yd ? { val: stats.rush_yd, lbl: "2025 Rush Yards" } : null;
-  if (filter === "receiving") return stats.rec_yd  ? { val: stats.rec_yd,  lbl: "2025 Rec Yards"  } : null;
-  if (pos === "QB" && stats.pass_yd) return { val: stats.pass_yd, lbl: "2025 Pass Yards" };
-  if (pos === "RB" && stats.rush_yd) return { val: stats.rush_yd, lbl: "2025 Rush Yards" };
-  if (pos === "WR" && stats.rec_yd)  return { val: stats.rec_yd,  lbl: "2025 Rec Yards"  };
-  if (pos === "TE" && stats.rec_yd)  return { val: stats.rec_yd,  lbl: "2025 Rec Yards"  };
-  if (stats.pass_yd) return { val: stats.pass_yd, lbl: "2025 Pass Yards" };
-  if (stats.rush_yd) return { val: stats.rush_yd, lbl: "2025 Rush Yards" };
-  if (stats.rec_yd)  return { val: stats.rec_yd,  lbl: "2025 Rec Yards"  };
+function getDisplayStat(player, filter) {
+  if (filter === "passing")   return player.pass_yd ? { val: calcPropLine(player.pass_yd), raw: player.pass_yd, lbl: "2026 Pass Yards" } : null;
+  if (filter === "rushing")   return player.rush_yd ? { val: calcPropLine(player.rush_yd), raw: player.rush_yd, lbl: "2026 Rush Yards" } : null;
+  if (filter === "receiving") return player.rec_yd  ? { val: calcPropLine(player.rec_yd),  raw: player.rec_yd,  lbl: "2026 Rec Yards"  } : null;
+
+  if (player.position === "QB" && player.pass_yd) return { val: calcPropLine(player.pass_yd), raw: player.pass_yd, lbl: "2026 Pass Yards" };
+  if (player.position === "RB" && player.rush_yd) return { val: calcPropLine(player.rush_yd), raw: player.rush_yd, lbl: "2026 Rush Yards" };
+  if (player.position === "WR" && player.rec_yd)  return { val: calcPropLine(player.rec_yd),  raw: player.rec_yd,  lbl: "2026 Rec Yards"  };
+  if (player.position === "TE" && player.rec_yd)  return { val: calcPropLine(player.rec_yd),  raw: player.rec_yd,  lbl: "2026 Rec Yards"  };
+
+  if (player.pass_yd) return { val: calcPropLine(player.pass_yd), raw: player.pass_yd, lbl: "2026 Pass Yards" };
+  if (player.rush_yd) return { val: calcPropLine(player.rush_yd), raw: player.rush_yd, lbl: "2026 Rush Yards" };
+  if (player.rec_yd)  return { val: calcPropLine(player.rec_yd),  raw: player.rec_yd,  lbl: "2026 Rec Yards"  };
   return null;
 }
 
-// ── FETCH WITH CACHE ──────────────────────────────────────────────────────────
-async function fetchAllPlayers() {
-  try {
-    const cached = localStorage.getItem(CACHE_KEY);
-    if (cached) {
-      const { timestamp, data } = JSON.parse(cached);
-      if (Date.now() - timestamp < CACHE_TTL_MS) return data;
-    }
-  } catch {}
-  const res = await fetch(SLEEPER_PLAYERS_URL);
-  if (!res.ok) throw new Error("Failed to fetch Sleeper players");
-  const data = await res.json();
-  try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify({ timestamp: Date.now(), data }));
-  } catch {}
-  return data;
-}
-
-async function fetchPlayerStats(playerId) {
-  try {
-    const res = await fetch(SLEEPER_STATS_URL(playerId));
-    if (!res.ok) return null;
-    return res.json();
-  } catch { return null; }
+// ── EXTRA STATS HELPER ────────────────────────────────────────────────────────
+function getExtraStats(player, mainLbl) {
+  const extras = [];
+  if (player.pass_yd && mainLbl !== "2026 Pass Yards") extras.push({ val: calcPropLine(player.pass_yd), lbl: "Pass Yards" });
+  if (player.pass_td) extras.push({ val: calcPropLine(player.pass_td), lbl: "Pass TDs" });
+  if (player.rush_yd && mainLbl !== "2026 Rush Yards") extras.push({ val: calcPropLine(player.rush_yd), lbl: "Rush Yards" });
+  if (player.rush_td) extras.push({ val: calcPropLine(player.rush_td), lbl: "Rush TDs" });
+  if (player.rec_yd  && mainLbl !== "2026 Rec Yards")  extras.push({ val: calcPropLine(player.rec_yd),  lbl: "Rec Yards"  });
+  if (player.receptions) extras.push({ val: calcPropLine(player.receptions), lbl: "Receptions" });
+  if (player.rec_td)  extras.push({ val: calcPropLine(player.rec_td), lbl: "Rec TDs" });
+  return extras;
 }
 
 // ── TOAST ─────────────────────────────────────────────────────────────────────
@@ -193,57 +89,103 @@ function Toast({ message, onDone }) {
   );
 }
 
+// ── BET MODAL ─────────────────────────────────────────────────────────────────
+function BetModal({ bet, onClose, onConfirm }) {
+  const [stake, setStake] = useState(10);
+  const odds = 1.9;
+  const payout = (stake * odds).toFixed(2);
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ background: "#11131a", border: "1px solid #00f6ff", borderRadius: "16px", padding: "1.5rem", width: "320px", boxShadow: "0 0 40px rgba(0,246,255,0.2)" }}>
+        <h3 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: "0.5rem", color: "#f3f4f6" }}>Place Bet</h3>
+        <p style={{ fontSize: "0.82rem", color: "#9ca3af", marginBottom: "0.4rem" }}>
+          {bet.playerName}
+        </p>
+        <p style={{ fontSize: "0.9rem", color: "#f3f4f6", fontWeight: 600, marginBottom: "1rem" }}>
+          {bet.direction === "more" ? "↑ More" : "↓ Less"} than <span style={{ color: "#00f6ff" }}>{bet.statValue}</span> {bet.statLabel}
+        </p>
+
+        {/* Last season reference */}
+        <p style={{ fontSize: "0.7rem", color: "#9ca3af", marginBottom: "1rem", background: "#0d0f14", padding: "6px 10px", borderRadius: "6px" }}>
+          📊 2025 actual: {Math.round(bet.rawValue)} {bet.statLabel.replace("2026 ", "")}
+        </p>
+
+        <label style={{ fontSize: "0.75rem", color: "#9ca3af", display: "block", marginBottom: "0.3rem" }}>Stake ($)</label>
+        <input type="number" min="1" value={stake} onChange={e => setStake(Number(e.target.value))}
+          style={{ width: "100%", background: "#0d0f14", border: "1px solid #404040", borderRadius: "8px", padding: "0.5rem 0.75rem", color: "#f3f4f6", fontSize: "1rem", outline: "none", marginBottom: "0.8rem" }}
+        />
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", color: "#9ca3af", marginBottom: "0.6rem" }}>
+          <span>Odds</span><span style={{ color: "#00f6ff", fontWeight: 700 }}>{odds} (~-110)</span>
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", color: "#9ca3af", marginBottom: "1.2rem" }}>
+          <span>Potential Payout</span><span style={{ color: "#00c853", fontWeight: 700 }}>${payout}</span>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
+          <button onClick={onClose}
+            style={{ padding: "0.6rem", borderRadius: "8px", cursor: "pointer", background: "transparent", border: "1px solid #404040", color: "#9ca3af", fontWeight: 600, fontSize: "0.85rem" }}
+          >Cancel</button>
+          <button onClick={() => onConfirm({ ...bet, stake })}
+            style={{ padding: "0.6rem", borderRadius: "8px", cursor: "pointer", background: "#00f6ff", border: "none", color: "#000", fontWeight: 700, fontSize: "0.85rem" }}
+          >Confirm Bet</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── PLAYER CARD ───────────────────────────────────────────────────────────────
 function PlayerCard({ player, filter, onBet }) {
-  const stat = getDisplayStat(player.stats, player.pos, filter);
+  const stat = getDisplayStat(player, filter);
   if (!stat) return null;
   const color    = TEAM_COLORS[player.team] || "#00f6ff";
   const initials = player.name.split(" ").map((w) => w[0]).join("").slice(0, 2);
-  const extraStats = [];
-  if (player.stats) {
-    if (player.stats.pass_yd && stat.lbl !== "2025 Pass Yards") extraStats.push({ val: player.stats.pass_yd, lbl: "Pass Yards" });
-    if (player.stats.pass_td) extraStats.push({ val: player.stats.pass_td, lbl: "Pass TDs" });
-    if (player.stats.rush_yd && stat.lbl !== "2025 Rush Yards") extraStats.push({ val: player.stats.rush_yd, lbl: "Rush Yards" });
-    if (player.stats.rush_td) extraStats.push({ val: player.stats.rush_td, lbl: "Rush TDs" });
-    if (player.stats.rec_yd  && stat.lbl !== "2025 Rec Yards")  extraStats.push({ val: player.stats.rec_yd,  lbl: "Rec Yards" });
-    if (player.stats.rec)     extraStats.push({ val: player.stats.rec,     lbl: "Receptions" });
-    if (player.stats.rec_td)  extraStats.push({ val: player.stats.rec_td,  lbl: "Rec TDs" });
-  }
+  const extras   = getExtraStats(player, stat.lbl);
+
   return (
     <div style={{ background: "#11131a", border: "1px solid #1f2430", borderRadius: "14px", overflow: "hidden", transition: "border-color 0.2s, box-shadow 0.2s, transform 0.2s" }}
       onMouseEnter={e => { e.currentTarget.style.borderColor = "#00f6ff"; e.currentTarget.style.boxShadow = "0 0 20px rgba(0,246,255,0.15)"; e.currentTarget.style.transform = "translateY(-2px)"; }}
       onMouseLeave={e => { e.currentTarget.style.borderColor = "#1f2430"; e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.transform = "translateY(0)"; }}
     >
-      <div style={{ background: `linear-gradient(135deg, ${color}22 0%, #11131a 100%)`, padding: "1.2rem 1rem 0.9rem", display: "flex", flexDirection: "column", alignItems: "center", position: "relative" }}>
+      <div style={{ background: `linear-gradient(135deg, ${color}22 0%, #11131a 100%)`, padding: "1.2rem 1rem 0.9rem", display: "flex", flexDirection: "column", alignItems: "center" }}>
         <div style={{ width: 68, height: 68, borderRadius: "50%", background: `${color}18`, border: `2px solid ${color}55`, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "0.6rem" }}>
           <span style={{ fontSize: "1.4rem", fontWeight: 800, color }}>{initials}</span>
         </div>
-        <span style={{ fontSize: "0.68rem", fontWeight: 700, color: "#00f6ff", letterSpacing: "1px", textTransform: "uppercase" }}>{player.team} – {player.pos}</span>
+        <span style={{ fontSize: "0.68rem", fontWeight: 700, color: "#00f6ff", letterSpacing: "1px", textTransform: "uppercase" }}>{player.team} – {player.position}</span>
         <span style={{ fontSize: "1.05rem", fontWeight: 700, color: "#f3f4f6", marginTop: 2, textAlign: "center" }}>{player.name}</span>
-        <span style={{ fontSize: "0.68rem", color: "#9ca3af", marginTop: 3 }}>2025 Season Stats</span>
+        <span style={{ fontSize: "0.68rem", color: "#9ca3af", marginTop: 3 }}>2026 Season Projection</span>
       </div>
+
       <div style={{ padding: "0.9rem 1rem", borderTop: "1px solid #1f2430" }}>
+        {/* Main prop line */}
         <div style={{ textAlign: "center", marginBottom: "0.6rem" }}>
-          <div style={{ fontSize: "2rem", fontWeight: 800, color: "#f3f4f6", lineHeight: 1 }}>{Math.round(stat.val)}</div>
+          <div style={{ fontSize: "2rem", fontWeight: 800, color: "#f3f4f6", lineHeight: 1 }}>{stat.val}</div>
           <div style={{ fontSize: "0.7rem", color: "#9ca3af", marginTop: 2 }}>{stat.lbl}</div>
+          {/* Last season reference */}
+          <div style={{ fontSize: "0.65rem", color: "#6b7494", marginTop: 4 }}>
+            2025 actual: {Math.round(stat.raw)}
+          </div>
         </div>
-        {extraStats.length > 0 && (
+
+        {/* Extra prop lines */}
+        {extras.length > 0 && (
           <div style={{ marginBottom: "0.7rem" }}>
-            {extraStats.slice(0, 3).map((s) => (
+            {extras.slice(0, 3).map((s) => (
               <div key={s.lbl} style={{ display: "flex", justifyContent: "space-between", padding: "2px 0", borderBottom: "1px solid #1f243033" }}>
                 <span style={{ fontSize: "0.65rem", color: "#9ca3af" }}>{s.lbl}</span>
-                <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "#6b7494" }}>{Math.round(s.val)}</span>
+                <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "#6b7494" }}>{s.val}</span>
               </div>
             ))}
           </div>
         )}
+
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
-          <button onClick={() => onBet(`${player.name} ↓ Less ${Math.round(stat.val)} ${stat.lbl}`)}
+          <button onClick={() => onBet({ playerName: player.name, statLabel: stat.lbl, statValue: stat.val, rawValue: stat.raw, direction: "less" })}
             style={{ padding: "0.5rem", borderRadius: "8px", cursor: "pointer", background: "rgba(255,61,87,0.1)", border: "1px solid rgba(255,61,87,0.3)", color: "#ff3d57", fontSize: "0.78rem", fontWeight: 700, transition: "background 0.18s" }}
             onMouseEnter={e => e.currentTarget.style.background = "rgba(255,61,87,0.22)"}
             onMouseLeave={e => e.currentTarget.style.background = "rgba(255,61,87,0.1)"}
           >↓ Less</button>
-          <button onClick={() => onBet(`${player.name} ↑ More ${Math.round(stat.val)} ${stat.lbl}`)}
+          <button onClick={() => onBet({ playerName: player.name, statLabel: stat.lbl, statValue: stat.val, rawValue: stat.raw, direction: "more" })}
             style={{ padding: "0.5rem", borderRadius: "8px", cursor: "pointer", background: "rgba(0,246,255,0.08)", border: "1px solid rgba(0,246,255,0.3)", color: "#00f6ff", fontSize: "0.78rem", fontWeight: 700, transition: "background 0.18s" }}
             onMouseEnter={e => e.currentTarget.style.background = "rgba(0,246,255,0.18)"}
             onMouseLeave={e => e.currentTarget.style.background = "rgba(0,246,255,0.08)"}
@@ -255,16 +197,14 @@ function PlayerCard({ player, filter, onBet }) {
 }
 
 // ── FUTURES TABLE ─────────────────────────────────────────────────────────────
-function FuturesTable({ category, onBet }) {
-  const { title, subtitle, items } = FUTURES[category];
+function FuturesTable({ category, data, onBet }) {
+  const { title, subtitle, items } = data[category];
   return (
     <div style={{ marginBottom: "2rem" }}>
       <div className="flex items-center gap-3 mb-3">
         <div>
           <span className="text-xs font-bold tracking-widest text-sb-muted uppercase">{title}</span>
-          <span style={{ marginLeft: "0.5rem", fontSize: "0.65rem", color: "#ffc107", background: "rgba(255,193,7,0.1)", border: "1px solid rgba(255,193,7,0.25)", padding: "2px 8px", borderRadius: "10px" }}>
-            Projected
-          </span>
+          <span style={{ marginLeft: "0.5rem", fontSize: "0.65rem", color: "#ffc107", background: "rgba(255,193,7,0.1)", border: "1px solid rgba(255,193,7,0.25)", padding: "2px 8px", borderRadius: "10px" }}>Projected</span>
         </div>
         <div className="flex-1 h-px bg-[#1f2430]" />
       </div>
@@ -290,16 +230,13 @@ function FuturesTable({ category, onBet }) {
                   <td style={{ padding: "0.7rem 1rem", color: "#9ca3af", fontWeight: 600, fontSize: "0.85rem" }}>{i + 1}</td>
                   <td style={{ padding: "0.7rem 1rem" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-                      <div style={{ width: 30, height: 30, borderRadius: "50%", background: `${color}22`, border: `1px solid ${color}44`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.6rem", fontWeight: 800, color }}>
-                        {item.abbr}
-                      </div>
+                      <div style={{ width: 30, height: 30, borderRadius: "50%", background: `${color}22`, border: `1px solid ${color}44`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.6rem", fontWeight: 800, color }}>{item.abbr}</div>
                       <span style={{ fontWeight: 600, fontSize: "0.88rem" }}>{item.label}</span>
                     </div>
                   </td>
                   <td style={{ padding: "0.7rem 1rem", color: "#00f6ff", fontWeight: 700, fontFamily: "monospace", fontSize: "1rem" }}>{item.odds}</td>
                   <td style={{ padding: "0.7rem 1rem" }}>
-                    <button
-                      onClick={() => onBet(`${item.label} — ${title} @ ${item.odds}`)}
+                    <button onClick={() => onBet({ playerName: item.label, statLabel: title, statValue: item.odds, rawValue: item.odds, direction: "future" })}
                       style={{ padding: "0.3rem 0.9rem", borderRadius: "6px", cursor: "pointer", background: "rgba(0,246,255,0.08)", border: "1px solid #00f6ff", color: "#00f6ff", fontSize: "0.75rem", fontWeight: 700, transition: "all 0.2s" }}
                       onMouseEnter={e => { e.currentTarget.style.background = "#00f6ff"; e.currentTarget.style.color = "#000"; }}
                       onMouseLeave={e => { e.currentTarget.style.background = "rgba(0,246,255,0.08)"; e.currentTarget.style.color = "#00f6ff"; }}
@@ -331,60 +268,37 @@ function SkeletonCard() {
 
 // ── MAIN COMPONENT ────────────────────────────────────────────────────────────
 export default function NFLBets() {
-  const [players,     setPlayers]     = useState([]);
-  const [loading,     setLoading]     = useState(true);
-  const [error,       setError]       = useState(null);
-  const [search,      setSearch]      = useState("");
-  const [filter,      setFilter]      = useState("all");
-  const [toast,       setToast]       = useState(null);
-  const [loadedCount, setLoadedCount] = useState(0);
-  const [tab,         setTab]         = useState("props");
-  const [fromCache,   setFromCache]   = useState(false);
+  const [players,    setPlayers]    = useState([]);
+  const [futures,    setFutures]    = useState(null);
+  const [loading,    setLoading]    = useState(true);
+  const [error,      setError]      = useState(null);
+  const [search,     setSearch]     = useState("");
+  const [filter,     setFilter]     = useState("all");
+  const [toast,      setToast]      = useState(null);
+  const [tab,        setTab]        = useState("props");
+  const [pendingBet, setPendingBet] = useState(null);
 
   useEffect(() => {
     async function loadData() {
       try {
-        try {
-          const cached = localStorage.getItem(CACHE_KEY);
-          if (cached) {
-            const { timestamp } = JSON.parse(cached);
-            if (Date.now() - timestamp < CACHE_TTL_MS) setFromCache(true);
-          }
-        } catch {}
-
-        const allPlayers = await fetchAllPlayers();
-        const targets = [];
-        Object.entries(allPlayers).forEach(([id, p]) => {
-          if (!p.full_name || !p.position || !p.team) return;
-          if (!["QB", "RB", "WR", "TE"].includes(p.position)) return;
-          const isTarget = TARGET_PLAYERS.some(name =>
-            p.full_name.toLowerCase().includes(name.toLowerCase()) ||
-            name.toLowerCase().includes(p.full_name.toLowerCase())
-          );
-          if (!isTarget) return;
-          targets.push({ id, name: p.full_name, pos: p.position, team: p.team });
-        });
-
-        const results = await Promise.allSettled(
-          targets.map(async (p) => {
-            const stats = await fetchPlayerStats(p.id);
-            setLoadedCount(c => c + 1);
-            return { ...p, stats: stats?.stats ?? null };
-          })
-        );
-
-        const loaded = results
-          .filter(r => r.status === "fulfilled" && r.value.stats)
-          .map(r => r.value)
-          .sort((a, b) => {
-            const getMain = (p) => p.stats?.pass_yd || p.stats?.rush_yd || p.stats?.rec_yd || 0;
-            return getMain(b) - getMain(a);
-          });
-
-        setPlayers(loaded);
+        const [playersRes, futuresRes] = await Promise.all([
+          fetch(`${API_BASE}/nfl/players`),
+          fetch(`${API_BASE}/nfl/futures`),
+        ]);
+        if (!playersRes.ok) throw new Error("Failed to fetch NFL players");
+        if (!futuresRes.ok) throw new Error("Failed to fetch NFL futures");
+        const [playersData, futuresData] = await Promise.all([
+          playersRes.json(),
+          futuresRes.json(),
+        ]);
+        setPlayers(playersData.sort((a, b) => {
+          const getMain = (p) => p.pass_yd || p.rush_yd || p.rec_yd || 0;
+          return getMain(b) - getMain(a);
+        }));
+        setFutures(futuresData);
       } catch (err) {
-        console.error("Sleeper fetch error:", err);
-        setError("Failed to load NFL stats. Please try again later.");
+        console.error("NFL data fetch error:", err);
+        setError("Failed to load NFL data. Please try again later.");
       } finally {
         setLoading(false);
       }
@@ -392,18 +306,38 @@ export default function NFLBets() {
     loadData();
   }, []);
 
+  async function handleConfirmBet(bet) {
+    try {
+      const res = await fetch(`${API_BASE}/nfl/bets`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(bet),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setToast(`❌ ${data.error || "Failed to place bet"}`);
+      } else {
+        setToast(`✅ Bet placed!\n${bet.playerName}\n${bet.direction === "more" ? "↑ More" : "↓ Less"} ${bet.statValue} ${bet.statLabel}\nPayout: $${data.potentialPayout}\nBalance: $${data.newBalance}`);
+      }
+    } catch {
+      setToast("❌ Failed to place bet. Please try again.");
+    } finally {
+      setPendingBet(null);
+    }
+  }
+
   const filtered = players.filter((p) => {
     const matchesSearch =
       p.name.toLowerCase().includes(search.toLowerCase()) ||
       p.team.toLowerCase().includes(search.toLowerCase());
     const matchesFilter =
       filter === "all"       ? true :
-      filter === "QB"        ? p.pos === "QB" :
-      filter === "RB"        ? p.pos === "RB" :
-      filter === "WR"        ? p.pos === "WR" :
-      filter === "passing"   ? !!p.stats?.pass_yd :
-      filter === "rushing"   ? !!p.stats?.rush_yd :
-      filter === "receiving" ? !!p.stats?.rec_yd  : true;
+      filter === "QB"        ? p.position === "QB" :
+      filter === "RB"        ? p.position === "RB" :
+      filter === "WR"        ? p.position === "WR" :
+      filter === "passing"   ? !!p.pass_yd :
+      filter === "rushing"   ? !!p.rush_yd :
+      filter === "receiving" ? !!p.rec_yd  : true;
     return matchesSearch && matchesFilter;
   });
 
@@ -418,31 +352,28 @@ export default function NFLBets() {
       <div className="flex items-center gap-3 mb-6">
         <h1 className="text-3xl font-extrabold tracking-wide">🏈 NFL</h1>
         <span style={{ background: "rgba(0,246,255,0.08)", color: "#00f6ff", border: "1px solid rgba(0,246,255,0.3)", fontSize: "0.7rem", fontWeight: 600, padding: "4px 12px", borderRadius: "20px" }}>
-          📊 2025 Season Stats
+          🔮 2026 Season Projections
         </span>
-        {fromCache && !loading && <span style={{ fontSize: "0.7rem", color: "#9ca3af" }}>⚡ Cached</span>}
-        {loading && <span style={{ fontSize: "0.75rem", color: "#9ca3af" }}>Loading players… {loadedCount}/{TARGET_PLAYERS.length}</span>}
+        {loading && <span style={{ fontSize: "0.75rem", color: "#9ca3af" }}>Loading…</span>}
       </div>
 
       {/* Tabs */}
-      <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem", borderBottom: "1px solid #1f2430", paddingBottom: "0" }}>
+      <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem", borderBottom: "1px solid #1f2430" }}>
         {TABS.map((t) => (
           <button key={t.key} onClick={() => setTab(t.key)}
-            style={{
-              padding: "0.5rem 1.2rem", background: "transparent", border: "none",
-              borderBottom: tab === t.key ? "2px solid #00f6ff" : "2px solid transparent",
-              color: tab === t.key ? "#00f6ff" : "#9ca3af",
-              fontSize: "0.88rem", fontWeight: 600, cursor: "pointer",
-              transition: "all 0.18s", marginBottom: "-1px",
-            }}
+            style={{ padding: "0.5rem 1.2rem", background: "transparent", border: "none", borderBottom: tab === t.key ? "2px solid #00f6ff" : "2px solid transparent", color: tab === t.key ? "#00f6ff" : "#9ca3af", fontSize: "0.88rem", fontWeight: 600, cursor: "pointer", transition: "all 0.18s", marginBottom: "-1px" }}
           >{t.label}</button>
         ))}
       </div>
 
-      {/* ── PLAYER PROPS TAB ── */}
+      {/* Player Props Tab */}
       {tab === "props" && (
         <>
-          {/* Search */}
+          {/* Disclaimer */}
+          <div style={{ background: "rgba(0,246,255,0.05)", border: "1px solid rgba(0,246,255,0.15)", borderRadius: "10px", padding: "0.7rem 1rem", marginBottom: "1.2rem", fontSize: "0.75rem", color: "#9ca3af" }}>
+            📊 Prop lines are <strong style={{ color: "#00f6ff" }}>2026 season projections</strong> based on 2025 actual stats. Each card shows the 2025 reference below the line.
+          </div>
+
           <div className="mb-4">
             <input type="text" placeholder="Search player or team…" value={search} onChange={e => setSearch(e.target.value)}
               style={{ background: "#11131a", border: "1px solid #404040", borderRadius: "10px", padding: "0.5rem 1rem", color: "#f3f4f6", fontSize: "0.88rem", outline: "none", width: "260px", transition: "border-color 0.2s" }}
@@ -451,7 +382,6 @@ export default function NFLBets() {
             />
           </div>
 
-          {/* Filter pills */}
           <div className="flex flex-wrap gap-2 mb-8">
             {FILTERS.map((f) => (
               <button key={f.key} onClick={() => setFilter(f.key)}
@@ -475,28 +405,31 @@ export default function NFLBets() {
               : filtered.length === 0
                 ? <p className="text-sb-muted">No players found.</p>
                 : filtered.map((p) => (
-                    <PlayerCard key={p.id} player={p} filter={filter} onBet={msg => setToast(`✅ Added to slip:\n${msg}`)} />
+                    <PlayerCard key={p.id} player={p} filter={filter} onBet={setPendingBet} />
                   ))
             }
           </div>
         </>
       )}
 
-      {/* ── FUTURES & AWARDS TAB ── */}
-      {tab === "futures" && (
+      {/* Futures Tab */}
+      {tab === "futures" && futures && (
         <div>
-          {/* Disclaimer */}
           <div style={{ background: "rgba(255,193,7,0.07)", border: "1px solid rgba(255,193,7,0.2)", borderRadius: "10px", padding: "0.7rem 1rem", marginBottom: "1.8rem", display: "flex", alignItems: "center", gap: "0.6rem" }}>
-            <span style={{ fontSize: "1rem" }}>⚠️</span>
+            <span>⚠️</span>
             <span style={{ fontSize: "0.78rem", color: "#ffc107" }}>
               These are <strong>projected odds</strong> for the 2026–27 NFL season. Live odds will be available when the season opens.
             </span>
           </div>
-
-          {Object.keys(FUTURES).map((cat) => (
-            <FuturesTable key={cat} category={cat} onBet={msg => setToast(`✅ Added to slip:\n${msg}`)} />
+          {Object.keys(futures).map((cat) => (
+            <FuturesTable key={cat} category={cat} data={futures} onBet={setPendingBet} />
           ))}
         </div>
+      )}
+
+      {/* Bet Modal */}
+      {pendingBet && (
+        <BetModal bet={pendingBet} onClose={() => setPendingBet(null)} onConfirm={handleConfirmBet} />
       )}
 
       {toast && <Toast message={toast} onDone={() => setToast(null)} />}
