@@ -74,8 +74,8 @@ function getExtraStats(player, mainLbl) {
 // ── TOAST ─────────────────────────────────────────────────────────────────────
 function Toast({ message, onDone }) {
   useEffect(() => {
-    const t = setTimeout(onDone, 3000);
-    return () => clearTimeout(t);
+    const t = window.setTimeout(onDone, 3000);
+    return () => window.clearTimeout(t);
   }, [onDone]);
   return (
     <div style={{
