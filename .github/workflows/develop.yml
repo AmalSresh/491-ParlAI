@@ -3,10 +3,12 @@ name: Dev CI
 on:
   push:
     branches:
-      - CICD-test-amal
+      - develop
+      - main
   pull_request:
     branches:
-      - CICD-test-amal
+      - develop
+      - main
 
 jobs:
   frontend-validate:
