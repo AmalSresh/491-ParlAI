@@ -51,6 +51,22 @@ export default function App() {
                   Dashboard
                 </Link>
               )}
+              {user.onboardingStage > 0 && (
+                <Link
+                  to="/profile"
+                  className="hover:text-sb-blue-light"
+                >
+                  Profile
+                </Link>
+              )}
+              {user.onboardingStage > 0 && (
+                <Link
+                  to="/settings"
+                  className="hover:text-sb-blue-light"
+                >
+                  Settings
+                </Link>
+              )}
               <button
                 type="button"
                 onClick={logout}
