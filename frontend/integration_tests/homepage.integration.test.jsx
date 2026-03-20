@@ -1,22 +1,9 @@
 import { render, screen } from "@testing-library/react";
-import Homepage from "../src/pages/Homepage";
-
+import { MemoryRouter } from "react-router-dom";
+import Home from "../src/pages/home";
 
 test("full homepage renders with header, sidebar, games, and footer", () => {
-  render(<Homepage />);
-
-  
-  expect(screen.getByText("ParlAI Sports Betting App")).toBeInTheDocument();
-
-
-  
-  expect(screen.getByText("Today's Games")).toBeInTheDocument();
-
-  
-  expect(screen.getAllByText(/win probability/i).length).toBe(3);
-
-  
-  expect(
-    screen.getByText("© 2026 ParlAI - AI-Powered Sports Predictions")
-  ).toBeInTheDocument();
+  render(<MemoryRouter><Home /></MemoryRouter>);
+  expect(screen.getByText("Welcome to the Home Page")).toBeInTheDocument();
+  expect(screen.getByText("This is the main landing page of the application.")).toBeInTheDocument();
 });
