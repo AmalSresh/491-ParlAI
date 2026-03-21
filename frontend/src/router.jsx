@@ -4,7 +4,7 @@ import Login from './pages/login';
 import Home from './pages/home';
 import Dashboard from './pages/dashboard';
 import HowToPlay from './pages/HowToPlay';
-import Support fro  './pages/Support';
+import Support fro  './pages/support';
 import Onboarding from './pages/onboarding';
 import ProtectedRoute from './components/ProtectedRoute';
 
