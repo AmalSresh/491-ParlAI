@@ -1,29 +1,10 @@
+// Send Team data, scores, and odds to the frontend
 import { app } from "@azure/functions";
-import sql from "mssql";
-// Database configuration (Store these in your Azure App Settings / local.settings.json)
-const sqlConfig = {
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  server: process.env.DB_SERVER,
-  options: {
-    encrypt: true,
-    trustServerCertificate: false,
-  },
-};
-
-// Global pool connection so we don't open a new connection every single execution
-let poolPromise = new sql.ConnectionPool(sqlConfig)
-  .connect()
-  .then((pool) => {
-    console.log("Connected to MSSQL");
-    return pool;
-  })
-  .catch((err) => console.log("Database Connection Failed! Bad Config: ", err));
+import { poolPromise } from "../../components/db-connect.js";
 
 app.http("getGames", {
   methods: ["GET"],
-  authLevel: "anonymous", // Change to 'function' if you want to require an API key from the frontend
+  authLevel: "anonymous",
   handler: async (request, context) => {
     context.log(
       "HTTP trigger invoked: Fetching games and odds for the frontend.",
@@ -32,8 +13,7 @@ app.http("getGames", {
     try {
       const pool = await poolPromise;
 
-      // 1. THE MASSIVE JOIN QUERY
-      // Grab games from yesterday (to show finished results) up to 7 days in the future
+      // 1. Get all the data we want to show the frontend from the relevant tables
       const result = await pool.request().query(`
                 SELECT 
                     e.id AS event_id, 
@@ -42,7 +22,9 @@ app.http("getGames", {
                     e.home_score, 
                     e.away_score,
                     h.name AS home_team, 
+                    h.logo_url AS home_logo,  
                     a.name AS away_team,
+                    a.logo_url AS away_logo, 
                     m.id AS market_id, 
                     m.type AS market_type,
                     s.id AS selection_id, 
@@ -61,8 +43,7 @@ app.http("getGames", {
 
       const rows = result.recordset;
 
-      // 2. THE JSON SHAPER
-      // Convert flat SQL rows into a nested JSON object
+      // 2. Convert to JSON
       const eventsMap = new Map();
 
       for (const row of rows) {
@@ -71,14 +52,16 @@ app.http("getGames", {
           eventsMap.set(row.event_id, {
             id: row.event_id,
             homeTeam: row.home_team,
+            homeLogo: row.home_logo,
             awayTeam: row.away_team,
+            awayLogo: row.away_logo,
             startTime: row.start_time,
             status: row.status,
             scores: {
               home: row.home_score,
               away: row.away_score,
             },
-            markets: [], // We will push markets in here
+            markets: [],
           });
         }
 
@@ -113,12 +96,11 @@ app.http("getGames", {
       // Convert the Map values back into a clean array
       const formattedGames = Array.from(eventsMap.values());
 
-      // 3. RETURN TO FRONTEND
+      // 3. Send to frontend
       return {
         status: 200,
         headers: {
           "Content-Type": "application/json",
-          // Note: In production, configure CORS in the Azure Portal, not just here
           "Access-Control-Allow-Origin": "*",
         },
         body: JSON.stringify(formattedGames),

@@ -2,32 +2,9 @@ import { app } from "@azure/functions";
 import sql from "mssql";
 import axios from "axios";
 
-// ==========================================
-// DATABASE CONFIGURATION
-// ==========================================
-const sqlConfig = {
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  server: process.env.DB_SERVER,
-  options: {
-    encrypt: true,
-    trustServerCertificate: false,
-  },
-};
+import { poolPromise } from "../../components/db-connect.js";
 
-let poolPromise = new sql.ConnectionPool(sqlConfig)
-  .connect()
-  .then((pool) => {
-    console.log("Connected to MSSQL for Odds Ingestion");
-    return pool;
-  })
-  .catch((err) => console.log("Database Connection Failed! Bad Config: ", err));
-
-// ==========================================
-// HELPER FUNCTIONS (The "Integer ID" Handlers)
-// ==========================================
-
+// Currently hardcoded - will change to dynamically getting leagues
 async function getOrCreateLeague(pool, leagueName) {
   let res = await pool
     .request()
@@ -38,12 +15,11 @@ async function getOrCreateLeague(pool, leagueName) {
   res = await pool
     .request()
     .input("name", sql.NVarChar, leagueName)
-    .query(
-      "INSERT INTO leagues (name, country) OUTPUT INSERTED.id VALUES (@name, 'Unknown')",
-    );
+    .query("INSERT INTO leagues name OUTPUT INSERTED.id VALUES @name");
   return res.recordset[0].id;
 }
 
+// Returns the Team ID given the team name from the odds-api
 async function getOrCreateTeam(pool, teamName, leagueId) {
   let res = await pool
     .request()
@@ -61,6 +37,8 @@ async function getOrCreateTeam(pool, teamName, leagueId) {
   return res.recordset[0].id;
 }
 
+// Odds-api team IDs for home and away team along with the games start time
+// ESPN-api will handle the live score data and will be appended to the same table
 async function getOrCreateEvent(
   pool,
   leagueId,
@@ -93,6 +71,7 @@ async function getOrCreateEvent(
   return res.recordset[0].id;
 }
 
+// Use the event_id created from the events table to make 3 rows per match for h2h, spreads, and totals
 async function getOrCreateMarket(pool, eventId, type) {
   let res = await pool
     .request()
@@ -111,6 +90,8 @@ async function getOrCreateMarket(pool, eventId, type) {
   return res.recordset[0].id;
 }
 
+// Adds the odds for different events per game in the selections table based on the id from events
+// Updates odds with the latest ones from odds-api every 4 hours
 async function upsertSelection(pool, marketId, label, odds, lineValue) {
   let res = await pool
     .request()
@@ -146,9 +127,6 @@ async function upsertSelection(pool, marketId, label, odds, lineValue) {
   }
 }
 
-// ==========================================
-// 1. TIMER FUNCTION (Production)
-// ==========================================
 app.timer("ingestOddsTimer", {
   schedule: "0 0 */4 * * *",
   handler: async (myTimer, context) => {
@@ -157,7 +135,7 @@ app.timer("ingestOddsTimer", {
     try {
       const pool = await poolPromise;
 
-      // Smart Gatekeeper
+      // Will only run full function if there is a game within 3 days
       const upcomingGamesResult = await pool.request().query(`
           SELECT COUNT(id) as upcomingCount FROM dbo.events 
           WHERE start_time BETWEEN SYSDATETIME() AND DATEADD(day, 3, SYSDATETIME())
@@ -192,8 +170,8 @@ app.timer("ingestOddsTimer", {
         return;
       }
 
-      // 1. GET OR CREATE LEAGUE
-      const leagueName = apiGames[0].sport_title || "EPL";
+      // 1. Get the league (Hardcoded to prem for now)
+      const leagueName = "English Premier League";
       const leagueId = await getOrCreateLeague(pool, leagueName);
 
       for (const apiGame of apiGames) {
@@ -201,7 +179,7 @@ app.timer("ingestOddsTimer", {
           `\n=== Processing Game: ${apiGame.home_team} vs ${apiGame.away_team} ===`,
         );
 
-        // 2. TEAMS
+        // 2. get the team id for reference
         const homeTeamId = await getOrCreateTeam(
           pool,
           apiGame.home_team,
@@ -213,7 +191,7 @@ app.timer("ingestOddsTimer", {
           leagueId,
         );
 
-        // 3. EVENT
+        // 3. Create the game event (who's playing, start time)
         const eventId = await getOrCreateEvent(
           pool,
           leagueId,
@@ -222,7 +200,7 @@ app.timer("ingestOddsTimer", {
           apiGame.commence_time,
         );
 
-        // 4. ODDS / MARKETS
+        // 4. Add the odds for each game or update them if the odds have changed
         if (apiGame.bookmakers && apiGame.bookmakers.length > 0) {
           const bookmaker =
             apiGame.bookmakers.find((b) => b.key === "lowvig") ||
@@ -248,108 +226,6 @@ app.timer("ingestOddsTimer", {
       context.log("✅ Odds ingestion completed successfully.");
     } catch (error) {
       context.error("❌ Error during odds ingestion:", error);
-    }
-  },
-});
-
-// ==========================================
-// 2. HTTP TEST FUNCTION (Manual Trigger)
-// ==========================================
-app.http("testIngestOdds", {
-  methods: ["GET"],
-  authLevel: "anonymous",
-  handler: async (request, context) => {
-    context.log("Manual HTTP Trigger: Forcing Odds Ingestion...");
-
-    try {
-      const pool = await poolPromise;
-      const apiKey = process.env.SOCCER_ODDS_API;
-
-      const response = await axios.get(
-        `https://api.the-odds-api.com/v4/sports/soccer_epl/odds/?apiKey=${apiKey}&regions=us&markets=h2h,spreads,totals`,
-      );
-      const apiGames = response.data;
-
-      if (!apiGames || apiGames.length === 0) {
-        return {
-          status: 200,
-          body: "API returned 0 games. Nothing to process.",
-        };
-      }
-
-      // 1. GET OR CREATE LEAGUE
-      const leagueName = apiGames[0].sport_title || "EPL";
-      const leagueId = await getOrCreateLeague(pool, leagueName);
-      context.log(`[DB] League ID: ${leagueId} (${leagueName})`);
-
-      // We only process the first game to keep the test fast and logs readable
-      const apiGame = apiGames[0];
-
-      context.log(
-        `\n=== TEST Processing Game: ${apiGame.home_team} vs ${apiGame.away_team} ===`,
-      );
-
-      // Loop through EVERY game returned by the API
-      for (const apiGame of apiGames) {
-        context.log(
-          `\n=== Processing Game: ${apiGame.home_team} vs ${apiGame.away_team} ===`,
-        );
-
-        // 2. TEAMS
-        const homeTeamId = await getOrCreateTeam(
-          pool,
-          apiGame.home_team,
-          leagueId,
-        );
-        const awayTeamId = await getOrCreateTeam(
-          pool,
-          apiGame.away_team,
-          leagueId,
-        );
-
-        // 3. EVENT
-        const eventId = await getOrCreateEvent(
-          pool,
-          leagueId,
-          homeTeamId,
-          awayTeamId,
-          apiGame.commence_time,
-        );
-
-        // 4. ODDS / MARKETS
-        if (apiGame.bookmakers && apiGame.bookmakers.length > 0) {
-          const bookmaker =
-            apiGame.bookmakers.find((b) => b.key === "lowvig") ||
-            apiGame.bookmakers[0];
-
-          for (const market of bookmaker.markets) {
-            if (!["h2h", "spreads", "totals"].includes(market.key)) continue;
-
-            const marketId = await getOrCreateMarket(pool, eventId, market.key);
-
-            for (const outcome of market.outcomes) {
-              await upsertSelection(
-                pool,
-                marketId,
-                outcome.name,
-                outcome.price,
-                outcome.point ?? null,
-              );
-            }
-          }
-        }
-      }
-
-      context.log(
-        "✅ Test HTTP Ingestion completed successfully for ALL games.",
-      );
-      return {
-        status: 200,
-        body: "Successfully ran test ingestion on all games. Check your database!",
-      };
-    } catch (error) {
-      context.error("❌ Error during test odds ingestion:", error);
-      return { status: 500, body: `Error: ${error.message}` };
     }
   },
 });
