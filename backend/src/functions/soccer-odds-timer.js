@@ -4,58 +4,63 @@ import axios from "axios";
 
 import { poolPromise } from "../../components/db-connect.js";
 
-// Currently hardcoded - will change to dynamically getting leagues
-async function getOrCreateLeague(pool, leagueName) {
+// Helper to strip out spaces, "and", "&" for perfect matching in the database
+function normalizeName(name) {
+  if (!name) return "";
+  return name
+    .toLowerCase()
+    .replace(/ and | & /g, "")
+    .replace(/[^a-z]/g, "");
+}
+
+// READ-ONLY: Only fetches the League. Will NOT create it.
+async function getLeague(pool, leagueName) {
   let res = await pool
     .request()
     .input("name", sql.NVarChar, leagueName)
     .query("SELECT id FROM leagues WHERE name = @name");
-  if (res.recordset.length > 0) return res.recordset[0].id;
 
-  res = await pool
-    .request()
-    .input("name", sql.NVarChar, leagueName)
-    .query("INSERT INTO leagues name OUTPUT INSERTED.id VALUES @name");
-  return res.recordset[0].id;
+  if (res.recordset.length > 0) return res.recordset[0].id;
+  return null; // Return null if ESPN hasn't created it yet
 }
 
-// Returns the Team ID given the team name from the odds-api
-async function getOrCreateTeam(pool, teamName, leagueId) {
+// READ-ONLY: Only fetches the Team. Will NOT create it.
+// Note: I removed the leagueId parameter since we don't need it for inserting anymore!
+async function getTeam(pool, teamName) {
+  const normalizedInput = normalizeName(teamName);
+
   let res = await pool
     .request()
-    .input("name", sql.NVarChar, teamName)
-    .query("SELECT id FROM teams WHERE name = @name");
-  if (res.recordset.length > 0) return res.recordset[0].id;
+    .input("normalizedName", sql.NVarChar, normalizedInput).query(`
+      SELECT id 
+      FROM teams 
+      WHERE 
+        -- 1. Check if the DB name contains the API name
+        REPLACE(LOWER(REPLACE(REPLACE(name, ' and ', ''), ' & ', '')), ' ', '') LIKE '%' + @normalizedName + '%'
+        OR 
+        -- 2. Check if the API name contains the DB name (e.g. API="BrightonHoveAlbion", DB="Brighton")
+        @normalizedName LIKE '%' + REPLACE(LOWER(REPLACE(REPLACE(name, ' and ', ''), ' & ', '')), ' ', '') + '%'
+    `);
 
-  res = await pool
-    .request()
-    .input("name", sql.NVarChar, teamName)
-    .input("leagueId", sql.Int, leagueId)
-    .query(
-      "INSERT INTO teams (league_id, name) OUTPUT INSERTED.id VALUES (@leagueId, @name)",
-    );
-  return res.recordset[0].id;
+  if (res.recordset.length > 0) return res.recordset[0].id;
+  return null; // Return null if ESPN hasn't created it yet
 }
 
 // Odds-api team IDs for home and away team along with the games start time
-// ESPN-api will handle the live score data and will be appended to the same table
+// It is perfectly fine for Odds API to create the EVENT, as long as the teams exist.
 async function getOrCreateEvent(
   pool,
   leagueId,
   homeTeamId,
   awayTeamId,
   startTime,
+  apiId,
 ) {
   let res = await pool
     .request()
-    .input("homeTeamId", sql.Int, homeTeamId)
-    .input("awayTeamId", sql.Int, awayTeamId)
-    .input("startTime", sql.DateTime2, new Date(startTime)).query(`
-      SELECT id FROM events 
-      WHERE home_team_id = @homeTeamId 
-        AND away_team_id = @awayTeamId 
-        AND CAST(start_time AS DATE) = CAST(@startTime AS DATE)
-    `);
+    .input("apiId", sql.VarChar, apiId)
+    .query("SELECT id FROM events WHERE api_id = @apiId");
+
   if (res.recordset.length > 0) return res.recordset[0].id;
 
   res = await pool
@@ -63,15 +68,16 @@ async function getOrCreateEvent(
     .input("leagueId", sql.Int, leagueId)
     .input("homeTeamId", sql.Int, homeTeamId)
     .input("awayTeamId", sql.Int, awayTeamId)
-    .input("startTime", sql.DateTime2, new Date(startTime)).query(`
-      INSERT INTO events (league_id, home_team_id, away_team_id, start_time, status) 
+    .input("startTime", sql.DateTime2, new Date(startTime))
+    .input("apiId", sql.VarChar, apiId).query(`
+      INSERT INTO events (league_id, home_team_id, away_team_id, start_time, status, api_id) 
       OUTPUT INSERTED.id 
-      VALUES (@leagueId, @homeTeamId, @awayTeamId, @startTime, 'scheduled')
+      VALUES (@leagueId, @homeTeamId, @awayTeamId, @startTime, 'scheduled', @apiId)
     `);
   return res.recordset[0].id;
 }
 
-// Use the event_id created from the events table to make 3 rows per match for h2h, spreads, and totals
+// Use the event_id created from the events table to make 3 rows per match
 async function getOrCreateMarket(pool, eventId, type) {
   let res = await pool
     .request()
@@ -90,8 +96,7 @@ async function getOrCreateMarket(pool, eventId, type) {
   return res.recordset[0].id;
 }
 
-// Adds the odds for different events per game in the selections table based on the id from events
-// Updates odds with the latest ones from odds-api every 4 hours
+// Adds or updates the odds in the selections table
 async function upsertSelection(pool, marketId, label, odds, lineValue) {
   let res = await pool
     .request()
@@ -112,19 +117,19 @@ async function upsertSelection(pool, marketId, label, odds, lineValue) {
         "UPDATE selections SET odds = @odds, line_value = @lineValue WHERE id = @id",
       );
     return selectionId;
-  } else {
-    res = await pool
-      .request()
-      .input("marketId", sql.BigInt, marketId)
-      .input("label", sql.NVarChar, label)
-      .input("odds", sql.Decimal(10, 4), odds)
-      .input("lineValue", sql.Decimal(10, 2), lineValue).query(`
-        INSERT INTO selections (market_id, label, odds, line_value) 
-        OUTPUT INSERTED.id 
-        VALUES (@marketId, @label, @odds, @lineValue)
-      `);
-    return res.recordset[0].id;
   }
+
+  res = await pool
+    .request()
+    .input("marketId", sql.BigInt, marketId)
+    .input("label", sql.NVarChar, label)
+    .input("odds", sql.Decimal(10, 4), odds)
+    .input("lineValue", sql.Decimal(10, 2), lineValue).query(`
+      INSERT INTO selections (market_id, label, odds, line_value) 
+      OUTPUT INSERTED.id 
+      VALUES (@marketId, @label, @odds, @lineValue)
+    `);
+  return res.recordset[0].id;
 }
 
 app.timer("ingestOddsTimer", {
@@ -135,29 +140,50 @@ app.timer("ingestOddsTimer", {
     try {
       const pool = await poolPromise;
 
-      // Will only run full function if there is a game within 3 days
-      const upcomingGamesResult = await pool.request().query(`
-          SELECT COUNT(id) as upcomingCount FROM dbo.events 
-          WHERE start_time BETWEEN SYSDATETIME() AND DATEADD(day, 3, SYSDATETIME())
-            AND status != 'completed'
-      `);
-      const upcomingGames = upcomingGamesResult.recordset[0].upcomingCount;
+      // 1. Get the league FIRST so we only check soccer games!
+      const leagueName = "English Premier League";
+      const leagueId = await getLeague(pool, leagueName);
 
-      const totalGamesResult = await pool
-        .request()
-        .query(`SELECT COUNT(id) as totalCount FROM dbo.events`);
-      const totalGames = totalGamesResult.recordset[0].totalCount;
-
-      if (upcomingGames === 0 && totalGames > 0) {
+      if (!leagueId) {
         context.log(
-          "Gatekeeper: No upcoming games in the next 3 days. Skipping.",
+          `League '${leagueName}' not found. Ensure ESPN API runs first to create leagues/teams.`,
         );
-        return;
+        return; // Exit if the league doesn't exist
       }
 
-      context.log(
-        `Found ${upcomingGames} upcoming games. Fetching fresh odds...`,
-      );
+      // 2. Smart Gatekeeper: Only check upcoming games for THIS specific league
+      const nextGameResult = await pool
+        .request()
+        .input("leagueId", sql.Int, leagueId).query(`
+          SELECT MIN(start_time) as nextGameTime 
+          FROM dbo.events 
+          WHERE league_id = @leagueId 
+            AND start_time > GETUTCDATE() 
+            AND status != 'completed'
+      `);
+
+      const nextGameTime = nextGameResult.recordset[0].nextGameTime;
+
+      if (nextGameTime) {
+        const threeDaysFromNow = new Date();
+        threeDaysFromNow.setUTCDate(threeDaysFromNow.getUTCDate() + 3);
+
+        if (new Date(nextGameTime) > threeDaysFromNow) {
+          context.log(
+            "Gatekeeper: The next EPL game is more than 3 days away. Skipping API call.",
+          );
+          return;
+        }
+        context.log(
+          "Upcoming EPL games found within 3 days. Fetching fresh odds...",
+        );
+      } else {
+        // Because you wiped League 700, nextGameTime will be null.
+        // This correctly triggers the API to fetch the fresh schedule!
+        context.log(
+          "No upcoming EPL games in the database. Fetching fresh schedule from API...",
+        );
+      }
 
       const apiKey = process.env.SOCCER_ODDS_API;
       const response = await axios.get(
@@ -170,37 +196,34 @@ app.timer("ingestOddsTimer", {
         return;
       }
 
-      // 1. Get the league (Hardcoded to prem for now)
-      const leagueName = "English Premier League";
-      const leagueId = await getOrCreateLeague(pool, leagueName);
-
       for (const apiGame of apiGames) {
         context.log(
           `\n=== Processing Game: ${apiGame.home_team} vs ${apiGame.away_team} ===`,
         );
 
-        // 2. get the team id for reference
-        const homeTeamId = await getOrCreateTeam(
-          pool,
-          apiGame.home_team,
-          leagueId,
-        );
-        const awayTeamId = await getOrCreateTeam(
-          pool,
-          apiGame.away_team,
-          leagueId,
-        );
+        // Get the team ids (Read-Only)
+        const homeTeamId = await getTeam(pool, apiGame.home_team);
+        const awayTeamId = await getTeam(pool, apiGame.away_team);
 
-        // 3. Create the game event (who's playing, start time)
+        // SAFEGUARD: If either team is missing, skip this game entirely!
+        if (!homeTeamId || !awayTeamId) {
+          context.log(
+            `⚠️ Skipping game: One or both teams not found in DB. (${apiGame.home_team} / ${apiGame.away_team})`,
+          );
+          continue;
+        }
+
+        // Create or update the game event
         const eventId = await getOrCreateEvent(
           pool,
           leagueId,
           homeTeamId,
           awayTeamId,
           apiGame.commence_time,
+          apiGame.id,
         );
 
-        // 4. Add the odds for each game or update them if the odds have changed
+        // Add the odds for each game
         if (apiGame.bookmakers && apiGame.bookmakers.length > 0) {
           const bookmaker =
             apiGame.bookmakers.find((b) => b.key === "lowvig") ||
@@ -221,6 +244,47 @@ app.timer("ingestOddsTimer", {
               );
             }
           }
+        }
+
+        // Fetch Player Props
+        try {
+          context.log(`Fetching player props for event: ${apiGame.id}`);
+          const propsResponse = await axios.get(
+            `https://api.the-odds-api.com/v4/sports/soccer_epl/events/${apiGame.id}/odds/?apiKey=${apiKey}&regions=us&markets=player_goal_scorer_anytime`,
+          );
+
+          const propsData = propsResponse.data;
+
+          if (propsData.bookmakers && propsData.bookmakers.length > 0) {
+            const propsBookmaker = propsData.bookmakers[0];
+
+            for (const market of propsBookmaker.markets) {
+              if (market.key !== "player_goal_scorer_anytime") continue;
+
+              const marketId = await getOrCreateMarket(
+                pool,
+                eventId,
+                market.key,
+              );
+
+              for (const outcome of market.outcomes) {
+                const playerLabel = outcome.description || outcome.name;
+
+                await upsertSelection(
+                  pool,
+                  marketId,
+                  playerLabel,
+                  outcome.price,
+                  outcome.point ?? null,
+                );
+              }
+            }
+          }
+        } catch (propError) {
+          context.error(
+            `Could not fetch props for game ${apiGame.id}:`,
+            propError.message,
+          );
         }
       }
       context.log("✅ Odds ingestion completed successfully.");

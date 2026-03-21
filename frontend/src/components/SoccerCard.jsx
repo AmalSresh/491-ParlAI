@@ -112,7 +112,7 @@ const OddsButton = ({ label, odds }) => (
 const GameCard = ({ game }) => {
   const [expanded, setExpanded] = useState(false);
 
-  // 1. Destructure for cleaner variable access
+  // 1. Destructure for cleaner variable access (ADDED: playerProps = [])
   const {
     status,
     startTime,
@@ -126,6 +126,7 @@ const GameCard = ({ game }) => {
     totalLine,
     overOdds,
     underOdds,
+    playerProps = [], // Default to empty array to prevent crashes
   } = game;
 
   // 2. Pre-split the odds so we don't do it inside the JSX
@@ -189,18 +190,15 @@ const GameCard = ({ game }) => {
               display: 'flex',
               justifyContent: 'space-between',
               mb: 1,
-              // Force this box to always be tall enough for 2 lines of text
               minHeight: '2.8em',
             }}
           >
-            {/* Home Team */}
             <Typography
               variant="subtitle1"
               sx={{
                 fontWeight: 'bold',
                 flex: 1,
                 lineHeight: 1.2,
-                // These 4 lines prevent it from ever exceeding 2 lines (truncates with ...)
                 display: '-webkit-box',
                 WebkitLineClamp: 2,
                 WebkitBoxOrient: 'vertical',
@@ -210,7 +208,6 @@ const GameCard = ({ game }) => {
               {homeTeam}
             </Typography>
 
-            {/* VS */}
             <Typography
               variant="caption"
               sx={{ color: '#333', mx: 1, fontWeight: 'bold', mt: 0.25 }}
@@ -218,7 +215,6 @@ const GameCard = ({ game }) => {
               VS
             </Typography>
 
-            {/* Away Team */}
             <Typography
               variant="subtitle1"
               sx={{
@@ -315,12 +311,14 @@ const GameCard = ({ game }) => {
             Additional Betting Markets
           </Typography>
 
+          {/* TOTAL GOALS BOX */}
           <Box
             sx={{
               backgroundColor: '#00f6ff',
               borderRadius: '4px',
               padding: '16px',
               border: '1px solid #3b4d80',
+              mb: 2, // Added margin bottom to separate from player props
             }}
           >
             <Typography
@@ -342,6 +340,79 @@ const GameCard = ({ game }) => {
               <OddsButton label="Under" odds={underOdds} />
             </Box>
           </Box>
+
+          {/* NEW: ANYTIME GOALSCORER PROPS */}
+          {playerProps.length > 0 && (
+            <Box
+              sx={{
+                backgroundColor: '#00f6ff',
+                borderRadius: '4px',
+                padding: '16px',
+                border: '1px solid #3b4d80',
+              }}
+            >
+              <Typography
+                variant="body2"
+                sx={{
+                  color: '#000000',
+                  textAlign: 'center',
+                  mb: 2,
+                  fontWeight: 'bold',
+                }}
+              >
+                Anytime Goalscorer
+              </Typography>
+
+              {/* Scrollable Container */}
+              <Box
+                sx={{
+                  maxHeight: '180px',
+                  overflowY: 'auto',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 1,
+                  pr: 1,
+                  '&::-webkit-scrollbar': { width: '6px' },
+                  '&::-webkit-scrollbar-track': { background: 'transparent' },
+                  '&::-webkit-scrollbar-thumb': {
+                    background: '#000000',
+                    borderRadius: '4px',
+                  },
+                }}
+              >
+                {playerProps.map((player, index) => (
+                  <Box
+                    key={index}
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      backgroundColor: '#000000',
+                      padding: '8px 12px',
+                      borderRadius: '4px',
+                    }}
+                  >
+                    <Typography
+                      variant="body2"
+                      sx={{ color: '#ffffff', fontSize: '0.85rem' }}
+                    >
+                      {player.label}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: '#00f6ff',
+                        fontWeight: 'bold',
+                        fontSize: '0.9rem',
+                      }}
+                    >
+                      {player.odds}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+            </Box>
+          )}
         </CardContent>
       </Collapse>
     </Card>
