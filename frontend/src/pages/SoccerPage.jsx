@@ -13,15 +13,13 @@ const SoccerPage = () => {
         const backendData = await response.json();
 
         const formattedGames = backendData.map((dbGame) => {
-          // 1. Extract Moneyline (h2h) - FIXED STRING MATCHING
+          // 1. Extract Moneyline (h2h)
           const h2hMarket = dbGame.markets?.find((m) => m.type === 'h2h');
-
           let homeOdds = '-',
             awayOdds = '-',
             drawOdds = '-';
 
           if (h2hMarket) {
-            // Flexible matching: check if "AFC Bournemouth" includes "Bournemouth" (or vice versa)
             homeOdds =
               h2hMarket.selections.find(
                 (s) =>
@@ -36,7 +34,6 @@ const SoccerPage = () => {
                   s.label.includes(dbGame.awayTeam),
               )?.odds || '-';
 
-            // ADDED: Capture the Draw odds!
             drawOdds =
               h2hMarket.selections.find(
                 (s) =>
@@ -44,11 +41,9 @@ const SoccerPage = () => {
                   s.label.toLowerCase() === 'tie',
               )?.odds || '-';
           }
-
-          // Format it as a 3-way line for soccer
           const mainOdds = `${homeOdds} / ${drawOdds} / ${awayOdds}`;
 
-          // 2. Extract Totals (Over/Under) - This was already perfect
+          // 2. Extract Over/Under
           const totalsMarket = dbGame.markets?.find((m) => m.type === 'totals');
           let totalLine = '-',
             overOdds = '-',
@@ -67,9 +62,22 @@ const SoccerPage = () => {
             underOdds = under?.odds || '-';
           }
 
-          // 3. Return the exact object shape
+          // Extract player props (who will score a goal) - for now
+          const playerPropsMarket = dbGame.markets?.find(
+            (m) => m.type === 'player_goal_scorer_anytime',
+          );
+          let playerProps = [];
+
+          if (playerPropsMarket && playerPropsMarket.selections) {
+            playerProps = [...playerPropsMarket.selections].sort(
+              (a, b) => a.odds - b.odds,
+            );
+          }
+
+          // 4. return object for soccer cards
           return {
             id: dbGame.id,
+            apiId: dbGame.apiId,
             homeTeam: dbGame.homeTeam,
             awayTeam: dbGame.awayTeam,
             homeScore: dbGame.scores?.home,
@@ -79,6 +87,7 @@ const SoccerPage = () => {
             totalLine: totalLine,
             overOdds: overOdds,
             underOdds: underOdds,
+            playerProps: playerProps,
             homeLogo:
               dbGame.homeLogo ||
               `https://ui-avatars.com/api/?name=${dbGame.homeTeam}&background=random`,

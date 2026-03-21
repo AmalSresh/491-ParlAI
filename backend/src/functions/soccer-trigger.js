@@ -13,33 +13,37 @@ app.http("getGames", {
     try {
       const pool = await poolPromise;
 
-      // 1. Get all the data we want to show the frontend from the relevant tables
+      // 1. Get all the data. ADDED: e.api_id
       const result = await pool.request().query(`
-                SELECT 
-                    e.id AS event_id, 
-                    e.start_time, 
-                    e.status, 
-                    e.home_score, 
-                    e.away_score,
-                    h.name AS home_team, 
-                    h.logo_url AS home_logo,  
-                    a.name AS away_team,
-                    a.logo_url AS away_logo, 
-                    m.id AS market_id, 
-                    m.type AS market_type,
-                    s.id AS selection_id, 
-                    s.label AS selection_label, 
-                    s.odds, 
-                    s.line_value
-                FROM events e
-                JOIN teams h ON e.home_team_id = h.id
-                JOIN teams a ON e.away_team_id = a.id
-                LEFT JOIN markets m ON e.id = m.event_id AND m.status = 'open'
-                LEFT JOIN selections s ON m.id = s.market_id
-                WHERE e.start_time >= DATEADD(day, -1, SYSDATETIME()) 
-                  AND e.start_time <= DATEADD(day, 7, SYSDATETIME())
-                ORDER BY e.start_time ASC;
-            `);
+        SELECT 
+            e.id AS event_id, 
+            e.api_id, 
+            e.start_time, 
+            e.status, 
+            e.home_score, 
+            e.away_score,
+            h.name AS home_team, 
+            h.logo_url AS home_logo,  
+            a.name AS away_team,
+            a.logo_url AS away_logo, 
+            m.id AS market_id, 
+            m.type AS market_type,
+            s.id AS selection_id, 
+            s.label AS selection_label, 
+            s.odds, 
+            s.line_value
+        FROM events e
+        JOIN teams h ON e.home_team_id = h.id
+        JOIN teams a ON e.away_team_id = a.id
+        LEFT JOIN markets m ON e.id = m.event_id
+        LEFT JOIN selections s ON m.id = s.market_id
+        
+        -- Active date filter: Keeps recent past games (-2 days) and next month's games (+30 days)
+        WHERE e.start_time >= DATEADD(day, -2, GETUTCDATE()) 
+          AND e.start_time <= DATEADD(day, 30, GETUTCDATE()) 
+        
+        ORDER BY e.start_time ASC;
+      `);
 
       const rows = result.recordset;
 
@@ -51,6 +55,7 @@ app.http("getGames", {
         if (!eventsMap.has(row.event_id)) {
           eventsMap.set(row.event_id, {
             id: row.event_id,
+            apiId: row.api_id, // <-- ADDED: Pass the Odds-API string ID to the frontend
             homeTeam: row.home_team,
             homeLogo: row.home_logo,
             awayTeam: row.away_team,
@@ -85,7 +90,7 @@ app.http("getGames", {
           if (row.selection_id) {
             market.selections.push({
               id: row.selection_id,
-              label: row.selection_label,
+              label: row.selection_label, // Will hold team names, "Over/Under", or "Harvey Barnes"
               odds: row.odds,
               lineValue: row.line_value,
             });
