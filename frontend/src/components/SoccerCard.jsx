@@ -15,11 +15,114 @@ const GameCard = ({ game }) => {
     setExpanded(!expanded);
   };
 
+  // --- NEW STATUS HELPER FUNCTION (MUI Style) ---
+  const renderGameStatus = (status, startTime) => {
+    // 1. Game is over
+    if (status === 'completed' || status === 'finished') {
+      return (
+        <Typography
+          variant="caption"
+          sx={{
+            color: '#555',
+            fontWeight: 'bold',
+            textTransform: 'uppercase',
+            letterSpacing: 1,
+          }}
+        >
+          Final
+        </Typography>
+      );
+    }
+
+    // 2. Game is currently happening
+    if (status === 'in_progress' || status === 'live') {
+      return (
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 1,
+          }}
+        >
+          {/* Pulsing Red Dot */}
+          <Box
+            sx={{
+              width: 8,
+              height: 8,
+              borderRadius: '50%',
+              backgroundColor: '#d32f2f', // Red
+              '@keyframes pulse': {
+                '0%': {
+                  transform: 'scale(0.95)',
+                  boxShadow: '0 0 0 0 rgba(211, 47, 47, 0.7)',
+                },
+                '70%': {
+                  transform: 'scale(1)',
+                  boxShadow: '0 0 0 6px rgba(211, 47, 47, 0)',
+                },
+                '100%': {
+                  transform: 'scale(0.95)',
+                  boxShadow: '0 0 0 0 rgba(211, 47, 47, 0)',
+                },
+              },
+              animation: 'pulse 2s infinite',
+            }}
+          />
+          <Typography
+            variant="caption"
+            sx={{
+              color: '#d32f2f',
+              fontWeight: 'bold',
+              textTransform: 'uppercase',
+              letterSpacing: 1,
+            }}
+          >
+            Live
+          </Typography>
+        </Box>
+      );
+    }
+
+    // 3. Game hasn't started yet (Scheduled)
+    // Add a check just in case startTime is missing
+    if (!startTime) return null;
+
+    const dateObj = new Date(startTime);
+    const timeString = dateObj.toLocaleTimeString([], {
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+    const dateString = dateObj.toLocaleDateString([], {
+      month: 'short',
+      day: 'numeric',
+    });
+
+    return (
+      <Typography variant="caption" sx={{ color: '#333', fontWeight: 'bold' }}>
+        {dateString} <span style={{ margin: '0 4px' }}>•</span> {timeString}
+      </Typography>
+    );
+  };
+
   return (
     <Card sx={{ backgroundColor: '#00f6ff', color: 'black' }}>
       {/* TOP HALF: Always visible */}
       <CardActionArea onClick={handleExpandClick} sx={{ padding: '8px' }}>
         <CardContent>
+          {/* ROW 0: Status & Start Time */}
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'center',
+              mb: 1.5,
+              borderBottom: '1px solid rgba(0,0,0,0.1)',
+              pb: 0.5,
+            }}
+          >
+            {renderGameStatus(game.status, game.startTime)}
+          </Box>
+
           {/* ROW 1: Team Names */}
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
             <Typography

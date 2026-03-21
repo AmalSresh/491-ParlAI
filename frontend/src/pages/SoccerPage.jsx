@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-// Assuming your component file is named SoccerCard.jsx based on your import
 import SoccerCard from '../components/SoccerCard';
 
 const SoccerPage = () => {
@@ -9,7 +8,6 @@ const SoccerPage = () => {
   useEffect(() => {
     const fetchLiveGames = async () => {
       try {
-        // REPLACE with your actual deployed Azure Function URL or local localhost URL
         const apiUrl = '/api/getGames';
         const response = await fetch(apiUrl);
         const backendData = await response.json();
@@ -47,7 +45,7 @@ const SoccerPage = () => {
             overOdds = over?.odds || '-';
             underOdds = under?.odds || '-';
           }
-
+          console.log(dbGame);
           // 3. Return the exact object shape your existing SoccerCard needs
           return {
             id: dbGame.id,
@@ -59,9 +57,16 @@ const SoccerPage = () => {
             totalLine: totalLine,
             overOdds: overOdds,
             underOdds: underOdds,
-            // You can add logic later to pull logos dynamically, or use placeholders
-            homeLogo: `https://via.placeholder.com/40?text=${dbGame.homeTeam.charAt(0)}`,
-            awayLogo: `https://via.placeholder.com/40?text=${dbGame.awayTeam.charAt(0)}`,
+            // UPDATED: Use actual logos from the DB, with a colorful fallback just in case
+            homeLogo:
+              dbGame.homeLogo ||
+              `https://ui-avatars.com/api/?name=${dbGame.homeTeam}&background=random`,
+            awayLogo:
+              dbGame.awayLogo ||
+              `https://ui-avatars.com/api/?name=${dbGame.awayTeam}&background=random`,
+            // ADDED: Passing along time/status in case your card wants to show "Live" or "Scheduled"
+            startTime: dbGame.startTime,
+            status: dbGame.status,
           };
         });
 
@@ -93,7 +98,9 @@ const SoccerPage = () => {
       ) : (
         <div className="p-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6 align-top items-start">
           {games.length === 0 ? (
-            <div className="text-white">No games scheduled.</div>
+            <div className="text-white col-span-full text-center">
+              No games scheduled.
+            </div>
           ) : (
             games.map((game) => <SoccerCard key={game.id} game={game} />)
           )}
