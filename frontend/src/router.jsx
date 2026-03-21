@@ -32,7 +32,11 @@ const router = createBrowserRouter([
       },
       {
         path: 'support',
-        element: <Support />,
+        element: (
+          <ProtectedRoute>
+            <Support />
+          </ProtectedRoute>
+        ),
       },
       {
         path: 'players',
