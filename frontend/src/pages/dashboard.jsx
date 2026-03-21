@@ -9,7 +9,7 @@ export default function Dashboard() {
         Dashboard
       </h1>
       <p className="text-white text-[1.1rem] m-0 mb-2">
-        Welcome, <strong>{user?.name ?? user?.email}</strong>.
+        Welcome, <strong>{user?.nickname ?? user?.email}</strong>.
       </p>
       <p className="text-sb-muted m-0">
         This is a protected area. You're signed in.
