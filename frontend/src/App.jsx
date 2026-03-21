@@ -1,10 +1,10 @@
-import { Outlet, Link, useLocation, Navigate } from 'react-router-dom';
+import { Outlet, useLocation, Navigate } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import { useAuth } from './context/AuthContext';
 import Header from './components/Header';
 import Footer from './components/Footer';
 export default function App() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const location = useLocation();
 
   if (

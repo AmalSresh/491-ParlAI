@@ -12,27 +12,48 @@ const SoccerPage = () => {
         const response = await fetch(apiUrl);
         const backendData = await response.json();
 
-        // Translate the nested backend JSON into the flat structure your GameCard expects
         const formattedGames = backendData.map((dbGame) => {
-          // 1. Extract Moneyline (h2h)
+          // 1. Extract Moneyline (h2h) - FIXED STRING MATCHING
           const h2hMarket = dbGame.markets?.find((m) => m.type === 'h2h');
-          let mainOdds = 'TBD';
+
+          let homeOdds = '-',
+            awayOdds = '-',
+            drawOdds = '-';
+
           if (h2hMarket) {
-            // Finding the odds for home and away teams
-            const homeOdds =
-              h2hMarket.selections.find((s) => s.label === dbGame.homeTeam)
-                ?.odds || '-';
-            const awayOdds =
-              h2hMarket.selections.find((s) => s.label === dbGame.awayTeam)
-                ?.odds || '-';
-            mainOdds = `${homeOdds} / ${awayOdds}`;
+            // Flexible matching: check if "AFC Bournemouth" includes "Bournemouth" (or vice versa)
+            homeOdds =
+              h2hMarket.selections.find(
+                (s) =>
+                  dbGame.homeTeam.includes(s.label) ||
+                  s.label.includes(dbGame.homeTeam),
+              )?.odds || '-';
+
+            awayOdds =
+              h2hMarket.selections.find(
+                (s) =>
+                  dbGame.awayTeam.includes(s.label) ||
+                  s.label.includes(dbGame.awayTeam),
+              )?.odds || '-';
+
+            // ADDED: Capture the Draw odds!
+            drawOdds =
+              h2hMarket.selections.find(
+                (s) =>
+                  s.label.toLowerCase() === 'draw' ||
+                  s.label.toLowerCase() === 'tie',
+              )?.odds || '-';
           }
 
-          // 2. Extract Totals (Over/Under)
+          // Format it as a 3-way line for soccer
+          const mainOdds = `${homeOdds} / ${drawOdds} / ${awayOdds}`;
+
+          // 2. Extract Totals (Over/Under) - This was already perfect
           const totalsMarket = dbGame.markets?.find((m) => m.type === 'totals');
           let totalLine = '-',
             overOdds = '-',
             underOdds = '-';
+
           if (totalsMarket && totalsMarket.selections.length > 0) {
             const over = totalsMarket.selections.find((s) =>
               s.label.toLowerCase().includes('over'),
@@ -45,8 +66,8 @@ const SoccerPage = () => {
             overOdds = over?.odds || '-';
             underOdds = under?.odds || '-';
           }
-          console.log(dbGame);
-          // 3. Return the exact object shape your existing SoccerCard needs
+
+          // 3. Return the exact object shape
           return {
             id: dbGame.id,
             homeTeam: dbGame.homeTeam,
@@ -54,17 +75,16 @@ const SoccerPage = () => {
             homeScore: dbGame.scores?.home,
             awayScore: dbGame.scores?.away,
             mainOdds: mainOdds,
+            drawOdds: drawOdds,
             totalLine: totalLine,
             overOdds: overOdds,
             underOdds: underOdds,
-            // UPDATED: Use actual logos from the DB, with a colorful fallback just in case
             homeLogo:
               dbGame.homeLogo ||
               `https://ui-avatars.com/api/?name=${dbGame.homeTeam}&background=random`,
             awayLogo:
               dbGame.awayLogo ||
               `https://ui-avatars.com/api/?name=${dbGame.awayTeam}&background=random`,
-            // ADDED: Passing along time/status in case your card wants to show "Live" or "Scheduled"
             startTime: dbGame.startTime,
             status: dbGame.status,
           };
@@ -79,10 +99,8 @@ const SoccerPage = () => {
     };
 
     fetchLiveGames();
-
-    // Optional: Set up a polling interval to refresh odds/scores every 60 seconds
-    const intervalId = setInterval(fetchLiveGames, 60000);
-    return () => clearInterval(intervalId); // Cleanup on unmount
+    const intervalId = window.setInterval(fetchLiveGames, 300000);
+    return () => window.clearInterval(intervalId);
   }, []);
 
   return (
