@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link } from 'react-router-dom';
 
 export default function Sidebar() {
   return (
@@ -14,7 +14,9 @@ export default function Sidebar() {
         <li>🏈 NFL</li>
         <li>⚾ MLB</li>
         <li>🏒 NHL</li>
-        <li>⚽ MLS</li>
+        <li>
+          <Link to="/soccer">⚽ Soccer</Link>
+        </li>
         <li>🎾 Tennis</li>
         <li>🥊 UFC</li>
       </ul>
