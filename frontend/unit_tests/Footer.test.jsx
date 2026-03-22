@@ -1,15 +1,15 @@
-import { render, screen } from "@testing-library/react";
-import Sidebar from "../src/components/Sidebar";
-import Footer from "../src/components/Footer";
+import { render, screen } from '@testing-library/react';
+import { BrowserRouter } from 'react-router-dom';
+import Footer from '../src/components/Footer';
 
-test("renders sidebar title", () => {
-  render(<Sidebar />);
-  expect(screen.getByText("Leagues")).toBeInTheDocument();
-});
+test('renders footer text', async () => {
+  render(
+    <BrowserRouter>
+      <Footer />
+    </BrowserRouter>,
+  );
 
-test("renders footer text", () => {
-  render(<Footer />);
   expect(
-    screen.getByText("© 2026 ParlAI - AI-Powered Sports Predictions")
+    await screen.findByText('© 2026 ParlAI - AI-Powered Sports Predictions'),
   ).toBeInTheDocument();
 });

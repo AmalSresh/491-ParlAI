@@ -1,3 +1,4 @@
+// User can set their nickname and favorite teams after account creation
 import { app } from '@azure/functions';
 import sql from 'mssql';
 
@@ -24,7 +25,7 @@ app.http('complete-onboarding', {
         };
       }
 
-      // Decode it (Swapped "ascii" to "utf-8" just to be incredibly safe)
+      // Decode it (Swapped "ascii" to "utf-8" just to be safe)
       const encoded = Buffer.from(header, 'base64');
       const decoded = encoded.toString('utf-8');
       const clientPrincipal = JSON.parse(decoded);
