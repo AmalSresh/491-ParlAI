@@ -4,6 +4,7 @@ import Login from './pages/login';
 import Home from './pages/home';
 import Dashboard from './pages/dashboard';
 import HowToPlay from './pages/HowToPlay';
+import Support from  './pages/support';
 import Onboarding from './pages/onboarding';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -28,6 +29,14 @@ const router = createBrowserRouter([
       {
         path: 'games',
         element: <Games />,
+      },
+      {
+        path: 'support',
+        element: (
+          <ProtectedRoute>
+            <Support />
+          </ProtectedRoute>
+        ),
       },
       {
         path: 'players',
