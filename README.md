@@ -22,7 +22,7 @@ Node.js
 Node.js  
  npm  
  Git  
- An Azure account (If deploying)
+ An Azure account
 
 ## To build and test the app
 
@@ -34,20 +34,16 @@ navigate to the frontend directory
  `cd frontend`
 
 Install dependencies  
- `npm install`
+ `npm install`  
+ Start the frontend emulator  
+ `npm run dev`
+
 navigate to the backend directory  
  `cd backend`
-
-Install dependencies  
- `npm install`
-
-Start up backend functions (in /backend)  
+In the terminal run  
  `npm run start`
 
-In the root directory run  
- `swa start`
-
-This will start the Azure emulator to simulate authentication, database control, and present the frontend.
+This will start the Azure emulator to simulate authentication, database functions, and present the frontend.
 
 ## Create .env file in Project root
 
@@ -62,6 +58,22 @@ DB_USER=YOUR_DB_USER
 DB_PASSWORD=YOUR_DB_PASSWORD
 DB_SERVER=YOUR_DB_SERVER
 DB_NAME=YOUR_DB_NAME
+SOCCER_ODDS_API=YOUR_ODDS_API_KEY
+
+## In your backend directory put this in local.settings.json file:
+
+{
+"IsEncrypted": false,
+"Values": {
+"FUNCTIONS_WORKER_RUNTIME": "node",
+"DB_SERVER": "YOUR_DB_SERVER",
+"DB_USER": "YOUR_DB_USER",
+"DB_PASSWORD": "YOUR_DB_PASS",
+"DB_NAME": "YOUR_DB_NAME",
+"AzureWebJobsStorage": "UseDevelopmentStorage=true",
+"SOCCER_ODDS_API": "YOUR_ODDS_API_KEY"
+}
+}
 
 ## SQL server connection
 
