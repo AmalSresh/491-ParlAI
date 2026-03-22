@@ -8,6 +8,7 @@ import Hockey from './pages/Hockey';
 import Support from  './pages/support';
 import Onboarding from './pages/onboarding';
 import ProtectedRoute from './components/ProtectedRoute';
+import SoccerPage from './pages/SoccerPage';
 
 // ⭐ Add your new placeholder pages
 import Games from './pages/Games';
@@ -76,6 +77,10 @@ const router = createBrowserRouter([
             <Dashboard />
           </ProtectedRoute>
         ),
+      },
+      {
+        path: 'soccer',
+        element: <SoccerPage />,
       },
 
       // ⭐ Catch-all route for unknown pages
