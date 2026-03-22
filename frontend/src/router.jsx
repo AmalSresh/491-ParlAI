@@ -4,11 +4,12 @@ import Login from './pages/login';
 import Home from './pages/home';
 import Dashboard from './pages/dashboard';
 import HowToPlay from './pages/HowToPlay';
-import Support from  './pages/support';
+import Support from './pages/support';
 import Onboarding from './pages/onboarding';
 import Settings from './pages/Settings';
 import Profile from './pages/Profile';
 import ProtectedRoute from './components/ProtectedRoute';
+import SoccerPage from './pages/SoccerPage';
 
 // ⭐ Placeholder pages
 import Games from './pages/Games';
@@ -89,6 +90,10 @@ const router = createBrowserRouter([
             <Profile />
           </ProtectedRoute>
         ),
+      },
+      {
+        path: 'soccer',
+        element: <SoccerPage />,
       },
 
       // Catch-all route for unknown pages

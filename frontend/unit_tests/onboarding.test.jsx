@@ -1,9 +1,8 @@
-import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { describe, test, expect, beforeEach, vi } from 'vitest';
-import Onboarding from '../src/pages/onboarding'; // Check this path matches your structure
-import { useAuth } from '../src/context/AuthContext'; // Check this path matches your structure
+import Onboarding from '../src/pages/onboarding';
+import { useAuth } from '../src/context/AuthContext';
 import { MemoryRouter } from 'react-router-dom';
 
 vi.mock('../src/context/AuthContext', () => ({
@@ -47,7 +46,6 @@ describe('Onboarding Component', () => {
       </MemoryRouter>,
     );
 
-    // FIX: Changed to toBeInTheDocument()
     await waitFor(() =>
       expect(screen.getByText('Choose your display name')).toBeInTheDocument(),
     );
