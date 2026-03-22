@@ -29,7 +29,8 @@ function getStatusLabel(state) {
 function GameCard({ game }) {
   const homeScore = game.home.score ?? null;
   const awayScore = game.away.score ?? null;
-  const isFinal = game.status?.typeState === "final" || game.status?.typeState === "completed";
+  // ESPN uses type.state "post" for finished games (not "final" / "completed").
+  const isFinal = game.status?.typeState === "post";
 
   return (
     <div className="rounded-xl border border-sb-border bg-sb-bg/60 overflow-hidden">
