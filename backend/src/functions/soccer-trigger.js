@@ -1,13 +1,13 @@
 // Send Team data, scores, and odds to the frontend
-import { app } from "@azure/functions";
-import { poolPromise } from "../../components/db-connect.js";
+import { app } from '@azure/functions';
+import { poolPromise } from '../../components/db-connect.js';
 
-app.http("getGames", {
-  methods: ["GET"],
-  authLevel: "anonymous",
+app.http('getGames', {
+  methods: ['GET'],
+  authLevel: 'anonymous',
   handler: async (request, context) => {
     context.log(
-      "HTTP trigger invoked: Fetching games and odds for the frontend.",
+      'HTTP trigger invoked: Fetching games and odds for the frontend.',
     );
 
     try {
@@ -105,17 +105,17 @@ app.http("getGames", {
       return {
         status: 200,
         headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
         },
         body: JSON.stringify(formattedGames),
       };
     } catch (error) {
-      context.error("Database query failed:", error);
+      context.error('Database query failed:', error);
       return {
         status: 500,
         body: JSON.stringify({
-          error: "Internal Server Error while fetching games.",
+          error: 'Internal Server Error while fetching games.',
         }),
       };
     }
