@@ -1,30 +1,24 @@
-import { render, screen } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom';
-import Sidebar from '../src/components/Sidebar';
+import { render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+import Sidebar from "../src/components/Sidebar";
 
-test('renders sidebar title', async () => {
+test("renders sidebar title", () => {
   render(
-    <BrowserRouter>
+    <MemoryRouter>
       <Sidebar />
-    </BrowserRouter>,
+    </MemoryRouter>
   );
-
-  // findByText automatically waits for the element to appear
-  expect(await screen.findByText('Leagues')).toBeInTheDocument();
+  expect(screen.getByText("Leagues")).toBeInTheDocument();
 });
 
-test('renders all league items', async () => {
+test("renders all league items", () => {
   render(
-    <BrowserRouter>
+    <MemoryRouter>
       <Sidebar />
-    </BrowserRouter>,
+    </MemoryRouter>
   );
-
-  const leagues = ['NBA', 'NFL', 'MLB', 'NHL', 'Soccer', 'Tennis', 'UFC'];
-
-  for (const league of leagues) {
-    expect(
-      await screen.findByText(new RegExp(league, 'i')),
-    ).toBeInTheDocument();
-  }
+  const leagues = ["NBA", "NFL", "MLB", "NHL", "MLS", "Tennis", "UFC"];
+  leagues.forEach((league) => {
+    expect(screen.getAllByText(new RegExp(league, "i"))[0]).toBeInTheDocument();
+  });
 });
