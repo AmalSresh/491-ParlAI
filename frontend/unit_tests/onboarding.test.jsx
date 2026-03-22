@@ -4,6 +4,7 @@ import '@testing-library/jest-dom';
 import { describe, test, expect, beforeEach, vi } from 'vitest';
 import Onboarding from '../src/pages/onboarding'; // Check this path matches your structure
 import { useAuth } from '../src/context/AuthContext'; // Check this path matches your structure
+import { MemoryRouter } from 'react-router-dom';
 
 vi.mock('../src/context/AuthContext', () => ({
   useAuth: vi.fn(),
@@ -40,7 +41,11 @@ describe('Onboarding Component', () => {
   });
 
   test('validates nickname length and format', async () => {
-    render(<Onboarding />);
+    render(
+      <MemoryRouter>
+        <Onboarding />
+      </MemoryRouter>,
+    );
 
     // FIX: Changed to toBeInTheDocument()
     await waitFor(() =>
@@ -86,7 +91,11 @@ describe('Onboarding Component', () => {
       }
     });
 
-    render(<Onboarding />);
+    render(
+      <MemoryRouter>
+        <Onboarding />
+      </MemoryRouter>,
+    );
     await waitFor(() =>
       expect(screen.getByText('Choose your display name')).toBeInTheDocument(),
     );
@@ -146,7 +155,11 @@ describe('Onboarding Component', () => {
       }
     });
 
-    render(<Onboarding />);
+    render(
+      <MemoryRouter>
+        <Onboarding />
+      </MemoryRouter>,
+    );
     await waitFor(() =>
       expect(screen.getByText('Choose your display name')).toBeInTheDocument(),
     );
