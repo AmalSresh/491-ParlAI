@@ -30,6 +30,9 @@ export default function Header() {
           <Link to="/how-to-play" className="hover:text-sb-blue-light">
             How to Play
           </Link>
+          <Link to="/support" className="hover:text-sb-blue-light">
+            Support
+          </Link>
 
           {user ? (
             <>
