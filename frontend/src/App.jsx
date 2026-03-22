@@ -44,6 +44,9 @@ export default function App() {
           <Link to="/support" className="hover:text-sb-blue-light">
             Support
           </Link>
+          <Link to="/hockey" className="hover:text-sb-blue-light">
+            🏒 Hockey
+          </Link>
           {user ? (
             <>
               {user.onboardingStage > 0 && (
