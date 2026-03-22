@@ -1,18 +1,29 @@
 import { useEffect, useMemo, useState } from "react";
-import { fetchNbaScoreboard } from "../api/nba/nbaBetsClient";
-
-function toYYYYMMDD(d) {
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${year}${month}${day}`;
-}
+import { fetchNbaScoreboardWeek, getNbaWeekDateKeys } from "../api/nba/nbaBetsClient";
 
 function formatKickoff(iso) {
   if (!iso) return "—";
   const dt = new Date(iso);
   if (Number.isNaN(dt.getTime())) return "—";
   return dt.toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" });
+}
+
+function formatDayHeading(iso) {
+  if (!iso) return "Date TBA";
+  const dt = new Date(iso);
+  if (Number.isNaN(dt.getTime())) return "Date TBA";
+  return dt.toLocaleDateString(undefined, {
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function daySortKey(iso) {
+  if (!iso) return "";
+  const dt = new Date(iso);
+  if (Number.isNaN(dt.getTime())) return "";
+  return dt.toDateString();
 }
 
 function getStatusLabel(state) {
@@ -108,6 +119,27 @@ export default function NBABets() {
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState("games");
+  const weekRangeLabel = useMemo(() => {
+    const keys = getNbaWeekDateKeys(new Date());
+    if (keys.length < 2) return "";
+    const start = keys[0];
+    const end = keys[6];
+    const fmt = (ymd) => {
+      const y = Number(ymd.slice(0, 4));
+      const m = Number(ymd.slice(4, 6)) - 1;
+      const day = Number(ymd.slice(6, 8));
+      return new Date(y, m, day);
+    };
+    const a = fmt(start);
+    const b = fmt(end);
+    const sameMonth = a.getMonth() === b.getMonth();
+    const left = a.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    const right = b.toLocaleDateString(
+      undefined,
+      sameMonth ? { day: "numeric" } : { month: "short", day: "numeric" },
+    );
+    return `${left} – ${right}`;
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -115,9 +147,7 @@ export default function NBABets() {
       setLoading(true);
       setError("");
       try {
-        const now = new Date();
-        const date = toYYYYMMDD(now);
-        const result = await fetchNbaScoreboard({ date });
+        const result = await fetchNbaScoreboardWeek();
         if (!alive) return;
         setGames(result);
       } catch (e) {
@@ -148,13 +178,38 @@ export default function NBABets() {
     });
   }, [games, search]);
 
+  const gamesByDay = useMemo(() => {
+    const sections = [];
+    let currentKey = null;
+    let bucket = [];
+    for (const g of filteredGames) {
+      const key = daySortKey(g.startDate) || "unknown";
+      if (key !== currentKey) {
+        if (bucket.length) {
+          sections.push({ dayKey: currentKey, heading: formatDayHeading(bucket[0].startDate), games: bucket });
+        }
+        currentKey = key;
+        bucket = [g];
+      } else {
+        bucket.push(g);
+      }
+    }
+    if (bucket.length) {
+      sections.push({ dayKey: currentKey, heading: formatDayHeading(bucket[0].startDate), games: bucket });
+    }
+    return sections;
+  }, [filteredGames]);
+
   return (
     <div className="text-sb-text">
       <div className="flex items-center gap-3 mb-6 flex-wrap">
         <h1 className="text-3xl font-extrabold tracking-wide">🏀 NBA</h1>
         <span className="text-[0.7rem] font-bold tracking-widest uppercase border border-sb-blue/50 text-sb-blue px-3 py-1.5 rounded-full bg-sb-bg/60">
-          🔎 Today’s Matchups (ESPN)
+          🔎 This week (Sun–Sat) • ESPN
         </span>
+        {weekRangeLabel ? (
+          <span className="text-sb-muted text-sm font-semibold">{weekRangeLabel}</span>
+        ) : null}
         {loading && <span className="text-sb-muted text-sm">Loading…</span>}
       </div>
 
@@ -214,9 +269,18 @@ export default function NBABets() {
           ) : filteredGames.length === 0 ? (
             <p className="text-sb-muted">No matchups found.</p>
           ) : (
-            <div className="grid grid-cols-1 gap-4">
-              {filteredGames.map((game) => (
-                <GameCard key={game.id} game={game} />
+            <div className="flex flex-col gap-8">
+              {gamesByDay.map(({ dayKey, heading, games: dayGames }) => (
+                <section key={dayKey || heading}>
+                  <h2 className="text-sm font-extrabold tracking-widest uppercase text-sb-muted border-b border-sb-border pb-2 mb-4">
+                    {heading}
+                  </h2>
+                  <div className="grid grid-cols-1 gap-4">
+                    {dayGames.map((game) => (
+                      <GameCard key={game.id} game={game} />
+                    ))}
+                  </div>
+                </section>
               ))}
             </div>
           )}
