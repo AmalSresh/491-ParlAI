@@ -7,7 +7,10 @@ export default function Sidebar() {
         <li>🏀 NBA</li>
         <li>🏈 NFL</li>
         <li>⚾ MLB</li>
-        <li>🏒 NHL</li>
+        <li>
+          <Link to="/hockey" className="no-underline">
+            🏒 NHL
+          </Link>
         <li>⚽ MLS</li>
         <li>🎾 Tennis</li>
         <li>🥊 UFC</li>
