@@ -4,11 +4,11 @@ import Login from './pages/login';
 import Home from './pages/home';
 import Dashboard from './pages/dashboard';
 import HowToPlay from './pages/HowToPlay';
+import Support from './pages/support';
 import Onboarding from './pages/onboarding';
 import ProtectedRoute from './components/ProtectedRoute';
 import NFLBets from './pages/NFLBets';
-
-
+import SoccerPage from './pages/SoccerPage';
 import Games from './pages/Games';
 import Players from './pages/Players';
 import MyBets from './pages/MyBets';
@@ -19,16 +19,21 @@ const router = createBrowserRouter([
     path: '/',
     element: <App />,
     children: [
-      
       {
         index: true,
         element: <Home />,
       },
-
-      
       {
         path: 'games',
         element: <Games />,
+      },
+      {
+        path: 'support',
+        element: (
+          <ProtectedRoute>
+            <Support />
+          </ProtectedRoute>
+        ),
       },
       {
         path: 'players',
@@ -38,8 +43,6 @@ const router = createBrowserRouter([
         path: 'bets',
         element: <MyBets />,
       },
-
-     
       {
         path: 'login',
         element: <Login />,
@@ -64,15 +67,14 @@ const router = createBrowserRouter([
           </ProtectedRoute>
         ),
       },
-
-
+      {
+        path: 'soccer',
+        element: <SoccerPage />,
+      },
       {
         path: 'nfl',
         element: <NFLBets />,
       },
-      
-
-      
       {
         path: '*',
         element: <NotFound />,
