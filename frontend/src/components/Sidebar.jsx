@@ -12,6 +12,7 @@ export default function Sidebar() {
           <Link to="/hockey" className="no-underline">
             🏒 NHL
           </Link>
+        </li>
         <li>⚽ MLS</li>
         <li>🏒 NHL</li>
         <li>
