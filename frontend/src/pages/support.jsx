@@ -63,7 +63,7 @@ export default function Support() {
       return;
     }
 
-    const preview = file.type.startsWith('image/') ? URL.createObjectURL(file) : null;
+    const preview = file.type.startsWith('image/') ? window.URL.createObjectURL(file) : null;
     setAttachment({ file, preview, error: null });
   }
 
