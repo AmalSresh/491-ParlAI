@@ -37,7 +37,14 @@ Install dependencies
  `npm install`
 navigate to the backend directory  
  `cd backend`
-In the terminal run  
+
+Install dependencies  
+ `npm install`
+
+Start up backend functions (in /backend)  
+ `npm run start`
+
+In the root directory run  
  `swa start`
 
 This will start the Azure emulator to simulate authentication, database control, and present the frontend.

@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const Onboarding = () => {
   const { checkAuth } = useAuth();
+  const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [nickname, setNickname] = useState('');
   const [selectedTeamIds, setSelectedTeamIds] = useState([]);
@@ -117,6 +119,8 @@ const Onboarding = () => {
       console.log('Success:', data.message);
 
       await checkAuth();
+
+      navigate('/dashboard');
     } catch (error) {
       console.error('Network error:', error);
       setError('Network error. Please check your connection.');
