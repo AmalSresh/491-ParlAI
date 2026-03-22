@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 
 const ESPN_NHL_SCOREBOARD = 'https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard';
-const ESPN_NHL_TEAMS = 'https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/teams';
 
 function OddsButton({ label, value, active, onClick, disabled }) {
   return (
