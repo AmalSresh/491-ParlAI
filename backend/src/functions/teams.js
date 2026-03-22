@@ -1,21 +1,12 @@
 import { app } from '@azure/functions';
-import sql from 'mssql';
-
+import { poolPromise } from '../../components/db-connect.js';
 app.http('teams', {
   methods: ['GET'],
   route: 'teams',
   authLevel: 'anonymous',
   handler: async (request, context) => {
     try {
-      const sqlConfig = {
-        server: process.env.DB_SERVER,
-        user: process.env.DB_USER,
-        password: process.env.DB_PASSWORD,
-        database: process.env.DB_NAME,
-        options: { encrypt: true, trustServerCertificate: false },
-      };
-
-      const pool = await sql.connect(sqlConfig);
+      const pool = await poolPromise;
 
       // Fetch teams ordered by name
       const result = await pool.request().query(`
