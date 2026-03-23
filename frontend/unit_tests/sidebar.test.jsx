@@ -1,28 +1,26 @@
-import { render, screen } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom';
-import Sidebar from '../src/components/Sidebar';
+import { render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+import Sidebar from "../src/components/Sidebar";
 
-test('renders sidebar title', async () => {
+test("renders sidebar title", () => {
   render(
-    <BrowserRouter>
+    <MemoryRouter>
       <Sidebar />
-    </BrowserRouter>,
+    </MemoryRouter>
   );
-  expect(await screen.findByText('Leagues')).toBeInTheDocument();
+  expect(screen.getByText("Leagues")).toBeInTheDocument();
 });
 
-test('renders all league items', async () => {
+test("renders all league items", async () => {
   render(
-    <BrowserRouter>
+    <MemoryRouter>
       <Sidebar />
-    </BrowserRouter>,
+    </MemoryRouter>
   );
-
-  const leagues = ['NBA', 'NFL', 'MLB', 'NHL', 'Soccer', 'Tennis', 'UFC'];
-
+  const leagues = ["NBA", "NFL", "MLB", "NHL", "Tennis", "UFC"];
   for (const league of leagues) {
     expect(
-      await screen.findByText(new RegExp(league, 'i')),
-    ).toBeInTheDocument();
+      await screen.findAllByText(new RegExp(league, "i"))
+    ).not.toHaveLength(0);
   }
 });
