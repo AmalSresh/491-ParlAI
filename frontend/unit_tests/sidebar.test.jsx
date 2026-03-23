@@ -8,8 +8,6 @@ test('renders sidebar title', async () => {
       <Sidebar />
     </BrowserRouter>,
   );
-
-  // findByText automatically waits for the element to appear
   expect(await screen.findByText('Leagues')).toBeInTheDocument();
 });
 
