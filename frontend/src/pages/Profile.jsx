@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 function Stat({ label, value }) {
   return (
@@ -21,7 +21,7 @@ function ActionCard({ title, desc, to }) {
     </>
   );
   const className =
-    "text-left rounded-xl border border-sb-border bg-sb-bg/80 p-3 text-sb-text hover:border-sb-blue transition-colors cursor-pointer block w-full";
+    'text-left rounded-xl border border-sb-border bg-sb-bg/80 p-3 text-sb-text hover:border-sb-blue transition-colors cursor-pointer block w-full';
   if (to) {
     return (
       <Link to={to} className={className}>
@@ -43,8 +43,8 @@ function Tab({ active, onClick, children }) {
       onClick={onClick}
       className={
         active
-          ? "rounded-full px-3 py-2 text-xs font-extrabold bg-sb-blue text-sb-dark border border-sb-blue"
-          : "rounded-full px-3 py-2 text-xs font-extrabold bg-sb-bg/80 text-sb-text border border-sb-border hover:border-sb-blue/60"
+          ? 'rounded-full px-3 py-2 text-xs font-extrabold bg-sb-blue text-sb-dark border border-sb-blue'
+          : 'rounded-full px-3 py-2 text-xs font-extrabold bg-sb-bg/80 text-sb-text border border-sb-border hover:border-sb-blue/60'
       }
     >
       {children}
@@ -57,59 +57,59 @@ export default function Profile() {
 
   const profileUser = useMemo(
     () => ({
-      name: user?.name ?? "Guest",
-      username: user?.email?.split("@")[0] ?? "user",
-      tier: "Silver",
-      memberSince: "2026",
+      name: user?.name ?? 'Guest',
+      username: user?.email?.split('@')[0] ?? 'user',
+      tier: 'Silver',
+      memberSince: '2026',
       balance: 124.75,
       bonus: 20.0,
       winRate: 0.54,
       totalWagered: 840.25,
       netProfit: 72.4,
     }),
-    [user?.name, user?.email]
+    [user?.name, user?.email],
   );
 
-  const [activeTab, setActiveTab] = useState("activity");
+  const [activeTab, setActiveTab] = useState('activity');
 
   const activity = useMemo(
     () => [
       {
-        id: "a1",
-        title: "Warriors vs Lakers",
-        subtitle: "Moneyline • GSW",
+        id: 'a1',
+        title: 'Warriors vs Lakers',
+        subtitle: 'Moneyline • GSW',
         amount: -10.0,
-        status: "Settled",
-        time: "Today • 11:04 AM",
+        status: 'Settled',
+        time: 'Today • 11:04 AM',
       },
       {
-        id: "a2",
-        title: "Chelsea vs Arsenal",
-        subtitle: "Over 2.5 Goals",
+        id: 'a2',
+        title: 'Chelsea vs Arsenal',
+        subtitle: 'Over 2.5 Goals',
         amount: 18.5,
-        status: "Won",
-        time: "Yesterday • 7:22 PM",
+        status: 'Won',
+        time: 'Yesterday • 7:22 PM',
       },
       {
-        id: "a3",
-        title: "NFL Sunday Parlay",
-        subtitle: "3-leg • +420",
+        id: 'a3',
+        title: 'NFL Sunday Parlay',
+        subtitle: '3-leg • +420',
         amount: -5.0,
-        status: "Lost",
-        time: "Feb 10 • 3:11 PM",
+        status: 'Lost',
+        time: 'Feb 10 • 3:11 PM',
       },
     ],
-    []
+    [],
   );
 
   const formatMoney = (n) =>
-    n.toLocaleString(undefined, { style: "currency", currency: "USD" });
+    n.toLocaleString(undefined, { style: 'currency', currency: 'USD' });
 
   const initials = profileUser.name
-    .split(" ")
+    .split(' ')
     .slice(0, 2)
     .map((s) => s[0])
-    .join("")
+    .join('')
     .toUpperCase();
 
   return (
@@ -169,11 +169,11 @@ export default function Profile() {
             <span
               className={
                 profileUser.netProfit >= 0
-                  ? "text-xs px-2.5 py-1.5 rounded-full border border-sb-blue bg-sb-blue/10 text-sb-blue"
-                  : "text-xs px-2.5 py-1.5 rounded-full border border-sb-error bg-sb-error-bg text-sb-error"
+                  ? 'text-xs px-2.5 py-1.5 rounded-full border border-sb-blue bg-sb-blue/10 text-sb-blue'
+                  : 'text-xs px-2.5 py-1.5 rounded-full border border-sb-error bg-sb-error-bg text-sb-error'
               }
             >
-              {profileUser.netProfit >= 0 ? "Net +" : "Net "}
+              {profileUser.netProfit >= 0 ? 'Net +' : 'Net '}
               {formatMoney(profileUser.netProfit)}
             </span>
           </div>
@@ -218,20 +218,20 @@ export default function Profile() {
         <section className="rounded-xl border border-sb-border bg-sb-card p-4 overflow-hidden">
           <div className="flex gap-2 pb-3 border-b border-sb-border mb-3 flex-wrap">
             <Tab
-              active={activeTab === "activity"}
-              onClick={() => setActiveTab("activity")}
+              active={activeTab === 'activity'}
+              onClick={() => setActiveTab('activity')}
             >
               Recent activity
             </Tab>
             <Tab
-              active={activeTab === "rewards"}
-              onClick={() => setActiveTab("rewards")}
+              active={activeTab === 'rewards'}
+              onClick={() => setActiveTab('rewards')}
             >
               Rewards
             </Tab>
           </div>
 
-          {activeTab === "activity" && (
+          {activeTab === 'activity' && (
             <div className="flex flex-col gap-2.5">
               {activity.map((a) => (
                 <div
@@ -252,11 +252,11 @@ export default function Profile() {
                     <div
                       className={
                         a.amount >= 0
-                          ? "font-extrabold text-sm text-sb-blue"
-                          : "font-extrabold text-sm text-sb-error"
+                          ? 'font-extrabold text-sm text-sb-blue'
+                          : 'font-extrabold text-sm text-sb-error'
                       }
                     >
-                      {a.amount >= 0 ? "+" : "-"}
+                      {a.amount >= 0 ? '+' : '-'}
                       {formatMoney(Math.abs(a.amount))}
                     </div>
                     <button
@@ -271,7 +271,7 @@ export default function Profile() {
             </div>
           )}
 
-          {activeTab === "rewards" && (
+          {activeTab === 'rewards' && (
             <div className="py-2">
               <div className="font-extrabold text-sb-text text-base mb-1">
                 Rewards (stub)
@@ -297,7 +297,6 @@ export default function Profile() {
               </div>
             </div>
           )}
-
         </section>
       </div>
     </div>
