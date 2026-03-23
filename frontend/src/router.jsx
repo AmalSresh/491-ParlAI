@@ -5,6 +5,7 @@ import Home from './pages/home';
 import Dashboard from './pages/dashboard';
 import HowToPlay from './pages/HowToPlay';
 import Support from './pages/support';
+import Hockey from './pages/Hockey';
 import Onboarding from './pages/onboarding';
 import Settings from './pages/Settings';
 import Profile from './pages/Profile';
