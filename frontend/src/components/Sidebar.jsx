@@ -17,7 +17,6 @@ export default function Sidebar() {
             🏒 NHL
           </Link>
         </li>
-        <li>⚽ MLS</li>
         <li>🏒 NHL</li>
         <li>
           <Link to="/soccer">⚽ Soccer</Link>
