@@ -1,5 +1,5 @@
 //Seeds team data for EPL to test out
-import sql from "mssql";
+import sql from 'mssql';
 
 const dbConfig = {
   user: process.env.DB_USER,
@@ -14,13 +14,13 @@ const dbConfig = {
 
 const seedDatabase = async () => {
   try {
-    console.log("Fetching data from API...");
+    console.log('Fetching data from API...');
     const response = await fetch(
-      "https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/teams",
+      'https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/teams',
     );
     const apiData = await response.json();
 
-    console.log("Connecting to database...");
+    console.log('Connecting to database...');
     const pool = await sql.connect(dbConfig);
 
     // Loop through sports
@@ -31,18 +31,18 @@ const seedDatabase = async () => {
       for (const league of sport.leagues) {
         const leagueId = league.id;
         const leagueName = league.name;
-        const country = "England";
+        const country = 'England';
         const leagueLogo =
-          "https://cdn.freebiesupply.com/images/large/2x/premier-league-logo-black-and-white.png";
+          'https://cdn.freebiesupply.com/images/large/2x/premier-league-logo-black-and-white.png';
 
         try {
           await pool
             .request()
-            .input("id", sql.Int, leagueId)
-            .input("name", sql.NVarChar, leagueName)
-            .input("country", sql.NVarChar, country)
-            .input("logoUrl", sql.NVarChar, leagueLogo)
-            .input("sport", sql.NVarChar, sportName).query(`
+            .input('id', sql.Int, leagueId)
+            .input('name', sql.NVarChar, leagueName)
+            .input('country', sql.NVarChar, country)
+            .input('logoUrl', sql.NVarChar, leagueLogo)
+            .input('sport', sql.NVarChar, sportName).query(`
               SET IDENTITY_INSERT Leagues ON; 
               
               INSERT INTO Leagues (id, name, country, logo_url, sport) 
@@ -68,10 +68,10 @@ const seedDatabase = async () => {
             // Insert the Team
             await pool
               .request()
-              .input("id", sql.Int, teamId)
-              .input("league_id", sql.Int, leagueId)
-              .input("name", sql.NVarChar, teamName)
-              .input("logoUrl", sql.NVarChar, teamLogoUrl).query(`
+              .input('id', sql.Int, teamId)
+              .input('league_id', sql.Int, leagueId)
+              .input('name', sql.NVarChar, teamName)
+              .input('logoUrl', sql.NVarChar, teamLogoUrl).query(`
                 SET IDENTITY_INSERT Teams ON;
 
                 INSERT INTO Teams (id, league_id, name, logo_url) 
@@ -89,10 +89,10 @@ const seedDatabase = async () => {
       }
     }
 
-    console.log("\n🎉 Seeding complete!");
+    console.log('\n🎉 Seeding complete!');
     process.exit(0);
   } catch (error) {
-    console.error("Fatal Error:", error);
+    console.error('Fatal Error:', error);
     process.exit(1);
   }
 };
