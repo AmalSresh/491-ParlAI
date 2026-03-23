@@ -4,19 +4,53 @@ import Login from './pages/login';
 import Home from './pages/home';
 import Dashboard from './pages/dashboard';
 import HowToPlay from './pages/HowToPlay';
+import Support from './pages/support';
+import Onboarding from './pages/onboarding';
 import Settings from './pages/Settings';
 import Profile from './pages/Profile';
 import ProtectedRoute from './components/ProtectedRoute';
+import SoccerPage from './pages/SoccerPage';
+
+// ⭐ Placeholder pages
+import Games from './pages/Games';
+import Players from './pages/Players';
+import MyBets from './pages/MyBets';
+import NotFound from './pages/NotFound';
 
 const router = createBrowserRouter([
   {
     path: '/',
     element: <App />,
     children: [
+      // Home page
       {
         index: true,
         element: <Home />,
       },
+
+      // Placeholder pages
+      {
+        path: 'games',
+        element: <Games />,
+      },
+      {
+        path: 'support',
+        element: (
+          <ProtectedRoute>
+            <Support />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'players',
+        element: <Players />,
+      },
+      {
+        path: 'bets',
+        element: <MyBets />,
+      },
+
+      // Existing pages
       {
         path: 'login',
         element: <Login />,
@@ -24,6 +58,14 @@ const router = createBrowserRouter([
       {
         path: 'how-to-play',
         element: <HowToPlay />,
+      },
+      {
+        path: 'onboarding',
+        element: (
+          <ProtectedRoute>
+            <Onboarding />
+          </ProtectedRoute>
+        ),
       },
       {
         path: 'dashboard',
@@ -48,6 +90,16 @@ const router = createBrowserRouter([
             <Profile />
           </ProtectedRoute>
         ),
+      },
+      {
+        path: 'soccer',
+        element: <SoccerPage />,
+      },
+
+      // Catch-all route for unknown pages
+      {
+        path: '*',
+        element: <NotFound />,
       },
     ],
   },
