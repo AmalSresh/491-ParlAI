@@ -8,7 +8,11 @@ const ISSUE_TYPES = [
   'General Question',
 ];
 
-const UPLOAD_TYPES = new Set(['Bug Report', 'Prediction Error', 'Account Issue']);
+const UPLOAD_TYPES = new Set([
+  'Bug Report',
+  'Prediction Error',
+  'Account Issue',
+]);
 
 const MAX_FILE_MB = 5;
 const ALLOWED_MIME = ['image/png', 'image/jpeg', 'application/pdf'];
@@ -24,11 +28,10 @@ export default function Support() {
     description: '',
   });
 
-  const [attachment, setAttachment] = useState(null); 
+  const [attachment, setAttachment] = useState(null);
   const [errors, setErrors] = useState({});
   const [submitted, setSubmitted] = useState(false);
 
-  
   useEffect(() => {
     if (user) {
       setFormData((prev) => ({
@@ -42,7 +45,6 @@ export default function Support() {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
 
-   
     if (name === 'issueType' && !UPLOAD_TYPES.has(value)) {
       setAttachment(null);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -54,16 +56,26 @@ export default function Support() {
     if (!file) return;
 
     if (!ALLOWED_MIME.includes(file.type)) {
-      setAttachment({ file: null, preview: null, error: `Unsupported file type. Please upload a ${ALLOWED_LABEL}.` });
+      setAttachment({
+        file: null,
+        preview: null,
+        error: `Unsupported file type. Please upload a ${ALLOWED_LABEL}.`,
+      });
       return;
     }
 
     if (file.size > MAX_FILE_MB * 1024 * 1024) {
-      setAttachment({ file: null, preview: null, error: `File is too large. Maximum size is ${MAX_FILE_MB} MB.` });
+      setAttachment({
+        file: null,
+        preview: null,
+        error: `File is too large. Maximum size is ${MAX_FILE_MB} MB.`,
+      });
       return;
     }
 
-    const preview = file.type.startsWith('image/') ? window.URL.createObjectURL(file) : null;
+    const preview = file.type.startsWith('image/')
+      ? window.URL.createObjectURL(file)
+      : null;
     setAttachment({ file, preview, error: null });
   }
 
@@ -93,18 +105,16 @@ export default function Support() {
     setErrors(validationErrors);
     if (Object.keys(validationErrors).length > 0) return;
 
-    
     const ticket = {
       userId: user?.id ?? null,
       name: formData.name.trim(),
-      email: user?.email ?? null,       
+      email: user?.email ?? null,
       issueType: formData.issueType,
       description: formData.description.trim(),
       attachment: attachment?.file ?? null,
       createdAt: new Date().toISOString(),
     };
 
-    
     console.log('Support ticket ready for submission:', ticket);
 
     setSubmitted(true);
@@ -190,7 +200,11 @@ export default function Support() {
                 className="w-full appearance-none rounded-lg border border-sb-blue/30 bg-sb-bg px-4 py-3 text-sb-text outline-none transition focus:border-sb-blue"
               >
                 {ISSUE_TYPES.map((type) => (
-                  <option key={type} value={type} className="bg-sb-nav text-sb-text">
+                  <option
+                    key={type}
+                    value={type}
+                    className="bg-sb-nav text-sb-text"
+                  >
                     {type}
                   </option>
                 ))}
