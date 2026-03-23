@@ -5,7 +5,6 @@ import Home from './pages/home';
 import Dashboard from './pages/dashboard';
 import HowToPlay from './pages/HowToPlay';
 import Hockey from './pages/Hockey';
-import Support from  './pages/support';
 import Support from './pages/support';
 import Onboarding from './pages/onboarding';
 import ProtectedRoute from './components/ProtectedRoute';
