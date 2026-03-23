@@ -10,8 +10,7 @@ export default function Settings() {
   const [realityCheckMins, setRealityCheckMins] = useState('60');
   const [defaultStake, setDefaultStake] = useState('');
 
-  const sectionCard =
-    'rounded-xl border border-sb-border bg-sb-card p-5 mb-6';
+  const sectionCard = 'rounded-xl border border-sb-border bg-sb-card p-5 mb-6';
   const labelClass = 'block text-sb-text font-semibold text-[0.95rem] mb-2';
   const inputClass =
     'w-full max-w-xs bg-sb-bg border border-sb-border rounded-lg py-2.5 px-3 text-sb-text text-[0.95rem] focus:outline-none focus:border-sb-blue focus:ring-1 focus:ring-sb-blue';
@@ -20,9 +19,7 @@ export default function Settings() {
 
   return (
     <div className="w-full min-w-0">
-      <h1 className="text-2xl leading-tight text-sb-blue m-0 mb-1">
-        Settings
-      </h1>
+      <h1 className="text-2xl leading-tight text-sb-blue m-0 mb-1">Settings</h1>
       <p className="text-sb-muted text-[0.95rem] m-0 mb-6">
         Manage your account, notifications, and betting preferences.
       </p>
@@ -180,7 +177,9 @@ export default function Settings() {
             </button>
           </div>
           <div>
-            <label className={labelClass}>Reality check interval (minutes)</label>
+            <label className={labelClass}>
+              Reality check interval (minutes)
+            </label>
             <select
               value={realityCheckMins}
               onChange={(e) => setRealityCheckMins(e.target.value)}
