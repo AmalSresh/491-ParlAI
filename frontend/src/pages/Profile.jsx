@@ -154,20 +154,6 @@ export default function Profile() {
                   {formatMoney(profileUser.bonus)}
                 </div>
               </div>
-              <div className="ml-auto flex gap-2.5 items-center flex-wrap">
-                <button
-                  type="button"
-                  className="rounded-full px-4 py-2.5 text-sm font-bold bg-sb-blue text-sb-dark border border-sb-blue hover:bg-sb-blue-light"
-                >
-                  Deposit
-                </button>
-                <button
-                  type="button"
-                  className="rounded-full px-4 py-2.5 text-sm font-bold bg-transparent text-sb-text border border-sb-border hover:border-sb-blue"
-                >
-                  Withdraw
-                </button>
-              </div>
             </div>
           </div>
         </div>
@@ -212,16 +198,19 @@ export default function Profile() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             <ActionCard
               title="Account"
-              desc="Update info, password, 2FA"
+              desc="Update info, email, and 2FA"
               to="/settings"
             />
             <ActionCard
               title="Limits"
-              desc="Deposit & wager limits"
+              desc="Wager limits & responsible play"
               to="/settings"
             />
-            <ActionCard title="Payment Methods" desc="Cards, bank, payout" />
-            <ActionCard title="Notifications" desc="Odds alerts & promos" to="/settings" />
+            <ActionCard
+              title="Notifications"
+              desc="Odds alerts & promos"
+              to="/settings"
+            />
           </div>
         </section>
 
@@ -239,12 +228,6 @@ export default function Profile() {
               onClick={() => setActiveTab("rewards")}
             >
               Rewards
-            </Tab>
-            <Tab
-              active={activeTab === "settings"}
-              onClick={() => setActiveTab("settings")}
-            >
-              Settings
             </Tab>
           </div>
 
@@ -315,40 +298,6 @@ export default function Profile() {
             </div>
           )}
 
-          {activeTab === "settings" && (
-            <div className="py-2">
-              <div className="font-extrabold text-sb-text text-base mb-1">
-                Settings (stub)
-              </div>
-              <p className="text-sb-muted text-sm m-0">
-                For full settings, use the Settings page.
-              </p>
-              <div className="mt-4 flex flex-col gap-3">
-                <label className="flex flex-col gap-1.5">
-                  <span className="text-sb-muted text-xs">Display name</span>
-                  <input
-                    type="text"
-                    className="rounded-xl border border-sb-border bg-sb-bg px-3 py-2.5 text-sb-text text-sm focus:outline-none focus:border-sb-blue focus:ring-1 focus:ring-sb-blue"
-                    defaultValue={profileUser.name}
-                  />
-                </label>
-                <label className="flex flex-col gap-1.5">
-                  <span className="text-sb-muted text-xs">Username</span>
-                  <input
-                    type="text"
-                    className="rounded-xl border border-sb-border bg-sb-bg px-3 py-2.5 text-sb-text text-sm focus:outline-none focus:border-sb-blue focus:ring-1 focus:ring-sb-blue"
-                    defaultValue={`@${profileUser.username}`}
-                  />
-                </label>
-                <Link
-                  to="/settings"
-                  className="rounded-full px-4 py-2.5 text-sm font-bold bg-sb-blue text-sb-dark border border-sb-blue hover:bg-sb-blue-light w-fit"
-                >
-                  Open full Settings
-                </Link>
-              </div>
-            </div>
-          )}
         </section>
       </div>
     </div>
