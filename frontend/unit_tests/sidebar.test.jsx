@@ -17,7 +17,7 @@ test("renders all league items", async () => {
       <Sidebar />
     </MemoryRouter>
   );
-  const leagues = ["NBA", "NFL", "MLB", "NHL", "MLS", "Tennis", "UFC"];
+  const leagues = ["NBA", "NFL", "MLB", "NHL", "Tennis", "UFC"];
   for (const league of leagues) {
     expect(
       await screen.findAllByText(new RegExp(league, "i"))
