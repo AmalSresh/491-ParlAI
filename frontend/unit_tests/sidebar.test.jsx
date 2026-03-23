@@ -12,7 +12,7 @@ test("renders sidebar title", () => {
   expect(await screen.findByText('Leagues')).toBeInTheDocument();
 });
 
-test("renders all league items", () => {
+test("renders all league items", azure () => {
   render(
     <MemoryRouter>
       <Sidebar />
