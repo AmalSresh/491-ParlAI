@@ -20,7 +20,6 @@ const Onboarding = () => {
       try {
         const authRes = await fetch('/.auth/me');
         const authData = await authRes.json();
-        console.log('Auth data:', authData); // remove later
         if (authData.clientPrincipal) {
           const id = authData.clientPrincipal.userId;
           setAzureUserId(id);
@@ -36,7 +35,6 @@ const Onboarding = () => {
         if (res.ok) {
           const data = await res.json();
           setAvailableTeams(data);
-          console.log('Fetched teams:', data); // remove later
         }
       } catch (err) {
         console.error('Failed to fetch teams', err);
