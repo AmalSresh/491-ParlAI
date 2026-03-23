@@ -23,10 +23,9 @@ function OddsButton({ label, value, active, onClick, disabled }) {
   );
 }
 
-function GameCard({ game, onBet, userBalance }) {
+function GameCard({ game, onBet, userBalance, betPlaced, onBetPlaced }) {
   const [selectedBet, setSelectedBet] = useState(null);
   const [stakeInput, setStakeInput] = useState('');
-  const [betPlaced, setBetPlaced] = useState(false);
 
   const home = game.competitions?.[0]?.competitors?.find(c => c.homeAway === 'home');
   const away = game.competitions?.[0]?.competitors?.find(c => c.homeAway === 'away');
@@ -44,8 +43,7 @@ function GameCard({ game, onBet, userBalance }) {
   const period = game.status?.period;
   const clock = game.status?.displayClock;
 
-  // Mock odds (in a real app these would come from an odds API)
-  // Seeded from game id so they don't change on every re-render
+  // Seeded from game id so odds stay stable per session
   const seed = game.id ? game.id.charCodeAt(0) / 255 : 0.5;
   const homeOdds = (1.4 + seed * 1.4).toFixed(2);
   const awayOdds = (1.4 + (1 - seed) * 1.4).toFixed(2);
@@ -62,7 +60,7 @@ function GameCard({ game, onBet, userBalance }) {
     const stake = parseFloat(stakeInput);
     if (!stake || stake <= 0 || stake > userBalance) return;
     onBet({ gameId: game.id, ...selectedBet, stake, payout: (stake * selectedBet.odds).toFixed(2) });
-    setBetPlaced(true);
+    onBetPlaced(game.id);
     setSelectedBet(null);
     setStakeInput('');
   };
@@ -144,85 +142,93 @@ function GameCard({ game, onBet, userBalance }) {
       {/* Betting Options */}
       {!isFinished && (
         <div className="border-t border-[#1a2535] pt-3">
-          <div className="flex gap-2 mb-3">
-            <div className="flex-1">
-              <div className="text-[10px] text-sb-muted uppercase tracking-widest mb-1.5">Moneyline</div>
-              <div className="flex gap-2">
-                <OddsButton
-                  label={awayTeam.abbreviation}
-                  value={`×${awayOdds}`}
-                  active={selectedBet?.type === 'ml_away'}
-                  onClick={() => handleSelectBet('ml_away', `${awayTeam.displayName} ML`, parseFloat(awayOdds))}
-                  disabled={isFinished}
-                />
-                <OddsButton
-                  label={homeTeam.abbreviation}
-                  value={`×${homeOdds}`}
-                  active={selectedBet?.type === 'ml_home'}
-                  onClick={() => handleSelectBet('ml_home', `${homeTeam.displayName} ML`, parseFloat(homeOdds))}
-                  disabled={isFinished}
-                />
-              </div>
-            </div>
-            <div className="flex-1">
-              <div className="text-[10px] text-sb-muted uppercase tracking-widest mb-1.5">Total Goals</div>
-              <div className="flex gap-2">
-                <OddsButton
-                  label="Over 5.5"
-                  value={`×${overOdds}`}
-                  active={selectedBet?.type === 'total_over'}
-                  onClick={() => handleSelectBet('total_over', 'Over 5.5 Goals', parseFloat(overOdds))}
-                  disabled={isFinished}
-                />
-                <OddsButton
-                  label="Under 5.5"
-                  value={`×${underOdds}`}
-                  active={selectedBet?.type === 'total_under'}
-                  onClick={() => handleSelectBet('total_under', 'Under 5.5 Goals', parseFloat(underOdds))}
-                  disabled={isFinished}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Stake Input */}
-          {selectedBet && (
-            <div className="bg-[#071018] rounded-lg border border-sb-blue/30 p-3 mt-2">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-sb-muted">Selected: <span className="text-sb-blue font-semibold">{selectedBet.label}</span></span>
-                <span className="text-xs text-sb-muted">Odds: <span className="text-white font-bold">×{selectedBet.odds}</span></span>
-              </div>
-              <div className="flex gap-2 items-center">
-                <div className="relative flex-1">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sb-muted font-bold">$</span>
-                  <input
-                    type="number"
-                    min="1"
-                    max={userBalance}
-                    value={stakeInput}
-                    onChange={e => setStakeInput(e.target.value)}
-                    placeholder="Stake"
-                    className="w-full bg-[#0a1822] border border-[#1e3040] rounded pl-7 pr-3 py-2 text-white text-sm focus:outline-none focus:border-sb-blue"
-                  />
-                </div>
-                {potentialPayout && (
-                  <div className="text-xs text-center">
-                    <div className="text-sb-muted">Win</div>
-                    <div className="text-green-400 font-bold">${potentialPayout}</div>
+          {betPlaced ? (
+            <p className="text-xs text-sb-muted text-center py-2">
+              You have already placed a bet on this game.
+            </p>
+          ) : (
+            <>
+              <div className="flex gap-2 mb-3">
+                <div className="flex-1">
+                  <div className="text-[10px] text-sb-muted uppercase tracking-widest mb-1.5">Moneyline</div>
+                  <div className="flex gap-2">
+                    <OddsButton
+                      label={awayTeam.abbreviation}
+                      value={`×${awayOdds}`}
+                      active={selectedBet?.type === 'ml_away'}
+                      onClick={() => handleSelectBet('ml_away', `${awayTeam.displayName} ML`, parseFloat(awayOdds))}
+                      disabled={false}
+                    />
+                    <OddsButton
+                      label={homeTeam.abbreviation}
+                      value={`×${homeOdds}`}
+                      active={selectedBet?.type === 'ml_home'}
+                      onClick={() => handleSelectBet('ml_home', `${homeTeam.displayName} ML`, parseFloat(homeOdds))}
+                      disabled={false}
+                    />
                   </div>
-                )}
-                <button
-                  onClick={handlePlaceBet}
-                  disabled={!stakeInput || parseFloat(stakeInput) <= 0 || parseFloat(stakeInput) > userBalance}
-                  className="bg-sb-blue text-sb-dark font-bold px-4 py-2 rounded text-sm hover:bg-sb-blue-light transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  Place Bet
-                </button>
+                </div>
+                <div className="flex-1">
+                  <div className="text-[10px] text-sb-muted uppercase tracking-widest mb-1.5">Total Goals</div>
+                  <div className="flex gap-2">
+                    <OddsButton
+                      label="Over 5.5"
+                      value={`×${overOdds}`}
+                      active={selectedBet?.type === 'total_over'}
+                      onClick={() => handleSelectBet('total_over', 'Over 5.5 Goals', parseFloat(overOdds))}
+                      disabled={false}
+                    />
+                    <OddsButton
+                      label="Under 5.5"
+                      value={`×${underOdds}`}
+                      active={selectedBet?.type === 'total_under'}
+                      onClick={() => handleSelectBet('total_under', 'Under 5.5 Goals', parseFloat(underOdds))}
+                      disabled={false}
+                    />
+                  </div>
+                </div>
               </div>
-              {parseFloat(stakeInput) > userBalance && (
-                <p className="text-sb-error text-xs mt-1">Insufficient balance</p>
+
+              {/* Stake Input */}
+              {selectedBet && (
+                <div className="bg-[#071018] rounded-lg border border-sb-blue/30 p-3 mt-2">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs text-sb-muted">Selected: <span className="text-sb-blue font-semibold">{selectedBet.label}</span></span>
+                    <span className="text-xs text-sb-muted">Odds: <span className="text-white font-bold">×{selectedBet.odds}</span></span>
+                  </div>
+                  <div className="flex gap-2 items-center">
+                    <div className="relative flex-1">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sb-muted font-bold">$</span>
+                      <input
+                        type="number"
+                        min="1"
+                        max={userBalance}
+                        value={stakeInput}
+                        onChange={e => setStakeInput(e.target.value)}
+                        placeholder="Stake"
+                        className="w-full bg-[#0a1822] border border-[#1e3040] rounded pl-7 pr-3 py-2 text-white text-sm focus:outline-none focus:border-sb-blue"
+                      />
+                    </div>
+                    {potentialPayout && (
+                      <div className="text-xs text-center">
+                        <div className="text-sb-muted">Win</div>
+                        <div className="text-green-400 font-bold">${potentialPayout}</div>
+                      </div>
+                    )}
+                    <button
+                      onClick={handlePlaceBet}
+                      disabled={!stakeInput || parseFloat(stakeInput) <= 0 || parseFloat(stakeInput) > userBalance}
+                      className="bg-sb-blue text-sb-dark font-bold px-4 py-2 rounded text-sm hover:bg-sb-blue-light transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      Place Bet
+                    </button>
+                  </div>
+                  {parseFloat(stakeInput) > userBalance && (
+                    <p className="text-sb-error text-xs mt-1">Insufficient balance</p>
+                  )}
+                </div>
               )}
-            </div>
+            </>
           )}
         </div>
       )}
@@ -235,10 +241,12 @@ export default function Hockey() {
   const [games, setGames] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [filter, setFilter] = useState('all'); // 'all' | 'live' | 'upcoming' | 'finished'
+  const [filter, setFilter] = useState('all');
   const [recentBets, setRecentBets] = useState([]);
   const [balance, setBalance] = useState(user?.balance ?? 1000);
   const [toast, setToast] = useState(null);
+  // Track which game IDs have already been bet on this session
+  const [bettedGames, setBettedGames] = useState(new Set());
 
   useEffect(() => {
     fetchGames();
@@ -265,6 +273,10 @@ export default function Hockey() {
     showToast(`Bet placed: ${betInfo.label} · $${betInfo.stake} to win $${betInfo.payout}`);
   }
 
+  function handleBetPlaced(gameId) {
+    setBettedGames(prev => new Set([...prev, gameId]));
+  }
+
   function showToast(msg) {
     setToast(msg);
     window.setTimeout(() => setToast(null), 4000);
@@ -284,7 +296,7 @@ export default function Hockey() {
     <div className="max-w-4xl mx-auto">
       {/* Toast */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 bg-sb-dark border border-sb-blue/50 text-sb-blue px-5 py-3 rounded-xl shadow-2xl text-sm font-semibold animate-auth-spin" style={{ animation: 'none' }}>
+        <div className="fixed bottom-6 right-6 z-50 bg-sb-dark border border-sb-blue/50 text-sb-blue px-5 py-3 rounded-xl shadow-2xl text-sm font-semibold">
           ✓ {toast}
         </div>
       )}
@@ -375,6 +387,8 @@ export default function Hockey() {
           game={game}
           onBet={handleBet}
           userBalance={balance}
+          betPlaced={bettedGames.has(game.id)}
+          onBetPlaced={handleBetPlaced}
         />
       ))}
     </div>
