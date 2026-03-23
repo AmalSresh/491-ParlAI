@@ -6,9 +6,12 @@ import Dashboard from './pages/dashboard';
 import HowToPlay from './pages/HowToPlay';
 import Support from './pages/support';
 import Onboarding from './pages/onboarding';
+import Settings from './pages/Settings';
+import Profile from './pages/Profile';
 import ProtectedRoute from './components/ProtectedRoute';
 import NFLBets from './pages/NFLBets';
 import SoccerPage from './pages/SoccerPage';
+
 import Games from './pages/Games';
 import Players from './pages/Players';
 import MyBets from './pages/MyBets';
@@ -64,6 +67,22 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute>
             <Dashboard />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'settings',
+        element: (
+          <ProtectedRoute>
+            <Settings />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'profile',
+        element: (
+          <ProtectedRoute>
+            <Profile />
           </ProtectedRoute>
         ),
       },
