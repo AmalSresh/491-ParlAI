@@ -1,10 +1,9 @@
-import { app } from "@azure/functions";
-import sql from "mssql";
-import { poolPromise } from "../../components/db-connect.js";
-app.http("teams", {
-  methods: ["GET"],
-  route: "teams",
-  authLevel: "anonymous",
+import { app } from '@azure/functions';
+import { poolPromise } from '../../components/db-connect.js';
+app.http('teams', {
+  methods: ['GET'],
+  route: 'teams',
+  authLevel: 'anonymous',
   handler: async (request, context) => {
     try {
       const pool = await poolPromise;
@@ -21,8 +20,8 @@ app.http("teams", {
         jsonBody: result.recordset,
       };
     } catch (error) {
-      context.error("Error fetching teams:", error);
-      return { status: 500, jsonBody: { error: "Internal Server Error" } };
+      context.error('Error fetching teams:', error);
+      return { status: 500, jsonBody: { error: 'Internal Server Error' } };
     }
   },
 });

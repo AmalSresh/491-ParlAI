@@ -4,6 +4,9 @@
   "description": "",
   "main": "src/functions/*.js",
   "scripts": {
+    "lint": "eslint .",
+    "format": "prettier --check .",
+    "format:fix": "prettier --write .",
     "start-azurite": "azurite --silent --location ./.azurite --debug ./.azurite/debug.log",
     "start-api": "func start",
     "start": "concurrently \"npm run start-azurite\" \"npm run start-api\"",
@@ -23,6 +26,10 @@
     "yamljs": "^0.3.0"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.0.3",
+    "globals": "^17.4.0",
+    "prettier": "^3.8.1",
     "azurite": "^3.12.0",
     "concurrently": "^9.2.1"
   }
