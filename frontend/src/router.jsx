@@ -9,9 +9,9 @@ import Onboarding from './pages/onboarding';
 import Settings from './pages/Settings';
 import Profile from './pages/Profile';
 import ProtectedRoute from './components/ProtectedRoute';
+import NFLBets from './pages/NFLBets';
 import SoccerPage from './pages/SoccerPage';
 
-// ⭐ Placeholder pages
 import Games from './pages/Games';
 import Players from './pages/Players';
 import MyBets from './pages/MyBets';
@@ -22,13 +22,10 @@ const router = createBrowserRouter([
     path: '/',
     element: <App />,
     children: [
-      // Home page
       {
         index: true,
         element: <Home />,
       },
-
-      // Placeholder pages
       {
         path: 'games',
         element: <Games />,
@@ -49,8 +46,6 @@ const router = createBrowserRouter([
         path: 'bets',
         element: <MyBets />,
       },
-
-      // Existing pages
       {
         path: 'login',
         element: <Login />,
@@ -95,8 +90,10 @@ const router = createBrowserRouter([
         path: 'soccer',
         element: <SoccerPage />,
       },
-
-      // Catch-all route for unknown pages
+      {
+        path: 'nfl',
+        element: <NFLBets />,
+      },
       {
         path: '*',
         element: <NotFound />,
