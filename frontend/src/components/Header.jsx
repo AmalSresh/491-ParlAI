@@ -41,6 +41,19 @@ export default function Header() {
                   Dashboard
                 </Link>
               )}
+              {user.onboardingStage > 0 && (
+                <Link to="/profile" className="hover:text-sb-blue-light">
+                  Profile
+                </Link>
+              )}
+              {user.onboardingStage > 0 && (
+                <Link
+                  to="/settings"
+                  className="rounded-lg border border-sb-blue px-3 py-1 text-sm font-semibold text-sb-blue-light hover:bg-sb-blue/20"
+                >
+                  Settings
+                </Link>
+              )}
               <button
                 type="button"
                 onClick={logout}
