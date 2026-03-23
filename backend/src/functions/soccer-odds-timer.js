@@ -1,24 +1,24 @@
-import { app } from "@azure/functions";
-import sql from "mssql";
-import axios from "axios";
+import { app } from '@azure/functions';
+import sql from 'mssql';
+import axios from 'axios';
 
-import { poolPromise } from "../../components/db-connect.js";
+import { poolPromise } from '../../components/db-connect.js';
 
 // Helper to strip out spaces, "and", "&" for perfect matching in the database
 function normalizeName(name) {
-  if (!name) return "";
+  if (!name) return '';
   return name
     .toLowerCase()
-    .replace(/ and | & /g, "")
-    .replace(/[^a-z]/g, "");
+    .replace(/ and | & /g, '')
+    .replace(/[^a-z]/g, '');
 }
 
 // READ-ONLY: Only fetches the League. Will NOT create it.
 async function getLeague(pool, leagueName) {
   let res = await pool
     .request()
-    .input("name", sql.NVarChar, leagueName)
-    .query("SELECT id FROM leagues WHERE name = @name");
+    .input('name', sql.NVarChar, leagueName)
+    .query('SELECT id FROM leagues WHERE name = @name');
 
   if (res.recordset.length > 0) return res.recordset[0].id;
   return null; // Return null if ESPN hasn't created it yet
@@ -31,7 +31,7 @@ async function getTeam(pool, teamName) {
 
   let res = await pool
     .request()
-    .input("normalizedName", sql.NVarChar, normalizedInput).query(`
+    .input('normalizedName', sql.NVarChar, normalizedInput).query(`
       SELECT id 
       FROM teams 
       WHERE 
@@ -58,18 +58,18 @@ async function getOrCreateEvent(
 ) {
   let res = await pool
     .request()
-    .input("apiId", sql.VarChar, apiId)
-    .query("SELECT id FROM events WHERE api_id = @apiId");
+    .input('apiId', sql.VarChar, apiId)
+    .query('SELECT id FROM events WHERE api_id = @apiId');
 
   if (res.recordset.length > 0) return res.recordset[0].id;
 
   res = await pool
     .request()
-    .input("leagueId", sql.Int, leagueId)
-    .input("homeTeamId", sql.Int, homeTeamId)
-    .input("awayTeamId", sql.Int, awayTeamId)
-    .input("startTime", sql.DateTime2, new Date(startTime))
-    .input("apiId", sql.VarChar, apiId).query(`
+    .input('leagueId', sql.Int, leagueId)
+    .input('homeTeamId', sql.Int, homeTeamId)
+    .input('awayTeamId', sql.Int, awayTeamId)
+    .input('startTime', sql.DateTime2, new Date(startTime))
+    .input('apiId', sql.VarChar, apiId).query(`
       INSERT INTO events (league_id, home_team_id, away_team_id, start_time, status, api_id) 
       OUTPUT INSERTED.id 
       VALUES (@leagueId, @homeTeamId, @awayTeamId, @startTime, 'scheduled', @apiId)
@@ -81,17 +81,17 @@ async function getOrCreateEvent(
 async function getOrCreateMarket(pool, eventId, type) {
   let res = await pool
     .request()
-    .input("eventId", sql.BigInt, eventId)
-    .input("type", sql.VarChar, type)
-    .query("SELECT id FROM markets WHERE event_id = @eventId AND type = @type");
+    .input('eventId', sql.BigInt, eventId)
+    .input('type', sql.VarChar, type)
+    .query('SELECT id FROM markets WHERE event_id = @eventId AND type = @type');
   if (res.recordset.length > 0) return res.recordset[0].id;
 
   res = await pool
     .request()
-    .input("eventId", sql.BigInt, eventId)
-    .input("type", sql.VarChar, type)
+    .input('eventId', sql.BigInt, eventId)
+    .input('type', sql.VarChar, type)
     .query(
-      "INSERT INTO markets (event_id, type) OUTPUT INSERTED.id VALUES (@eventId, @type)",
+      'INSERT INTO markets (event_id, type) OUTPUT INSERTED.id VALUES (@eventId, @type)',
     );
   return res.recordset[0].id;
 }
@@ -100,31 +100,31 @@ async function getOrCreateMarket(pool, eventId, type) {
 async function upsertSelection(pool, marketId, label, odds, lineValue) {
   let res = await pool
     .request()
-    .input("marketId", sql.BigInt, marketId)
-    .input("label", sql.NVarChar, label)
+    .input('marketId', sql.BigInt, marketId)
+    .input('label', sql.NVarChar, label)
     .query(
-      "SELECT id FROM selections WHERE market_id = @marketId AND label = @label",
+      'SELECT id FROM selections WHERE market_id = @marketId AND label = @label',
     );
 
   if (res.recordset.length > 0) {
     const selectionId = res.recordset[0].id;
     await pool
       .request()
-      .input("id", sql.BigInt, selectionId)
-      .input("odds", sql.Decimal(10, 4), odds)
-      .input("lineValue", sql.Decimal(10, 2), lineValue)
+      .input('id', sql.BigInt, selectionId)
+      .input('odds', sql.Decimal(10, 4), odds)
+      .input('lineValue', sql.Decimal(10, 2), lineValue)
       .query(
-        "UPDATE selections SET odds = @odds, line_value = @lineValue WHERE id = @id",
+        'UPDATE selections SET odds = @odds, line_value = @lineValue WHERE id = @id',
       );
     return selectionId;
   }
 
   res = await pool
     .request()
-    .input("marketId", sql.BigInt, marketId)
-    .input("label", sql.NVarChar, label)
-    .input("odds", sql.Decimal(10, 4), odds)
-    .input("lineValue", sql.Decimal(10, 2), lineValue).query(`
+    .input('marketId', sql.BigInt, marketId)
+    .input('label', sql.NVarChar, label)
+    .input('odds', sql.Decimal(10, 4), odds)
+    .input('lineValue', sql.Decimal(10, 2), lineValue).query(`
       INSERT INTO selections (market_id, label, odds, line_value) 
       OUTPUT INSERTED.id 
       VALUES (@marketId, @label, @odds, @lineValue)
@@ -132,16 +132,16 @@ async function upsertSelection(pool, marketId, label, odds, lineValue) {
   return res.recordset[0].id;
 }
 
-app.timer("ingestOddsTimer", {
-  schedule: "0 0 */4 * * *",
+app.timer('ingestOddsTimer', {
+  schedule: '0 0 */4 * * *',
   handler: async (myTimer, context) => {
-    context.log("Timer trigger executing at:", new Date().toISOString());
+    context.log('Timer trigger executing at:', new Date().toISOString());
 
     try {
       const pool = await poolPromise;
 
       // 1. Get the league FIRST so we only check soccer games!
-      const leagueName = "English Premier League";
+      const leagueName = 'English Premier League';
       const leagueId = await getLeague(pool, leagueName);
 
       if (!leagueId) {
@@ -154,7 +154,7 @@ app.timer("ingestOddsTimer", {
       // 2. Smart Gatekeeper: Only check upcoming games for THIS specific league
       const nextGameResult = await pool
         .request()
-        .input("leagueId", sql.Int, leagueId).query(`
+        .input('leagueId', sql.Int, leagueId).query(`
           SELECT MIN(start_time) as nextGameTime 
           FROM dbo.events 
           WHERE league_id = @leagueId 
@@ -170,18 +170,18 @@ app.timer("ingestOddsTimer", {
 
         if (new Date(nextGameTime) > threeDaysFromNow) {
           context.log(
-            "Gatekeeper: The next EPL game is more than 3 days away. Skipping API call.",
+            'Gatekeeper: The next EPL game is more than 3 days away. Skipping API call.',
           );
           return;
         }
         context.log(
-          "Upcoming EPL games found within 3 days. Fetching fresh odds...",
+          'Upcoming EPL games found within 3 days. Fetching fresh odds...',
         );
       } else {
         // Because you wiped League 700, nextGameTime will be null.
         // This correctly triggers the API to fetch the fresh schedule!
         context.log(
-          "No upcoming EPL games in the database. Fetching fresh schedule from API...",
+          'No upcoming EPL games in the database. Fetching fresh schedule from API...',
         );
       }
 
@@ -192,7 +192,7 @@ app.timer("ingestOddsTimer", {
       const apiGames = response.data;
 
       if (!apiGames || apiGames.length === 0) {
-        context.log("API returned 0 games. Exiting early.");
+        context.log('API returned 0 games. Exiting early.');
         return;
       }
 
@@ -226,11 +226,11 @@ app.timer("ingestOddsTimer", {
         // Add the odds for each game
         if (apiGame.bookmakers && apiGame.bookmakers.length > 0) {
           const bookmaker =
-            apiGame.bookmakers.find((b) => b.key === "lowvig") ||
+            apiGame.bookmakers.find((b) => b.key === 'lowvig') ||
             apiGame.bookmakers[0];
 
           for (const market of bookmaker.markets) {
-            if (!["h2h", "spreads", "totals"].includes(market.key)) continue;
+            if (!['h2h', 'spreads', 'totals'].includes(market.key)) continue;
 
             const marketId = await getOrCreateMarket(pool, eventId, market.key);
 
@@ -259,7 +259,7 @@ app.timer("ingestOddsTimer", {
             const propsBookmaker = propsData.bookmakers[0];
 
             for (const market of propsBookmaker.markets) {
-              if (market.key !== "player_goal_scorer_anytime") continue;
+              if (market.key !== 'player_goal_scorer_anytime') continue;
 
               const marketId = await getOrCreateMarket(
                 pool,
@@ -287,9 +287,9 @@ app.timer("ingestOddsTimer", {
           );
         }
       }
-      context.log("✅ Odds ingestion completed successfully.");
+      context.log('✅ Odds ingestion completed successfully.');
     } catch (error) {
-      context.error("❌ Error during odds ingestion:", error);
+      context.error('❌ Error during odds ingestion:', error);
     }
   },
 });
