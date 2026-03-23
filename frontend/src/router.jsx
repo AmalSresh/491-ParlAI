@@ -9,7 +9,6 @@ import Settings from './pages/Settings';
 import Profile from './pages/Profile';
 import ProtectedRoute from './components/ProtectedRoute';
 
-// ⭐ Add your new placeholder pages
 import NFLBets from './pages/NFLBets';
 import SoccerPage from './pages/SoccerPage';
 
