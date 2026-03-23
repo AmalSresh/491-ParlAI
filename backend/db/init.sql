@@ -118,3 +118,13 @@ CREATE NONCLUSTERED INDEX IX_bets_selection_id ON bets(selection_id);
 CREATE NONCLUSTERED INDEX IX_events_status ON events(status);
 CREATE NONCLUSTERED INDEX IX_bets_status ON bets(status);
 
+-- NFL Players table
+-- Stores player info fetched from Sleeper API
+CREATE TABLE nfl_players (
+    id          INT IDENTITY(1,1) PRIMARY KEY,
+    sleeper_id  NVARCHAR(50)  NOT NULL UNIQUE,
+    name        NVARCHAR(255) NOT NULL,
+    position    NVARCHAR(10)  NOT NULL,
+    team        NVARCHAR(10)  NOT NULL,
+    created_at  DATETIME2     NOT NULL DEFAULT SYSDATETIME()
+);
