@@ -1,11 +1,11 @@
-import { app } from "@azure/functions";
-import sql from "mssql";
-import axios from "axios";
-import { poolPromise } from "../../components/db-connect.js";
+import { app } from '@azure/functions';
+import sql from 'mssql';
+import axios from 'axios';
+import { poolPromise } from '../../components/db-connect.js';
 
 const espnToOddsApiMap = {
-  "AFC Bournemouth": "Bournemouth",
-  "Brighton & Hove Albion": "Brighton and Hove Albion",
+  'AFC Bournemouth': 'Bournemouth',
+  'Brighton & Hove Albion': 'Brighton and Hove Albion',
 };
 
 // checks active games for the gatekeeper function
@@ -23,9 +23,9 @@ async function getActiveGamesCount(pool) {
 async function findEventByTeams(pool, homeName, awayName, startTime) {
   const result = await pool
     .request()
-    .input("homeName", sql.NVarChar, homeName)
-    .input("awayName", sql.NVarChar, awayName)
-    .input("startTime", sql.DateTime2, new Date(startTime)).query(`
+    .input('homeName', sql.NVarChar, homeName)
+    .input('awayName', sql.NVarChar, awayName)
+    .input('startTime', sql.DateTime2, new Date(startTime)).query(`
       SELECT e.id, e.status 
       FROM dbo.events e
       JOIN dbo.teams h ON e.home_team_id = h.id
@@ -44,10 +44,10 @@ async function findEventByTeams(pool, homeName, awayName, startTime) {
 async function updateEventScore(pool, eventId, homeScore, awayScore, status) {
   await pool
     .request()
-    .input("eventId", sql.VarChar, eventId)
-    .input("homeScore", sql.Int, homeScore)
-    .input("awayScore", sql.Int, awayScore)
-    .input("status", sql.VarChar, status).query(`
+    .input('eventId', sql.VarChar, eventId)
+    .input('homeScore', sql.Int, homeScore)
+    .input('awayScore', sql.Int, awayScore)
+    .input('status', sql.VarChar, status).query(`
       UPDATE dbo.events 
       SET home_score = @homeScore, 
           away_score = @awayScore, 
@@ -56,10 +56,10 @@ async function updateEventScore(pool, eventId, homeScore, awayScore, status) {
     `);
 }
 
-app.timer("ingestScoresTimer", {
-  schedule: "0 */5 * * * *", // Every 5 minutes
+app.timer('ingestScoresTimer', {
+  schedule: '0 */5 * * * *', // Every 5 minutes
   handler: async (myTimer, context) => {
-    context.log("Checking for live games to update scores via ESPN...");
+    context.log('Checking for live games to update scores via ESPN...');
 
     try {
       const pool = await poolPromise;
@@ -67,13 +67,13 @@ app.timer("ingestScoresTimer", {
       // 1. Only run whole function if there is a live game
       const activeCount = await getActiveGamesCount(pool);
       if (activeCount === 0) {
-        context.log("Gatekeeper: No live games right now. Skipping ESPN call.");
+        context.log('Gatekeeper: No live games right now. Skipping ESPN call.');
         return;
       }
 
       // 2. Fetch latest scores
       const espnUrl =
-        "https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard";
+        'https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard';
       const response = await axios.get(espnUrl);
       const espnEvents = response.data.events;
 
@@ -83,8 +83,8 @@ app.timer("ingestScoresTimer", {
       for (const espnGame of espnEvents) {
         const competitors = espnGame.competitions[0].competitors;
 
-        const homeTeamObj = competitors.find((c) => c.homeAway === "home");
-        const awayTeamObj = competitors.find((c) => c.homeAway === "away");
+        const homeTeamObj = competitors.find((c) => c.homeAway === 'home');
+        const awayTeamObj = competitors.find((c) => c.homeAway === 'away');
 
         const rawHomeName = homeTeamObj.team.name;
         const rawAwayName = awayTeamObj.team.name;
@@ -100,17 +100,17 @@ app.timer("ingestScoresTimer", {
         );
 
         if (!dbEvent) continue;
-        if (dbEvent.status === "completed") continue;
+        if (dbEvent.status === 'completed') continue;
 
         // 5. Parse status and scores from API response
         const isCompleted = espnGame.status.type.completed;
-        const newStatus = isCompleted ? "completed" : "in_progress";
+        const newStatus = isCompleted ? 'completed' : 'in_progress';
 
         const homeScore = parseInt(homeTeamObj.score, 10);
         const awayScore = parseInt(awayTeamObj.score, 10);
 
         // 6. Update score and status in the events table
-        if (espnGame.status.type.state !== "pre") {
+        if (espnGame.status.type.state !== 'pre') {
           await updateEventScore(
             pool,
             dbEvent.id,
@@ -125,7 +125,7 @@ app.timer("ingestScoresTimer", {
         }
       }
     } catch (error) {
-      context.error("Error during ESPN scores ingestion:", error);
+      context.error('Error during ESPN scores ingestion:', error);
     }
   },
 });
