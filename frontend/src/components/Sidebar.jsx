@@ -5,7 +5,11 @@ export default function Sidebar() {
     <aside className="sidebar">
       <h2 className="sidebar-title">Leagues</h2>
       <ul className="sidebar-list">
-        <li>🏀 NBA</li>
+        <li>
+          <Link to="/nba" className="no-underline">
+            🏀 NBA
+          </Link>
+        </li>
         <li>
           <Link to="/nfl" className="hover:text-sb-blue-light">
             🏈 NFL
