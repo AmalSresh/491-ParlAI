@@ -9,26 +9,18 @@ test("renders sidebar title", () => {
     </MemoryRouter>
   );
   expect(screen.getByText("Leagues")).toBeInTheDocument();
-  expect(await screen.findByText('Leagues')).toBeInTheDocument();
 });
 
-test("renders all league items", azure () => {
+test("renders all league items", async () => {
   render(
     <MemoryRouter>
       <Sidebar />
     </MemoryRouter>
   );
   const leagues = ["NBA", "NFL", "MLB", "NHL", "MLS", "Tennis", "UFC"];
-  leagues.forEach((league) => {
-    expect(screen.getAllByText(new RegExp(league, "i"))[0]).toBeInTheDocument();
-  });
-});
-
-  const leagues = ['NBA', 'NFL', 'MLB', 'NHL', 'Soccer', 'Tennis', 'UFC'];
-
   for (const league of leagues) {
     expect(
-      await screen.findByText(new RegExp(league, 'i')),
-    ).toBeInTheDocument();
+      await screen.findAllByText(new RegExp(league, "i"))
+    ).not.toHaveLength(0);
   }
 });
