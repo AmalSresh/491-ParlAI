@@ -4,16 +4,20 @@ import Login from './pages/login';
 import Home from './pages/home';
 import Dashboard from './pages/dashboard';
 import HowToPlay from './pages/HowToPlay';
-import Support from './pages/support';
 import Onboarding from './pages/onboarding';
+import Settings from './pages/Settings';
+import Profile from './pages/Profile';
 import ProtectedRoute from './components/ProtectedRoute';
 import NFLBets from './pages/NFLBets';
 import SoccerPage from './pages/SoccerPage';
 import Games from './pages/Games';
 import Players from './pages/Players';
 import MyBets from './pages/MyBets';
+import NBABets from './pages/NBABets';
 import NotFound from './pages/NotFound';
 import MLBBets from './pages/MLBBets';
+import Hockey from './pages/Hockey';
+import Support from './pages/Support';
 
 const router = createBrowserRouter([
   {
@@ -29,20 +33,24 @@ const router = createBrowserRouter([
         element: <Games />,
       },
       {
-        path: 'support',
-        element: (
-          <ProtectedRoute>
-            <Support />
-          </ProtectedRoute>
-        ),
-      },
-      {
         path: 'players',
         element: <Players />,
       },
       {
         path: 'bets',
         element: <MyBets />,
+      },
+      {
+        path: 'hockey',
+        element: <Hockey />,
+      },
+      {
+        path: 'support',
+        element: <Support />,
+      },
+      {
+        path: 'nba',
+        element: <NBABets />,
       },
       {
         path: 'login',
@@ -69,6 +77,22 @@ const router = createBrowserRouter([
         ),
       },
       {
+        path: 'settings',
+        element: (
+          <ProtectedRoute>
+            <Settings />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'profile',
+        element: (
+          <ProtectedRoute>
+            <Profile />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: 'soccer',
         element: <SoccerPage />,
       },
@@ -77,12 +101,12 @@ const router = createBrowserRouter([
         element: <NFLBets />,
       },
       {
-        path: '*',
-        element: <NotFound />,
-      },
-      {
         path: 'mlb',
         element: <MLBBets />,
+      },
+      {
+        path: '*',
+        element: <NotFound />,
       },
     ],
   },
