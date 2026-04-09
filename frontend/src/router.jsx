@@ -13,6 +13,7 @@ import Games from './pages/Games';
 import Players from './pages/Players';
 import MyBets from './pages/MyBets';
 import NotFound from './pages/NotFound';
+import MLBBets from './pages/MLBBets';
 
 const router = createBrowserRouter([
   {
@@ -78,6 +79,10 @@ const router = createBrowserRouter([
       {
         path: '*',
         element: <NotFound />,
+      },
+      {
+        path: 'mlb',
+        element: <MLBBets />,
       },
     ],
   },
