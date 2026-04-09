@@ -155,7 +155,6 @@ export default function NBABets() {
         if (!alive) return;
         setError("Failed to load NBA matchups from ESPN.");
       } finally {
-        if (!alive) return;
         setLoading(false);
       }
     }

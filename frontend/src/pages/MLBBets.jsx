@@ -304,8 +304,7 @@ export default function MLBBets() {
   const [balance,    setBalance]    = useState(user?.balance ?? 1000);
   const [recentBets, setRecentBets] = useState([]);
   const [placedBets, setPlacedBets] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('mlb_placed_bets') || '[]'); }
-    catch { return []; }
+    try { return JSON.parse(window.localStorage.getItem('mlb_placed_bets') || '[]'); }    catch { return []; }
   });
   const [pendingBet, setPendingBet] = useState(null);
   const [toast,      setToast]      = useState(null);
@@ -337,8 +336,7 @@ export default function MLBBets() {
     setBalance(prev => prev - stake);
     const newPlaced = [...placedBets, bet.gameId];
     setPlacedBets(newPlaced);
-    try { localStorage.setItem('mlb_placed_bets', JSON.stringify(newPlaced)); } catch {}
-    setRecentBets(prev => [bet, ...prev].slice(0, 5));
+    try { window.localStorage.setItem('mlb_placed_bets', JSON.stringify(newPlaced)); } catch (e) { console.warn(e); }    setRecentBets(prev => [bet, ...prev].slice(0, 5));
     setPendingBet(null);
     setToast(`✅ Bet placed!\n${bet.label}\nStake: $${stake} · To win: $${payout.toFixed(2)}`);
   }
