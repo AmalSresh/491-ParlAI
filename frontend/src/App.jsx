@@ -3,6 +3,8 @@ import Sidebar from './components/Sidebar';
 import { useAuth } from './context/AuthContext';
 import Header from './components/Header';
 import Footer from './components/Footer';
+import ChatWidget from './components/ChatWidget';
+
 
 export default function App() {
   const { user } = useAuth();
@@ -28,6 +30,7 @@ export default function App() {
         </main>
       </div>
       <Footer />
+      <ChatWidget />
     </div>
   );
 }
