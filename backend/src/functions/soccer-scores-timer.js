@@ -3,39 +3,98 @@ import sql from 'mssql';
 import axios from 'axios';
 import { poolPromise } from '../../components/db-connect.js';
 
-const espnToOddsApiMap = {
-  'AFC Bournemouth': 'Bournemouth',
-  'Brighton & Hove Albion': 'Brighton and Hove Albion',
-};
+import { gradeEventSelections } from '../../evaluation/globalGrading.js';
 
-// checks active games for the gatekeeper function
-async function getActiveGamesCount(pool) {
-  const result = await pool.request().query(`
-    SELECT COUNT(id) as activeCount 
-    FROM dbo.events 
-    WHERE start_time <= SYSDATETIME() 
-      AND status != 'completed'
-  `);
-  return result.recordset[0].activeCount;
+// Same normalization as soccer-odds-timer so ESPN scoreboard names resolve to the
+// same team rows as Odds API names (e.g. "AFC Bournemouth" vs "Bournemouth").
+function normalizeName(name) {
+  if (!name) return '';
+  return name
+    .toLowerCase()
+    .replace(/ and | & /g, '')
+    .replace(/[^a-z]/g, '');
 }
 
-// Find the a specific match based on the home/away team along with the game's start time
-async function findEventByTeams(pool, homeName, awayName, startTime) {
+async function getTeamId(pool, teamName) {
+  const normalizedInput = normalizeName(teamName);
+  const res = await pool
+    .request()
+    .input('normalizedName', sql.NVarChar, normalizedInput).query(`
+      SELECT id 
+      FROM teams 
+      WHERE 
+        REPLACE(LOWER(REPLACE(REPLACE(name, ' and ', ''), ' & ', '')), ' ', '') LIKE '%' + @normalizedName + '%'
+        OR 
+        @normalizedName LIKE '%' + REPLACE(LOWER(REPLACE(REPLACE(name, ' and ', ''), ' & ', '')), ' ', '') + '%'
+    `);
+  if (res.recordset.length > 0) return res.recordset[0].id;
+  return null;
+}
+
+const EPL_LEAGUE_NAME = 'English Premier League';
+
+/** Run score sync when EPL has any match that kicked off in the last 3 days (live, final, or missing scores). */
+async function hasRecentOrLiveEplScoresToSync(pool) {
   const result = await pool
     .request()
-    .input('homeName', sql.NVarChar, homeName)
-    .input('awayName', sql.NVarChar, awayName)
-    .input('startTime', sql.DateTime2, new Date(startTime)).query(`
+    .input('leagueName', sql.NVarChar, EPL_LEAGUE_NAME).query(`
+    SELECT COUNT(*) AS cnt
+    FROM dbo.events e
+    INNER JOIN dbo.leagues l ON e.league_id = l.id
+    WHERE l.name = @leagueName
+      AND e.start_time <= SYSUTCDATETIME()
+      AND e.start_time >= DATEADD(day, -3, SYSUTCDATETIME())
+  `);
+  return result.recordset[0].cnt > 0;
+}
+
+function formatEspnDateUtc(d) {
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(d.getUTCDate()).padStart(2, '0');
+  return `${y}${m}${day}`;
+}
+
+/** ESPN scoreboard is date-scoped; pull today and the previous two UTC days so finals from the last 3 days are included. */
+async function fetchEplScoreboardEvents() {
+  const merged = [];
+  const seenIds = new Set();
+
+  for (let dayOffset = 0; dayOffset < 3; dayOffset++) {
+    const d = new Date();
+    d.setUTCDate(d.getUTCDate() - dayOffset);
+    const dates = formatEspnDateUtc(d);
+    const url = `https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard?dates=${dates}`;
+    const response = await axios.get(url);
+    const batch = response.data?.events || [];
+    for (const ev of batch) {
+      if (ev?.id != null && !seenIds.has(ev.id)) {
+        seenIds.add(ev.id);
+        merged.push(ev);
+      }
+    }
+  }
+
+  return merged;
+}
+
+// Find a match using the same home/away team IDs as soccer-odds-timer (fuzzy team match + kickoff date).
+async function findEventByTeamIds(pool, homeTeamId, awayTeamId, startTime) {
+  const result = await pool
+    .request()
+    .input('homeTeamId', sql.Int, homeTeamId)
+    .input('awayTeamId', sql.Int, awayTeamId)
+    .input('startTime', sql.DateTime2, new Date(startTime))
+    .input('leagueName', sql.NVarChar, EPL_LEAGUE_NAME).query(`
       SELECT e.id, e.status 
       FROM dbo.events e
-      JOIN dbo.teams h ON e.home_team_id = h.id
-      JOIN dbo.teams a ON e.away_team_id = a.id
-      WHERE h.name = @homeName 
-        AND a.name = @awayName 
+      INNER JOIN dbo.leagues l ON e.league_id = l.id
+      WHERE l.name = @leagueName
+        AND e.home_team_id = @homeTeamId 
+        AND e.away_team_id = @awayTeamId 
         AND CAST(e.start_time AS DATE) = CAST(@startTime AS DATE)
     `);
 
-  // Return the event object if found, otherwise return null
   if (result.recordset.length > 0) return result.recordset[0];
   return null;
 }
@@ -44,7 +103,7 @@ async function findEventByTeams(pool, homeName, awayName, startTime) {
 async function updateEventScore(pool, eventId, homeScore, awayScore, status) {
   await pool
     .request()
-    .input('eventId', sql.VarChar, eventId)
+    .input('eventId', sql.BigInt, eventId)
     .input('homeScore', sql.Int, homeScore)
     .input('awayScore', sql.Int, awayScore)
     .input('status', sql.VarChar, status).query(`
@@ -59,23 +118,22 @@ async function updateEventScore(pool, eventId, homeScore, awayScore, status) {
 app.timer('ingestScoresTimer', {
   schedule: '0 */5 * * * *', // Every 5 minutes
   handler: async (myTimer, context) => {
-    context.log('Checking for live games to update scores via ESPN...');
+    context.log(
+      'Checking EPL scoreboard (last 3 UTC days + live) for DB sync via ESPN...',
+    );
 
     try {
       const pool = await poolPromise;
 
-      // 1. Only run whole function if there is a live game
-      const activeCount = await getActiveGamesCount(pool);
-      if (activeCount === 0) {
-        context.log('Gatekeeper: No live games right now. Skipping ESPN call.');
+      const shouldSync = await hasRecentOrLiveEplScoresToSync(pool);
+      if (!shouldSync) {
+        context.log(
+          'Gatekeeper: No EPL events kicked off in the last 3 days. Skipping ESPN call.',
+        );
         return;
       }
 
-      // 2. Fetch latest scores
-      const espnUrl =
-        'https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard';
-      const response = await axios.get(espnUrl);
-      const espnEvents = response.data.events;
+      const espnEvents = await fetchEplScoreboardEvents();
 
       if (!espnEvents || espnEvents.length === 0) return;
 
@@ -89,18 +147,18 @@ app.timer('ingestScoresTimer', {
         const rawHomeName = homeTeamObj.team.name;
         const rawAwayName = awayTeamObj.team.name;
 
-        const mappedHomeName = espnToOddsApiMap[rawHomeName] || rawHomeName;
-        const mappedAwayName = espnToOddsApiMap[rawAwayName] || rawAwayName;
+        const homeTeamId = await getTeamId(pool, rawHomeName);
+        const awayTeamId = await getTeamId(pool, rawAwayName);
+        if (!homeTeamId || !awayTeamId) continue;
 
-        const dbEvent = await findEventByTeams(
+        const dbEvent = await findEventByTeamIds(
           pool,
-          mappedHomeName,
-          mappedAwayName,
+          homeTeamId,
+          awayTeamId,
           espnGame.date,
         );
 
         if (!dbEvent) continue;
-        if (dbEvent.status === 'completed') continue;
 
         // 5. Parse status and scores from API response
         const isCompleted = espnGame.status.type.completed;
@@ -108,6 +166,10 @@ app.timer('ingestScoresTimer', {
 
         const homeScore = parseInt(homeTeamObj.score, 10);
         const awayScore = parseInt(awayTeamObj.score, 10);
+
+        // 🎯 THE GATEKEEPER: Check if the game JUST finished this exact minute
+        const isNewlyCompleted =
+          newStatus === 'completed' && dbEvent.status !== 'completed';
 
         // 6. Update score and status in the events table
         if (espnGame.status.type.state !== 'pre') {
@@ -120,8 +182,35 @@ app.timer('ingestScoresTimer', {
           );
 
           context.log(
-            `✅ Updated: ${mappedHomeName} ${homeScore} - ${awayScore} ${mappedAwayName} (${newStatus})`,
+            `✅ Updated: ${rawHomeName} ${homeScore} - ${awayScore} ${rawAwayName} (${newStatus})`,
           );
+
+          // 7. 💰 TRIGGER SETTLEMENT & PAYOUTS
+          if (isNewlyCompleted) {
+            context.log(
+              `🏁 Match Finalized: ${rawHomeName} vs ${rawAwayName}. Starting Grading...`,
+            );
+
+            try {
+              // Grade all the selections for this event
+              await gradeEventSelections(
+                pool,
+                dbEvent.id,
+                'soccer',
+                homeScore,
+                awayScore,
+                rawHomeName,
+                rawAwayName,
+              );
+
+              context.log(`🏆 Settlement Complete for Event: ${dbEvent.id}`);
+            } catch (gradeError) {
+              context.error(
+                `❌ Critical Error grading event ${dbEvent.id}:`,
+                gradeError,
+              );
+            }
+          }
         }
       }
     } catch (error) {

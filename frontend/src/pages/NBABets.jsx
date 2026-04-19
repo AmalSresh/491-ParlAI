@@ -1,39 +1,46 @@
-import { useEffect, useMemo, useState } from "react";
-import { fetchNbaScoreboardWeek, getNbaWeekDateKeys } from "../api/nba/nbaBetsClient";
+import { useEffect, useMemo, useState } from 'react';
+import {
+  fetchNbaScoreboardWeek,
+  getNbaWeekDateKeys,
+} from '../api/nba/nbaBetsClient';
 
 function formatKickoff(iso) {
-  if (!iso) return "—";
+  if (!iso) return '—';
   const dt = new Date(iso);
-  if (Number.isNaN(dt.getTime())) return "—";
-  return dt.toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" });
+  if (Number.isNaN(dt.getTime())) return '—';
+  return dt.toLocaleString(undefined, {
+    weekday: 'short',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
 }
 
 function formatDayHeading(iso) {
-  if (!iso) return "Date TBA";
+  if (!iso) return 'Date TBA';
   const dt = new Date(iso);
-  if (Number.isNaN(dt.getTime())) return "Date TBA";
+  if (Number.isNaN(dt.getTime())) return 'Date TBA';
   return dt.toLocaleDateString(undefined, {
-    weekday: "long",
-    month: "short",
-    day: "numeric",
+    weekday: 'long',
+    month: 'short',
+    day: 'numeric',
   });
 }
 
 function daySortKey(iso) {
-  if (!iso) return "";
+  if (!iso) return '';
   const dt = new Date(iso);
-  if (Number.isNaN(dt.getTime())) return "";
+  if (Number.isNaN(dt.getTime())) return '';
   return dt.toDateString();
 }
 
 function getStatusLabel(state) {
   switch (state) {
-    case "pre":
-    case "post":
-    case "in":
+    case 'pre':
+    case 'post':
+    case 'in':
       return state.toUpperCase();
     default:
-      return state ? String(state).toUpperCase() : "—";
+      return state ? String(state).toUpperCase() : '—';
   }
 }
 
@@ -41,7 +48,7 @@ function GameCard({ game }) {
   const homeScore = game.home.score ?? null;
   const awayScore = game.away.score ?? null;
   // ESPN uses type.state "post" for finished games (not "final" / "completed").
-  const isFinal = game.status?.typeState === "post";
+  const isFinal = game.status?.typeState === 'post';
 
   return (
     <div className="rounded-xl border border-sb-border bg-sb-bg/60 overflow-hidden">
@@ -54,21 +61,30 @@ function GameCard({ game }) {
             {game.away.abbr} @ {game.home.abbr}
           </div>
           <div className="text-sb-muted text-sm mt-1">
-            {formatKickoff(game.startDate)} • {getStatusLabel(game.status?.typeState)}
+            {formatKickoff(game.startDate)} •{' '}
+            {getStatusLabel(game.status?.typeState)}
           </div>
         </div>
 
         <div className="flex items-center gap-6">
           <div className="text-right">
-            <div className="text-sb-muted text-xs font-bold">{game.home.abbr}</div>
-            <div className={`text-2xl font-extrabold ${isFinal ? "text-sb-text" : "text-sb-blue"}`}>
-              {homeScore !== null ? homeScore : "—"}
+            <div className="text-sb-muted text-xs font-bold">
+              {game.home.abbr}
+            </div>
+            <div
+              className={`text-2xl font-extrabold ${isFinal ? 'text-sb-text' : 'text-sb-blue'}`}
+            >
+              {homeScore !== null ? homeScore : '—'}
             </div>
           </div>
           <div className="text-left">
-            <div className="text-sb-muted text-xs font-bold">{game.away.abbr}</div>
-            <div className={`text-2xl font-extrabold ${isFinal ? "text-sb-text" : "text-sb-blue"}`}>
-              {awayScore !== null ? awayScore : "—"}
+            <div className="text-sb-muted text-xs font-bold">
+              {game.away.abbr}
+            </div>
+            <div
+              className={`text-2xl font-extrabold ${isFinal ? 'text-sb-text' : 'text-sb-blue'}`}
+            >
+              {awayScore !== null ? awayScore : '—'}
             </div>
           </div>
         </div>
@@ -76,9 +92,13 @@ function GameCard({ game }) {
 
       <div className="p-4 flex items-center justify-between gap-4 flex-wrap">
         <div className="min-w-0">
-          <div className="text-sb-text font-extrabold text-sm">{game.away.name} vs {game.home.name}</div>
+          <div className="text-sb-text font-extrabold text-sm">
+            {game.away.name} vs {game.home.name}
+          </div>
           <div className="text-sb-muted text-xs mt-1">
-            {game.status?.clock ? `Clock: ${game.status.clock}` : "Tip-off clock not provided"}
+            {game.status?.clock
+              ? `Clock: ${game.status.clock}`
+              : 'Tip-off clock not provided'}
           </div>
         </div>
 
@@ -116,12 +136,12 @@ function GameCard({ game }) {
 export default function NBABets() {
   const [games, setGames] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [search, setSearch] = useState("");
-  const [tab, setTab] = useState("games");
+  const [error, setError] = useState('');
+  const [search, setSearch] = useState('');
+  const [tab, setTab] = useState('games');
   const weekRangeLabel = useMemo(() => {
     const keys = getNbaWeekDateKeys(new Date());
-    if (keys.length < 2) return "";
+    if (keys.length < 2) return '';
     const start = keys[0];
     const end = keys[6];
     const fmt = (ymd) => {
@@ -133,10 +153,13 @@ export default function NBABets() {
     const a = fmt(start);
     const b = fmt(end);
     const sameMonth = a.getMonth() === b.getMonth();
-    const left = a.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    const left = a.toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+    });
     const right = b.toLocaleDateString(
       undefined,
-      sameMonth ? { day: "numeric" } : { month: "short", day: "numeric" },
+      sameMonth ? { day: 'numeric' } : { month: 'short', day: 'numeric' },
     );
     return `${left} – ${right}`;
   }, []);
@@ -145,7 +168,7 @@ export default function NBABets() {
     let alive = true;
     async function load() {
       setLoading(true);
-      setError("");
+      setError('');
       try {
         const result = await fetchNbaScoreboardWeek();
         if (!alive) return;
@@ -153,7 +176,7 @@ export default function NBABets() {
       } catch (e) {
         console.error(e);
         if (!alive) return;
-        setError("Failed to load NBA matchups from ESPN.");
+        setError('Failed to load NBA matchups from ESPN.');
       } finally {
         if (!alive) return;
         setLoading(false);
@@ -183,10 +206,14 @@ export default function NBABets() {
     let currentKey = null;
     let bucket = [];
     for (const g of filteredGames) {
-      const key = daySortKey(g.startDate) || "unknown";
+      const key = daySortKey(g.startDate) || 'unknown';
       if (key !== currentKey) {
         if (bucket.length) {
-          sections.push({ dayKey: currentKey, heading: formatDayHeading(bucket[0].startDate), games: bucket });
+          sections.push({
+            dayKey: currentKey,
+            heading: formatDayHeading(bucket[0].startDate),
+            games: bucket,
+          });
         }
         currentKey = key;
         bucket = [g];
@@ -195,7 +222,11 @@ export default function NBABets() {
       }
     }
     if (bucket.length) {
-      sections.push({ dayKey: currentKey, heading: formatDayHeading(bucket[0].startDate), games: bucket });
+      sections.push({
+        dayKey: currentKey,
+        heading: formatDayHeading(bucket[0].startDate),
+        games: bucket,
+      });
     }
     return sections;
   }, [filteredGames]);
@@ -208,7 +239,9 @@ export default function NBABets() {
           🔎 This week (Sun–Sat) • ESPN
         </span>
         {weekRangeLabel ? (
-          <span className="text-sb-muted text-sm font-semibold">{weekRangeLabel}</span>
+          <span className="text-sb-muted text-sm font-semibold">
+            {weekRangeLabel}
+          </span>
         ) : null}
         {loading && <span className="text-sb-muted text-sm">Loading…</span>}
       </div>
@@ -216,29 +249,29 @@ export default function NBABets() {
       <div className="flex gap-2 mb-6 border-b border-sb-border flex-wrap">
         <button
           type="button"
-          onClick={() => setTab("games")}
+          onClick={() => setTab('games')}
           className={
-            tab === "games"
-              ? "px-4 py-2 text-xs font-extrabold rounded-t-xl bg-sb-blue text-sb-dark border-x border-t border-sb-blue"
-              : "px-4 py-2 text-xs font-extrabold rounded-t-xl bg-transparent text-sb-muted hover:text-sb-blue hover:border-t hover:border-sb-blue border border-transparent"
+            tab === 'games'
+              ? 'px-4 py-2 text-xs font-extrabold rounded-t-xl bg-sb-blue text-sb-dark border-x border-t border-sb-blue'
+              : 'px-4 py-2 text-xs font-extrabold rounded-t-xl bg-transparent text-sb-muted hover:text-sb-blue hover:border-t hover:border-sb-blue border border-transparent'
           }
         >
           Matchups
         </button>
         <button
           type="button"
-          onClick={() => setTab("futures")}
+          onClick={() => setTab('futures')}
           className={
-            tab === "futures"
-              ? "px-4 py-2 text-xs font-extrabold rounded-t-xl bg-sb-blue text-sb-dark border-x border-t border-sb-blue"
-              : "px-4 py-2 text-xs font-extrabold rounded-t-xl bg-transparent text-sb-muted hover:text-sb-blue hover:border-t hover:border-sb-blue border border-transparent"
+            tab === 'futures'
+              ? 'px-4 py-2 text-xs font-extrabold rounded-t-xl bg-sb-blue text-sb-dark border-x border-t border-sb-blue'
+              : 'px-4 py-2 text-xs font-extrabold rounded-t-xl bg-transparent text-sb-muted hover:text-sb-blue hover:border-t hover:border-sb-blue border border-transparent'
           }
         >
           Futures
         </button>
       </div>
 
-      {tab === "games" && (
+      {tab === 'games' && (
         <>
           <div className="mb-4 flex items-center gap-3 flex-wrap">
             <input
@@ -250,7 +283,7 @@ export default function NBABets() {
             />
 
             <div className="ml-auto text-sb-muted text-sm">
-              {filteredGames.length} game{filteredGames.length === 1 ? "" : "s"}
+              {filteredGames.length} game{filteredGames.length === 1 ? '' : 's'}
             </div>
           </div>
 
@@ -259,7 +292,10 @@ export default function NBABets() {
           {loading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="rounded-xl border border-sb-border bg-sb-bg/60 p-4 animate-pulse">
+                <div
+                  key={i}
+                  className="rounded-xl border border-sb-border bg-sb-bg/60 p-4 animate-pulse"
+                >
                   <div className="h-4 w-[60%] bg-sb-muted/40 rounded mb-3" />
                   <div className="h-4 w-[80%] bg-sb-muted/30 rounded mb-2" />
                   <div className="h-20 w-full bg-sb-muted/20 rounded" />
@@ -287,16 +323,18 @@ export default function NBABets() {
         </>
       )}
 
-      {tab === "futures" && (
+      {tab === 'futures' && (
         <div className="rounded-xl border border-sb-border bg-sb-bg/60 p-5">
-          <h2 className="text-lg font-extrabold text-sb-text m-0">Futures & awards</h2>
+          <h2 className="text-lg font-extrabold text-sb-text m-0">
+            Futures & awards
+          </h2>
           <p className="text-sb-muted text-sm mt-2 m-0">
-            ESPN’s NBA scoreboard endpoint provides matchups and scores, but it doesn’t include futures/awards markets.
-            Connect your existing odds API (or futures endpoint) and we’ll render them here.
+            ESPN’s NBA scoreboard endpoint provides matchups and scores, but it
+            doesn’t include futures/awards markets. Connect your existing odds
+            API (or futures endpoint) and we’ll render them here.
           </p>
         </div>
       )}
     </div>
   );
 }
-
