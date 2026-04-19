@@ -21,11 +21,11 @@ const BetSlipFooter = ({
     if (checkoutError) {
       setIsSuccess(false);
       setIsConfirming(false);
-
+      // eslint-disable-next-line no-undef
       const timer = setTimeout(() => {
         if (setCheckoutError) setCheckoutError('');
       }, 5000);
-
+      // eslint-disable-next-line no-undef
       return () => clearTimeout(timer);
     }
   }, [checkoutError, setCheckoutError]);

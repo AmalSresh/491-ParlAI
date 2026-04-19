@@ -178,6 +178,7 @@ export default function NBABets() {
         if (!alive) return;
         setError('Failed to load NBA matchups from ESPN.');
       } finally {
+        // eslint-disable-next-line no-unsafe-finally
         if (!alive) return;
         setLoading(false);
       }
