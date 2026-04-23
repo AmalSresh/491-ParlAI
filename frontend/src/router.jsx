@@ -2,7 +2,7 @@ import { createBrowserRouter } from 'react-router-dom';
 import App from './App';
 import Login from './pages/login';
 import Home from './pages/home';
-import Dashboard from './pages/dashboard';
+//import Dashboard from './pages/dashboard';
 import HowToPlay from './pages/HowToPlay';
 import Support from './pages/support';
 import Hockey from './pages/Hockey';
@@ -10,64 +10,47 @@ import Onboarding from './pages/onboarding';
 import Settings from './pages/Settings';
 import Profile from './pages/Profile';
 import ProtectedRoute from './components/ProtectedRoute';
+
 import NFLBets from './pages/NFLBets';
 import SoccerPage from './pages/SoccerPage';
 
 import Games from './pages/Games';
 import Players from './pages/Players';
 import MyBets from './pages/MyBets';
+import NBABets from './pages/NBABets';
 import NotFound from './pages/NotFound';
+import Hockey from './pages/Hockey';
+import Support from './pages/Support';
+
+import SportsLayout from './sportsLayout';
 
 const router = createBrowserRouter([
   {
     path: '/',
     element: <App />,
     children: [
+      { index: true, element: <Home /> },
+
+      // Pages that will have bet slip footer
       {
-        index: true,
-        element: <Home />,
+        element: <SportsLayout />,
+        children: [
+          { path: 'soccer', element: <SoccerPage /> },
+          { path: 'nfl', element: <NFLBets /> },
+          { path: 'nba', element: <NBABets /> },
+          { path: 'hockey', element: <Hockey /> },
+        ],
       },
+
+      { path: 'login', element: <Login /> },
+      { path: 'onboarding', element: <Onboarding /> },
+      { path: 'how-to-play', element: <HowToPlay /> },
+      { path: 'support', element: <Support /> },
       {
-        path: 'games',
-        element: <Games />,
-      },
-      {
-        path: 'support',
+        path: 'profile',
         element: (
           <ProtectedRoute>
-            <Support />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: 'players',
-        element: <Players />,
-      },
-      {
-        path: 'bets',
-        element: <MyBets />,
-      },
-      {
-        path: 'login',
-        element: <Login />,
-      },
-      {
-        path: 'how-to-play',
-        element: <HowToPlay />,
-      },
-      {
-        path: 'onboarding',
-        element: (
-          <ProtectedRoute>
-            <Onboarding />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: 'dashboard',
-        element: (
-          <ProtectedRoute>
-            <Dashboard />
+            <Profile />
           </ProtectedRoute>
         ),
       },
@@ -79,26 +62,11 @@ const router = createBrowserRouter([
           </ProtectedRoute>
         ),
       },
-      {
-        path: 'profile',
-        element: (
-          <ProtectedRoute>
-            <Profile />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: 'soccer',
-        element: <SoccerPage />,
-      },
-      {
-        path: 'nfl',
-        element: <NFLBets />,
-      },
-      {
-        path: '*',
-        element: <NotFound />,
-      },
+      { path: 'games', element: <Games /> },
+      { path: 'players', element: <Players /> },
+      { path: 'bets', element: <MyBets /> },
+
+      { path: '*', element: <NotFound /> },
     ],
   },
 ]);
