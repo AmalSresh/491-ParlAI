@@ -3,19 +3,42 @@ import { render, screen, act } from '@testing-library/react';
 import { vi } from 'vitest';
 import SoccerPage from '../src/pages/SoccerPage';
 
-// 1. Mock the child component so we only test SoccerPage's logic
+//  Mock the context to provide dummy values to the hook
+vi.mock('../src/context/BetSlipContext', () => {
+  const mockToggleSelection = vi.fn();
+  const mockPruneSelectionsForGames = vi.fn();
+
+  return {
+    useGlobalBetSlip: vi.fn(() => ({
+      selections: [],
+      toggleSelection: mockToggleSelection,
+      pruneSelectionsForGames: mockPruneSelectionsForGames,
+    })),
+  };
+});
+
+// 2. Mock the child component so we only test SoccerPage's logic
 vi.mock('../src/components/SoccerCard', () => ({
-  default: ({ game }) => (
-    <div data-testid="mock-soccer-card">
-      {game.homeTeam} vs {game.awayTeam} - {game.mainOdds}
-    </div>
-  ),
+  default: ({ game }) => {
+    // Safely extract the odds using optional chaining, just in case
+    const homeOdds = game.h2hPicks?.home?.odds || '-';
+    const drawOdds = game.h2hPicks?.draw?.odds || '-';
+    const awayOdds = game.h2hPicks?.away?.odds || '-';
+
+    return (
+      <div data-testid="mock-soccer-card">
+        {game.homeTeam} vs {game.awayTeam} - {homeOdds} / {drawOdds} /{' '}
+        {awayOdds}
+      </div>
+    );
+  },
 }));
 
 // Mock data that mimics your backend structure
 const mockBackendData = [
   {
     id: '1',
+    league: { id: 700, sport: 'soccer', name: 'English Premier League' },
     homeTeam: 'Arsenal',
     awayTeam: 'Chelsea',
     scores: { home: 2, away: 1 },
@@ -23,9 +46,9 @@ const mockBackendData = [
       {
         type: 'h2h',
         selections: [
-          { label: 'Arsenal', odds: '-150' },
-          { label: 'Chelsea', odds: '+300' },
-          { label: 'Draw', odds: '+220' },
+          { id: 1, label: 'Arsenal', odds: '-150' },
+          { id: 2, label: 'Chelsea', odds: '+300' },
+          { id: 3, label: 'Draw', odds: '+220' },
         ],
       },
       {
@@ -40,7 +63,6 @@ const mockBackendData = [
 ];
 
 describe('SoccerPage Component', () => {
-  // 1. Removed useFakeTimers from beforeEach so it doesn't break the other tests
   beforeEach(() => {
     global.fetch = vi.fn();
     vi.spyOn(window, 'setInterval');
@@ -49,7 +71,7 @@ describe('SoccerPage Component', () => {
 
   afterEach(() => {
     vi.clearAllMocks();
-    vi.useRealTimers(); // Keep this to ensure timers reset safely after the final test
+    vi.useRealTimers();
   });
 
   test('renders loading state initially', () => {
@@ -63,7 +85,9 @@ describe('SoccerPage Component', () => {
       json: async () => [],
     });
     render(<SoccerPage />);
-    expect(await screen.findByText('No games scheduled.')).toBeInTheDocument();
+    expect(
+      await screen.findByText('No games scheduled at this moment.'),
+    ).toBeInTheDocument();
   });
 
   test('fetches and parses game data correctly', async () => {
@@ -76,39 +100,51 @@ describe('SoccerPage Component', () => {
       'Arsenal vs Chelsea - -150 / +220 / +300',
     );
     expect(parsedCardText).toBeInTheDocument();
-    expect(global.fetch).toHaveBeenCalledWith('/api/getGames');
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining(
+        '/api/getGames?leagueName=English+Premier+League',
+      ),
+    );
   });
 
   test('sets up and cleans up the polling interval', async () => {
-    vi.useFakeTimers();
-
-    // 👇 Spy AFTER fake timers are enabled
-    const setIntervalSpy = vi.spyOn(window, 'setInterval');
-    const clearIntervalSpy = vi.spyOn(window, 'clearInterval');
+    // 1. Make sure fake timers are OFF for this test
+    vi.useRealTimers();
 
     global.fetch.mockResolvedValue({
       json: async () => [],
     });
 
+    // 2. Spy on the window timers
+    const setIntervalSpy = vi.spyOn(window, 'setInterval');
+    const clearIntervalSpy = vi.spyOn(window, 'clearInterval');
+
+    // 3. Render the component
     const { unmount } = render(<SoccerPage />);
 
-    await act(async () => {
-      vi.advanceTimersByTime(1);
-    });
-
+    // 4. Wait for the initial mount fetch to settle using the UI
+    await screen.findByText('No games scheduled at this moment.');
     expect(global.fetch).toHaveBeenCalledTimes(1);
 
+    // 5. Verify the interval was registered
     expect(setIntervalSpy).toHaveBeenCalledWith(expect.any(Function), 300000);
 
-    // Trigger interval
+    const pollingFunction = setIntervalSpy.mock.calls[0][0];
+
+    // 6. Manually execute the function just like setInterval would
     await act(async () => {
-      vi.advanceTimersByTime(300000);
+      await pollingFunction();
     });
 
+    // 7. Prove the polling function triggered a second fetch!
     expect(global.fetch).toHaveBeenCalledTimes(2);
+
+    // 8. Unmount and prove the cleanup returns the specific interval ID
+    // We grab the mocked ID that setIntervalSpy returned
+    const intervalId = setIntervalSpy.mock.results[0].value;
 
     unmount();
 
-    expect(clearIntervalSpy).toHaveBeenCalled();
+    expect(clearIntervalSpy).toHaveBeenCalledWith(intervalId);
   });
 });

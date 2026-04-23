@@ -1,5 +1,6 @@
-// Send Team data, scores, and odds to the frontend
+// Send Team data, scores, and odds to the frontend (all leagues in DB unless filtered).
 import { app } from '@azure/functions';
+import sql from 'mssql';
 import { poolPromise } from '../../components/db-connect.js';
 
 app.http('getGames', {
@@ -13,10 +14,61 @@ app.http('getGames', {
     try {
       const pool = await poolPromise;
 
-      // 1. Get all the data. ADDED: e.api_id
-      const result = await pool.request().query(`
+      const url = new URL(request.url);
+      const leagueIdParam = url.searchParams.get('leagueId');
+      const leagueNameParam = url.searchParams.get('leagueName');
+      const sportParam = url.searchParams.get('sport');
+      const startDateParam = url.searchParams.get('startDate');
+      const endDateParam = url.searchParams.get('endDate');
+
+      const defaultStart = new Date();
+      defaultStart.setDate(defaultStart.getDate() - 2);
+
+      const defaultEnd = new Date();
+      defaultEnd.setDate(defaultEnd.getDate() + 30);
+
+      const startDate =
+        startDateParam && !isNaN(Date.parse(startDateParam))
+          ? new Date(startDateParam)
+          : defaultStart;
+
+      const endDate =
+        endDateParam && !isNaN(Date.parse(endDateParam))
+          ? new Date(endDateParam)
+          : defaultEnd;
+
+      const parsedLeagueId =
+        leagueIdParam != null && leagueIdParam !== ''
+          ? parseInt(leagueIdParam, 10)
+          : NaN;
+
+      // 1. All events in the window, with league metadata for routing on the client.
+      const req = pool.request();
+      let filterSql = '';
+      if (!Number.isNaN(parsedLeagueId)) {
+        req.input('filterLeagueId', sql.Int, parsedLeagueId);
+        filterSql += ' AND e.league_id = @filterLeagueId';
+      }
+      if (leagueNameParam) {
+        req.input('filterLeagueName', sql.NVarChar, leagueNameParam);
+        filterSql += ' AND l.name = @filterLeagueName';
+      }
+      if (sportParam) {
+        req.input('filterSport', sql.NVarChar, sportParam);
+        filterSql += ' AND l.sport = @filterSport';
+      }
+
+      req.input('startDate', sql.DateTime, startDate);
+      req.input('endDate', sql.DateTime, endDate);
+
+      const result = await req.query(`
         SELECT 
             e.id AS event_id, 
+            e.league_id,
+            l.name AS league_name,
+            l.country AS league_country,
+            l.logo_url AS league_logo_url,
+            l.sport AS league_sport,
             e.api_id, 
             e.start_time, 
             e.status, 
@@ -33,14 +85,15 @@ app.http('getGames', {
             s.odds, 
             s.line_value
         FROM events e
+        INNER JOIN leagues l ON e.league_id = l.id
         JOIN teams h ON e.home_team_id = h.id
         JOIN teams a ON e.away_team_id = a.id
         LEFT JOIN markets m ON e.id = m.event_id
         LEFT JOIN selections s ON m.id = s.market_id
         
-        -- Active date filter: Keeps recent past games (-2 days) and next month's games (+30 days)
-        WHERE e.start_time >= DATEADD(day, -2, GETUTCDATE()) 
-          AND e.start_time <= DATEADD(day, 30, GETUTCDATE()) 
+        WHERE e.start_time >= @startDate
+          AND e.start_time <= @endDate
+          ${filterSql}
         
         ORDER BY e.start_time ASC;
       `);
@@ -55,7 +108,14 @@ app.http('getGames', {
         if (!eventsMap.has(row.event_id)) {
           eventsMap.set(row.event_id, {
             id: row.event_id,
-            apiId: row.api_id, // <-- ADDED: Pass the Odds-API string ID to the frontend
+            league: {
+              id: row.league_id,
+              name: row.league_name,
+              country: row.league_country,
+              logoUrl: row.league_logo_url,
+              sport: row.league_sport,
+            },
+            apiId: row.api_id, // Odds-API event id
             homeTeam: row.home_team,
             homeLogo: row.home_logo,
             awayTeam: row.away_team,

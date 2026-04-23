@@ -54,7 +54,7 @@ app.http('user-me', {
       let result = await pool
         .request()
         .input('azureUserId', sql.NVarChar, finalUserId).query(`
-                    SELECT id, name, email, onboarding_stage as onboardingStage, balance 
+                    SELECT id, nickname, email, onboarding_stage as onboardingStage, balance 
                     FROM users 
                     WHERE azure_user_id = @azureUserId
                 `);
@@ -74,7 +74,7 @@ app.http('user-me', {
 
         const insertResult = await request.query(`
         INSERT INTO users (azure_user_id, email, onboarding_stage, balance)
-        OUTPUT INSERTED.id, INSERTED.name, INSERTED.email, INSERTED.onboarding_stage as onboardingStage, INSERTED.balance
+        OUTPUT INSERTED.id, INSERTED.email, INSERTED.onboarding_stage as onboardingStage, INSERTED.balance
         VALUES (@azureUserId, @email, 0, @balance)
     `);
 

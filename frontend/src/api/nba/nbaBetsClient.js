@@ -1,23 +1,23 @@
-const API_BASE = "/api";
-const ENV_API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "").trim();
+const API_BASE = '/api';
+const ENV_API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').trim();
 const RESOLVED_API_BASE = ENV_API_BASE_URL || API_BASE;
 const ENDPOINTS = {
   placeBet: `${RESOLVED_API_BASE}/nba/bets`,
 };
 
 const ESPN_NBA_SCOREBOARD_URL =
-  "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard";
+  'https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard';
 
 function safeGetTeamName(team) {
-  return team?.displayName || team?.name || team?.abbreviation || "—";
+  return team?.displayName || team?.name || team?.abbreviation || '—';
 }
 
 function safeTeamAbbr(team) {
-  return team?.abbreviation || team?.shortName || "—";
+  return team?.abbreviation || team?.shortName || '—';
 }
 
 function normalizeScore(score) {
-  if (score === null || score === undefined || score === "") return null;
+  if (score === null || score === undefined || score === '') return null;
   const n = Number(score);
   return Number.isNaN(n) ? null : n;
 }
@@ -25,7 +25,7 @@ function normalizeScore(score) {
 function parseNbaScoreboard(payload) {
   const league = payload?.leagues?.[0];
   const seasonDisplay =
-    league?.season?.displayName || league?.season?.year || "—";
+    league?.season?.displayName || league?.season?.year || '—';
 
   const events = payload?.events || [];
 
@@ -33,18 +33,22 @@ function parseNbaScoreboard(payload) {
     .map((event) => {
       const comp = event?.competitions?.[0];
       const competitors = comp?.competitors || [];
-      const home = competitors.find((c) => c.homeAway === "home");
-      const away = competitors.find((c) => c.homeAway === "away");
+      const home = competitors.find((c) => c.homeAway === 'home');
+      const away = competitors.find((c) => c.homeAway === 'away');
 
       if (!home || !away) return null;
 
       return {
-        id: event?.id || comp?.id || `${away?.team?.abbreviation}@${home?.team?.abbreviation}`,
-        league: league?.abbreviation || "NBA",
+        id:
+          event?.id ||
+          comp?.id ||
+          `${away?.team?.abbreviation}@${home?.team?.abbreviation}`,
+        league: league?.abbreviation || 'NBA',
         seasonDisplay,
         startDate: comp?.startDate || event?.date || null,
         status: {
-          typeState: comp?.status?.type?.state || comp?.status?.type?.id || null,
+          typeState:
+            comp?.status?.type?.state || comp?.status?.type?.id || null,
           clock: comp?.status?.displayClock || null,
         },
         home: {
@@ -64,8 +68,8 @@ function parseNbaScoreboard(payload) {
 
 function toYYYYMMDD(d) {
   const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
   return `${year}${month}${day}`;
 }
 
@@ -91,7 +95,9 @@ export function getNbaWeekDateKeys(refDate = new Date()) {
 }
 
 export async function fetchNbaScoreboard({ date } = {}) {
-  const url = date ? `${ESPN_NBA_SCOREBOARD_URL}?dates=${date}` : ESPN_NBA_SCOREBOARD_URL;
+  const url = date
+    ? `${ESPN_NBA_SCOREBOARD_URL}?dates=${date}`
+    : ESPN_NBA_SCOREBOARD_URL;
   const res = await fetch(url);
   if (!res.ok) {
     throw new Error(`ESPN NBA scoreboard failed (${res.status})`);
@@ -105,7 +111,9 @@ export async function fetchNbaScoreboard({ date } = {}) {
  */
 export async function fetchNbaScoreboardWeek({ refDate } = {}) {
   const keys = getNbaWeekDateKeys(refDate ?? new Date());
-  const dayResults = await Promise.all(keys.map((date) => fetchNbaScoreboard({ date })));
+  const dayResults = await Promise.all(
+    keys.map((date) => fetchNbaScoreboard({ date })),
+  );
   const byId = new Map();
   for (const dayGames of dayResults) {
     for (const g of dayGames) {
@@ -121,8 +129,8 @@ export async function fetchNbaScoreboardWeek({ refDate } = {}) {
 
 export async function placeNbaBet(bet) {
   const res = await fetch(ENDPOINTS.placeBet, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(bet),
   });
 
@@ -138,4 +146,3 @@ export async function placeNbaBet(bet) {
 
   return res.json();
 }
-
