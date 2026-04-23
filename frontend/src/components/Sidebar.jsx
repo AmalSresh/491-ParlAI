@@ -26,7 +26,11 @@ export default function Sidebar() {
           <Link to="/soccer">⚽ Soccer</Link>
         </li>
         <li>🎾 Tennis</li>
-        <li>🥊 UFC</li>
+        <li>
+          <Link to="/ufc" className="no-underline">
+            🥊 UFC
+          </Link>
+        </li>
       </ul>
     </aside>
   );
