@@ -5,7 +5,6 @@ import { useAuth } from '../context/AuthContext';
 const ESPN_MLB_SCOREBOARD =
   'https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard';
 
-
 // ── ODDS GENERATOR ────────────────────────────────────────────────────────────
 // Seeded from game ID so odds don't flicker on re-render
 function generateOdds(gameId, homeAway) {

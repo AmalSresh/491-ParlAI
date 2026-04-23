@@ -1,5 +1,5 @@
-import { app } from "@azure/functions";
-import sql from "mssql";
+import { app } from '@azure/functions';
+import sql from 'mssql';
 
 const MLB_LEAGUE_ID = 703;
 
@@ -11,10 +11,10 @@ const sqlConfig = {
   options: { encrypt: true, trustServerCertificate: false },
 };
 
-app.http("mlb-games", {
-  methods: ["GET"],
-  route: "mlb/games",
-  authLevel: "anonymous",
+app.http('mlb-games', {
+  methods: ['GET'],
+  route: 'mlb/games',
+  authLevel: 'anonymous',
   handler: async (request, context) => {
     try {
       const pool = await sql.connect(sqlConfig);
@@ -27,10 +27,9 @@ app.http("mlb-games", {
 
       const result = await pool
         .request()
-        .input("leagueId",  sql.Int,       MLB_LEAGUE_ID)
-        .input("startDate", sql.DateTime2, start)
-        .input("endDate",   sql.DateTime2, end)
-        .query(`
+        .input('leagueId', sql.Int, MLB_LEAGUE_ID)
+        .input('startDate', sql.DateTime2, start)
+        .input('endDate', sql.DateTime2, end).query(`
           SELECT
             id, espn_id, league_id,
             home_team, away_team, home_abbr, away_abbr,
@@ -46,58 +45,58 @@ app.http("mlb-games", {
         `);
 
       const games = result.recordset.map((row) => ({
-        id:        row.espn_id,
-        dbId:      row.id,
-        leagueId:  row.league_id,
-        sport:     "mlb",
-        homeTeam:  row.home_team,
-        awayTeam:  row.away_team,
-        homeAbbr:  row.home_abbr,
-        awayAbbr:  row.away_abbr,
-        homeLogo:  row.home_logo,
-        awayLogo:  row.away_logo,
+        id: row.espn_id,
+        dbId: row.id,
+        leagueId: row.league_id,
+        sport: 'mlb',
+        homeTeam: row.home_team,
+        awayTeam: row.away_team,
+        homeAbbr: row.home_abbr,
+        awayAbbr: row.away_abbr,
+        homeLogo: row.home_logo,
+        awayLogo: row.away_logo,
         homeColor: row.home_color,
         awayColor: row.away_color,
         homeScore: row.home_score,
         awayScore: row.away_score,
-        status:    row.status,
+        status: row.status,
         startTime: row.start_time,
-        inning:    row.inning,
-        gameName:  `${row.away_team} @ ${row.home_team}`,
+        inning: row.inning,
+        gameName: `${row.away_team} @ ${row.home_team}`,
         h2hPicks: {
           home: {
-            id:    `${row.espn_id}_ml_home`,
+            id: `${row.espn_id}_ml_home`,
             label: row.home_team,
-            odds:  parseFloat(row.home_ml_odds),
+            odds: parseFloat(row.home_ml_odds),
           },
           away: {
-            id:    `${row.espn_id}_ml_away`,
+            id: `${row.espn_id}_ml_away`,
             label: row.away_team,
-            odds:  parseFloat(row.away_ml_odds),
+            odds: parseFloat(row.away_ml_odds),
           },
         },
         totalsPicks: {
           over: {
-            id:        `${row.espn_id}_over`,
-            odds:      parseFloat(row.over_odds),
+            id: `${row.espn_id}_over`,
+            odds: parseFloat(row.over_odds),
             lineValue: parseFloat(row.total_line),
           },
           under: {
-            id:        `${row.espn_id}_under`,
-            odds:      parseFloat(row.under_odds),
+            id: `${row.espn_id}_under`,
+            odds: parseFloat(row.under_odds),
             lineValue: parseFloat(row.total_line),
           },
         },
-        totalLine:  parseFloat(row.total_line),
-        overOdds:   parseFloat(row.over_odds),
-        underOdds:  parseFloat(row.under_odds),
-        updatedAt:  row.updated_at,
+        totalLine: parseFloat(row.total_line),
+        overOdds: parseFloat(row.over_odds),
+        underOdds: parseFloat(row.under_odds),
+        updatedAt: row.updated_at,
       }));
 
       return { status: 200, jsonBody: games };
     } catch (error) {
-      context.error("Error fetching MLB games:", error);
-      return { status: 500, jsonBody: { error: "Internal Server Error" } };
+      context.error('Error fetching MLB games:', error);
+      return { status: 500, jsonBody: { error: 'Internal Server Error' } };
     }
   },
 });

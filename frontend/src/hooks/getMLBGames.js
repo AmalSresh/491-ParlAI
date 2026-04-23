@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 
 export const getMLBGames = (pruneSelectionsForGames) => {
-  const [games,   setGames]   = useState([]);
+  const [games, setGames] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchGames = async () => {
