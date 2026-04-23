@@ -1,9 +1,214 @@
-import { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useState, useEffect } from "react";
+import { useAuth } from "../context/AuthContext";
 
 const ESPN_NHL_SCOREBOARD =
-  'https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard';
+  "https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard";
+const API_BASE = "/api";
 
+// ── TOAST ─────────────────────────────────────────────────────────────────────
+function Toast({ message, onDone }) {
+  useEffect(() => {
+    const t = window.setTimeout(onDone, 4000);
+    return () => window.clearTimeout(t);
+  }, [onDone]);
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        bottom: "2rem",
+        right: "2rem",
+        zIndex: 999,
+        background: "#11131a",
+        border: "1px solid #00f6ff",
+        color: "#f3f4f6",
+        padding: "0.85rem 1.2rem",
+        borderRadius: "12px",
+        fontSize: "0.84rem",
+        lineHeight: 1.5,
+        whiteSpace: "pre-line",
+        boxShadow: "0 0 24px rgba(0,246,255,0.2)",
+        maxWidth: "280px",
+      }}
+    >
+      {message}
+    </div>
+  );
+}
+
+// ── BET MODAL ─────────────────────────────────────────────────────────────────
+function BetModal({ bet, userBalance, onClose, onConfirm }) {
+  const [stake, setStake] = useState(10);
+  const payout = (stake * bet.odds).toFixed(2);
+  const isInvalid = stake <= 0 || stake > userBalance;
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.7)",
+        zIndex: 1000,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <div
+        style={{
+          background: "#11131a",
+          border: "1px solid #00f6ff",
+          borderRadius: "16px",
+          padding: "1.5rem",
+          width: "320px",
+          boxShadow: "0 0 40px rgba(0,246,255,0.2)",
+        }}
+      >
+        <h3
+          style={{
+            fontSize: "1.1rem",
+            fontWeight: 700,
+            marginBottom: "0.5rem",
+            color: "#f3f4f6",
+          }}
+        >
+          Place Bet
+        </h3>
+        <p
+          style={{
+            fontSize: "0.82rem",
+            color: "#9ca3af",
+            marginBottom: "0.3rem",
+          }}
+        >
+          {bet.awayTeam} @ {bet.homeTeam}
+        </p>
+        <p
+          style={{
+            fontSize: "0.9rem",
+            color: "#f3f4f6",
+            fontWeight: 600,
+            marginBottom: "1rem",
+          }}
+        >
+          <span style={{ color: "#00f6ff" }}>{bet.selection}</span>
+        </p>
+
+        <label
+          style={{
+            fontSize: "0.75rem",
+            color: "#9ca3af",
+            display: "block",
+            marginBottom: "0.3rem",
+          }}
+        >
+          Stake ($) — Balance: ${Number(userBalance).toFixed(2)}
+        </label>
+        <input
+          type="number"
+          min="1"
+          max={userBalance}
+          value={stake}
+          onChange={(e) => setStake(Number(e.target.value))}
+          style={{
+            width: "100%",
+            background: "#0d0f14",
+            border: `1px solid ${isInvalid ? "#ff3d57" : "#404040"}`,
+            borderRadius: "8px",
+            padding: "0.5rem 0.75rem",
+            color: "#f3f4f6",
+            fontSize: "1rem",
+            outline: "none",
+            marginBottom: "0.8rem",
+            boxSizing: "border-box",
+          }}
+        />
+        {stake > userBalance && (
+          <p
+            style={{
+              fontSize: "0.72rem",
+              color: "#ff3d57",
+              marginBottom: "0.6rem",
+              marginTop: "-0.6rem",
+            }}
+          >
+            Exceeds your balance
+          </p>
+        )}
+
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            fontSize: "0.8rem",
+            color: "#9ca3af",
+            marginBottom: "0.6rem",
+          }}
+        >
+          <span>Odds</span>
+          <span style={{ color: "#00f6ff", fontWeight: 700 }}>
+            ×{bet.odds}
+          </span>
+        </div>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            fontSize: "0.8rem",
+            color: "#9ca3af",
+            marginBottom: "1.2rem",
+          }}
+        >
+          <span>Potential Payout</span>
+          <span style={{ color: "#00c853", fontWeight: 700 }}>${payout}</span>
+        </div>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "0.5rem",
+          }}
+        >
+          <button
+            onClick={onClose}
+            style={{
+              padding: "0.6rem",
+              borderRadius: "8px",
+              cursor: "pointer",
+              background: "transparent",
+              border: "1px solid #404040",
+              color: "#9ca3af",
+              fontWeight: 600,
+              fontSize: "0.85rem",
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            disabled={isInvalid}
+            onClick={() => onConfirm({ ...bet, stake })}
+            style={{
+              padding: "0.6rem",
+              borderRadius: "8px",
+              cursor: isInvalid ? "not-allowed" : "pointer",
+              background: isInvalid ? "#1f2430" : "#00f6ff",
+              border: "none",
+              color: isInvalid ? "#9ca3af" : "#000",
+              fontWeight: 700,
+              fontSize: "0.85rem",
+              opacity: isInvalid ? 0.5 : 1,
+            }}
+          >
+            Confirm Bet
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── ODDS BUTTON ───────────────────────────────────────────────────────────────
 function OddsButton({ label, value, active, onClick, disabled }) {
   return (
     <button
@@ -13,10 +218,10 @@ function OddsButton({ label, value, active, onClick, disabled }) {
         relative px-3 py-2 rounded text-sm font-bold border transition-all duration-150
         ${
           active
-            ? 'bg-sb-blue text-sb-dark border-sb-blue shadow-[0_0_12px_rgba(0,246,255,0.4)]'
-            : 'bg-[#0a1520] text-sb-text border-[#1e3040] hover:border-sb-blue hover:text-sb-blue'
+            ? "bg-sb-blue text-sb-dark border-sb-blue shadow-[0_0_12px_rgba(0,246,255,0.4)]"
+            : "bg-[#0a1520] text-sb-text border-[#1e3040] hover:border-sb-blue hover:text-sb-blue"
         }
-        ${disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}
+        ${disabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}
       `}
     >
       <span className="block text-[10px] font-normal opacity-70 mb-0.5">
@@ -27,20 +232,20 @@ function OddsButton({ label, value, active, onClick, disabled }) {
   );
 }
 
-function GameCard({ game, onBet, userBalance, betPlaced, onBetPlaced }) {
+// ── GAME CARD ─────────────────────────────────────────────────────────────────
+function GameCard({ game, onBetRequest, betPlaced }) {
   const [selectedBet, setSelectedBet] = useState(null);
-  const [stakeInput, setStakeInput] = useState('');
 
   const home = game.competitions?.[0]?.competitors?.find(
-    (c) => c.homeAway === 'home',
+    (c) => c.homeAway === "home",
   );
   const away = game.competitions?.[0]?.competitors?.find(
-    (c) => c.homeAway === 'away',
+    (c) => c.homeAway === "away",
   );
   const status = game.status?.type;
-  const isLive = status?.state === 'in';
-  const isFinished = status?.state === 'post';
-  const isScheduled = status?.state === 'pre';
+  const isLive = status?.state === "in";
+  const isFinished = status?.state === "post";
+  const isScheduled = status?.state === "pre";
 
   if (!home || !away) return null;
 
@@ -51,45 +256,37 @@ function GameCard({ game, onBet, userBalance, betPlaced, onBetPlaced }) {
   const period = game.status?.period;
   const clock = game.status?.displayClock;
 
-  // Seeded from game id so odds stay stable per session
+  // Seeded odds — stable per game, no flicker on re-render
   const seed = game.id ? game.id.charCodeAt(0) / 255 : 0.5;
   const homeOdds = (1.4 + seed * 1.4).toFixed(2);
   const awayOdds = (1.4 + (1 - seed) * 1.4).toFixed(2);
-  const overOdds = '1.90';
-  const underOdds = '1.90';
+  const overOdds = "1.90";
+  const underOdds = "1.90";
 
-  const handleSelectBet = (type, label, odds) => {
+  const handleSelect = (type, selection, odds) => {
     if (betPlaced || isFinished) return;
-    setSelectedBet(selectedBet?.type === type ? null : { type, label, odds });
-    setStakeInput('');
+    setSelectedBet(selectedBet?.type === type ? null : { type, selection, odds });
   };
 
-  const handlePlaceBet = () => {
-    const stake = parseFloat(stakeInput);
-    if (!stake || stake <= 0 || stake > userBalance) return;
-    onBet({
+  const handleBetClick = () => {
+    if (!selectedBet) return;
+    onBetRequest({
       gameId: game.id,
-      ...selectedBet,
-      stake,
-      payout: (stake * selectedBet.odds).toFixed(2),
+      homeTeam: homeTeam.displayName,
+      awayTeam: awayTeam.displayName,
+      betType: selectedBet.type.startsWith("ml") ? "moneyline" : "total_goals",
+      selection: selectedBet.selection,
+      odds: selectedBet.odds,
     });
-    onBetPlaced(game.id);
-    setSelectedBet(null);
-    setStakeInput('');
   };
-
-  const potentialPayout =
-    selectedBet && stakeInput
-      ? (parseFloat(stakeInput) * selectedBet.odds).toFixed(2)
-      : null;
 
   return (
     <div
       className={`
-      rounded-xl border p-4 mb-3 transition-all
-      ${isLive ? 'border-[#00f6ff44] bg-[#050e14] shadow-[0_0_20px_rgba(0,246,255,0.08)]' : 'border-[#1a2535] bg-[#060c12]'}
-      ${isFinished ? 'opacity-60' : ''}
-    `}
+        rounded-xl border p-4 mb-3 transition-all
+        ${isLive ? "border-[#00f6ff44] bg-[#050e14] shadow-[0_0_20px_rgba(0,246,255,0.08)]" : "border-[#1a2535] bg-[#060c12]"}
+        ${isFinished ? "opacity-60" : ""}
+      `}
     >
       {/* Status Badge */}
       <div className="flex items-center justify-between mb-3">
@@ -102,12 +299,12 @@ function GameCard({ game, onBet, userBalance, betPlaced, onBetPlaced }) {
           )}
           {isScheduled && (
             <span className="text-xs text-sb-muted">
-              {new Date(game.date).toLocaleString('en-US', {
-                weekday: 'short',
-                month: 'short',
-                day: 'numeric',
-                hour: 'numeric',
-                minute: '2-digit',
+              {new Date(game.date).toLocaleString("en-US", {
+                weekday: "short",
+                month: "short",
+                day: "numeric",
+                hour: "numeric",
+                minute: "2-digit",
               })}
             </span>
           )}
@@ -124,7 +321,6 @@ function GameCard({ game, onBet, userBalance, betPlaced, onBetPlaced }) {
 
       {/* Teams & Score */}
       <div className="flex items-center justify-between mb-4">
-        {/* Away Team */}
         <div className="flex items-center gap-3 flex-1">
           {awayTeam.logo && (
             <img
@@ -143,19 +339,17 @@ function GameCard({ game, onBet, userBalance, betPlaced, onBetPlaced }) {
           </div>
         </div>
 
-        {/* Score / VS */}
         <div className="text-center px-4">
           {isLive || isFinished ? (
             <div className="text-2xl font-black text-white tracking-tight">
-              {awayScore} <span className="text-sb-muted text-lg">–</span>{' '}
-              {homeScore}
+              {awayScore}{" "}
+              <span className="text-sb-muted text-lg">–</span> {homeScore}
             </div>
           ) : (
             <div className="text-lg font-bold text-sb-muted">VS</div>
           )}
         </div>
 
-        {/* Home Team */}
         <div className="flex items-center gap-3 flex-1 justify-end">
           <div className="text-right">
             <div className="font-bold text-sb-text text-sm">
@@ -193,10 +387,10 @@ function GameCard({ game, onBet, userBalance, betPlaced, onBetPlaced }) {
                     <OddsButton
                       label={awayTeam.abbreviation}
                       value={`×${awayOdds}`}
-                      active={selectedBet?.type === 'ml_away'}
+                      active={selectedBet?.type === "ml_away"}
                       onClick={() =>
-                        handleSelectBet(
-                          'ml_away',
+                        handleSelect(
+                          "ml_away",
                           `${awayTeam.displayName} ML`,
                           parseFloat(awayOdds),
                         )
@@ -206,10 +400,10 @@ function GameCard({ game, onBet, userBalance, betPlaced, onBetPlaced }) {
                     <OddsButton
                       label={homeTeam.abbreviation}
                       value={`×${homeOdds}`}
-                      active={selectedBet?.type === 'ml_home'}
+                      active={selectedBet?.type === "ml_home"}
                       onClick={() =>
-                        handleSelectBet(
-                          'ml_home',
+                        handleSelect(
+                          "ml_home",
                           `${homeTeam.displayName} ML`,
                           parseFloat(homeOdds),
                         )
@@ -226,11 +420,11 @@ function GameCard({ game, onBet, userBalance, betPlaced, onBetPlaced }) {
                     <OddsButton
                       label="Over 5.5"
                       value={`×${overOdds}`}
-                      active={selectedBet?.type === 'total_over'}
+                      active={selectedBet?.type === "total_over"}
                       onClick={() =>
-                        handleSelectBet(
-                          'total_over',
-                          'Over 5.5 Goals',
+                        handleSelect(
+                          "total_over",
+                          "Over 5.5 Goals",
                           parseFloat(overOdds),
                         )
                       }
@@ -239,11 +433,11 @@ function GameCard({ game, onBet, userBalance, betPlaced, onBetPlaced }) {
                     <OddsButton
                       label="Under 5.5"
                       value={`×${underOdds}`}
-                      active={selectedBet?.type === 'total_under'}
+                      active={selectedBet?.type === "total_under"}
                       onClick={() =>
-                        handleSelectBet(
-                          'total_under',
-                          'Under 5.5 Goals',
+                        handleSelect(
+                          "total_under",
+                          "Under 5.5 Goals",
                           parseFloat(underOdds),
                         )
                       }
@@ -253,63 +447,14 @@ function GameCard({ game, onBet, userBalance, betPlaced, onBetPlaced }) {
                 </div>
               </div>
 
-              {/* Stake Input */}
               {selectedBet && (
-                <div className="bg-[#071018] rounded-lg border border-sb-blue/30 p-3 mt-2">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs text-sb-muted">
-                      Selected:{' '}
-                      <span className="text-sb-blue font-semibold">
-                        {selectedBet.label}
-                      </span>
-                    </span>
-                    <span className="text-xs text-sb-muted">
-                      Odds:{' '}
-                      <span className="text-white font-bold">
-                        ×{selectedBet.odds}
-                      </span>
-                    </span>
-                  </div>
-                  <div className="flex gap-2 items-center">
-                    <div className="relative flex-1">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sb-muted font-bold">
-                        $
-                      </span>
-                      <input
-                        type="number"
-                        min="1"
-                        max={userBalance}
-                        value={stakeInput}
-                        onChange={(e) => setStakeInput(e.target.value)}
-                        placeholder="Stake"
-                        className="w-full bg-[#0a1822] border border-[#1e3040] rounded pl-7 pr-3 py-2 text-white text-sm focus:outline-none focus:border-sb-blue"
-                      />
-                    </div>
-                    {potentialPayout && (
-                      <div className="text-xs text-center">
-                        <div className="text-sb-muted">Win</div>
-                        <div className="text-green-400 font-bold">
-                          ${potentialPayout}
-                        </div>
-                      </div>
-                    )}
-                    <button
-                      onClick={handlePlaceBet}
-                      disabled={
-                        !stakeInput ||
-                        parseFloat(stakeInput) <= 0 ||
-                        parseFloat(stakeInput) > userBalance
-                      }
-                      className="bg-sb-blue text-sb-dark font-bold px-4 py-2 rounded text-sm hover:bg-sb-blue-light transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                      Place Bet
-                    </button>
-                  </div>
-                  {parseFloat(stakeInput) > userBalance && (
-                    <p className="text-sb-error text-xs mt-1">
-                      Insufficient balance
-                    </p>
-                  )}
+                <div className="mt-2 flex justify-end">
+                  <button
+                    onClick={handleBetClick}
+                    className="bg-sb-blue text-sb-dark font-bold px-5 py-2 rounded text-sm hover:bg-sb-blue-light transition-colors"
+                  >
+                    Review Bet →
+                  </button>
                 </div>
               )}
             </>
@@ -320,16 +465,17 @@ function GameCard({ game, onBet, userBalance, betPlaced, onBetPlaced }) {
   );
 }
 
+// ── MAIN COMPONENT ────────────────────────────────────────────────────────────
 export default function Hockey() {
   const { user } = useAuth();
   const [games, setGames] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [filter, setFilter] = useState('all');
+  const [filter, setFilter] = useState("all");
   const [recentBets, setRecentBets] = useState([]);
   const [balance, setBalance] = useState(user?.balance ?? 1000);
   const [toast, setToast] = useState(null);
-  // Track which game IDs have already been bet on this session
+  const [pendingBet, setPendingBet] = useState(null);
   const [bettedGames, setBettedGames] = useState(new Set());
 
   useEffect(() => {
@@ -341,7 +487,7 @@ export default function Hockey() {
     setError(null);
     try {
       const res = await fetch(ESPN_NHL_SCOREBOARD);
-      if (!res.ok) throw new Error('Failed to fetch NHL games');
+      if (!res.ok) throw new Error("Failed to fetch NHL games");
       const data = await res.json();
       setGames(data.events ?? []);
     } catch (err) {
@@ -351,41 +497,66 @@ export default function Hockey() {
     }
   }
 
-  function handleBet(betInfo) {
-    setBalance((prev) => prev - betInfo.stake);
-    setRecentBets((prev) => [betInfo, ...prev].slice(0, 5));
-    showToast(
-      `Bet placed: ${betInfo.label} · $${betInfo.stake} to win $${betInfo.payout}`,
-    );
-  }
-
-  function handleBetPlaced(gameId) {
-    setBettedGames((prev) => new Set([...prev, gameId]));
-  }
-
-  function showToast(msg) {
-    setToast(msg);
-    window.setTimeout(() => setToast(null), 4000);
+  async function handleConfirmBet(bet) {
+    try {
+      const res = await fetch(`${API_BASE}/nhl/bets`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(bet),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setToast(`❌ ${data.error || "Failed to place bet"}`);
+      } else {
+        setBettedGames((prev) => new Set([...prev, bet.gameId]));
+        setBalance(data.newBalance);
+        setRecentBets((prev) =>
+          [
+            {
+              label: bet.selection,
+              stake: bet.stake,
+              payout: data.potentialPayout,
+            },
+            ...prev,
+          ].slice(0, 5),
+        );
+        setToast(
+          `✅ Bet placed!\n${bet.awayTeam} @ ${bet.homeTeam}\n${bet.selection}\nPayout: $${data.potentialPayout}\nBalance: $${data.newBalance}`,
+        );
+      }
+    } catch {
+      setToast("❌ Failed to place bet. Please try again.");
+    } finally {
+      setPendingBet(null);
+    }
   }
 
   const filteredGames = games.filter((g) => {
     const state = g.status?.type?.state;
-    if (filter === 'live') return state === 'in';
-    if (filter === 'upcoming') return state === 'pre';
-    if (filter === 'finished') return state === 'post';
+    if (filter === "live") return state === "in";
+    if (filter === "upcoming") return state === "pre";
+    if (filter === "finished") return state === "post";
     return true;
   });
 
-  const liveCount = games.filter((g) => g.status?.type?.state === 'in').length;
+  const liveCount = games.filter(
+    (g) => g.status?.type?.state === "in",
+  ).length;
 
   return (
     <div className="max-w-4xl mx-auto">
-      {/* Toast */}
-      {toast && (
-        <div className="fixed bottom-6 right-6 z-50 bg-sb-dark border border-sb-blue/50 text-sb-blue px-5 py-3 rounded-xl shadow-2xl text-sm font-semibold">
-          ✓ {toast}
-        </div>
+      {/* Bet Modal */}
+      {pendingBet && (
+        <BetModal
+          bet={pendingBet}
+          userBalance={balance}
+          onClose={() => setPendingBet(null)}
+          onConfirm={handleConfirmBet}
+        />
       )}
+
+      {/* Toast */}
+      {toast && <Toast message={toast} onDone={() => setToast(null)} />}
 
       {/* Header */}
       <div className="mb-6">
@@ -414,7 +585,7 @@ export default function Hockey() {
             Your Balance
           </div>
           <div className="text-2xl font-black text-sb-blue">
-            ${balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            ${Number(balance).toLocaleString("en-US", { minimumFractionDigits: 2 })}
           </div>
         </div>
         <div className="md:col-span-2 bg-[#060c12] border border-[#1a2535] rounded-xl p-4">
@@ -442,18 +613,18 @@ export default function Hockey() {
 
       {/* Filter Tabs */}
       <div className="flex gap-2 mb-4">
-        {['all', 'live', 'upcoming', 'finished'].map((f) => (
+        {["all", "live", "upcoming", "finished"].map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
             className={`px-4 py-1.5 rounded-full text-sm font-semibold border transition-all capitalize
               ${
                 filter === f
-                  ? 'bg-sb-blue text-sb-dark border-sb-blue'
-                  : 'border-[#1a2535] text-sb-muted hover:border-sb-blue hover:text-sb-blue'
+                  ? "bg-sb-blue text-sb-dark border-sb-blue"
+                  : "border-[#1a2535] text-sb-muted hover:border-sb-blue hover:text-sb-blue"
               }`}
           >
-            {f === 'live' && liveCount > 0
+            {f === "live" && liveCount > 0
               ? `Live (${liveCount})`
               : f.charAt(0).toUpperCase() + f.slice(1)}
           </button>
@@ -475,7 +646,7 @@ export default function Hockey() {
       )}
       {error && (
         <div className="bg-sb-error-bg border border-sb-error/30 text-sb-error rounded-xl p-4 text-sm">
-          Failed to load games: {error}.{' '}
+          Failed to load games: {error}.{" "}
           <button onClick={fetchGames} className="underline">
             Try again
           </button>
@@ -484,7 +655,7 @@ export default function Hockey() {
       {!loading && !error && filteredGames.length === 0 && (
         <div className="text-center py-16 text-sb-muted">
           <p className="text-2xl mb-2">🏒</p>
-          <p>No {filter === 'all' ? '' : filter} games right now.</p>
+          <p>No {filter === "all" ? "" : filter} games right now.</p>
           <p className="text-sm mt-1">
             Check back during the NHL season for live matchups.
           </p>
@@ -496,10 +667,8 @@ export default function Hockey() {
           <GameCard
             key={game.id}
             game={game}
-            onBet={handleBet}
-            userBalance={balance}
+            onBetRequest={setPendingBet}
             betPlaced={bettedGames.has(game.id)}
-            onBetPlaced={handleBetPlaced}
           />
         ))}
     </div>
