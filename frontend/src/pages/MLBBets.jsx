@@ -5,39 +5,6 @@ import { useAuth } from '../context/AuthContext';
 const ESPN_MLB_SCOREBOARD =
   'https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard';
 
-// ── TEAM COLORS ───────────────────────────────────────────────────────────────
-const TEAM_COLORS = {
-  NYY: '#003087',
-  BOS: '#BD3039',
-  LAD: '#005A9C',
-  SF: '#FD5A1E',
-  CHC: '#0E3386',
-  STL: '#C41E3A',
-  ATL: '#CE1141',
-  NYM: '#002D72',
-  PHI: '#E81828',
-  MIL: '#FFC52F',
-  CIN: '#C6011F',
-  PIT: '#FDB827',
-  CHW: '#27251F',
-  CLE: '#00385D',
-  DET: '#0C2340',
-  KC: '#004687',
-  MIN: '#002B5C',
-  HOU: '#EB6E1F',
-  LAA: '#BA0021',
-  OAK: '#003831',
-  SEA: '#0C2C56',
-  TEX: '#003278',
-  TB: '#092C5C',
-  TOR: '#134A8E',
-  BAL: '#DF4601',
-  WSH: '#AB0003',
-  MIA: '#00A3E0',
-  COL: '#333366',
-  ARI: '#A71930',
-  SD: '#2F241D',
-};
 
 // ── ODDS GENERATOR ────────────────────────────────────────────────────────────
 // Seeded from game ID so odds don't flicker on re-render
@@ -272,8 +239,8 @@ function GameCard({ game, onBet, placedBets }) {
   const underOdds = '1.90';
   const totalLine = '8.5';
 
-  const homeColor = TEAM_COLORS[homeTeam.abbreviation] || '#00f6ff';
-  const awayColor = TEAM_COLORS[awayTeam.abbreviation] || '#00f6ff';
+  const homeColor = game.homeColor || '#00f6ff';
+  const awayColor = game.awayColor || '#00f6ff';
 
   const alreadyBet = placedBets.includes(game.id);
 
