@@ -32,6 +32,14 @@ const BetSlipFooter = ({
 
   if (selections.length === 0) return null;
 
+  // LIVE PAYOUT CALCULATION
+  const numericStake = Number(stake) || 0;
+  const totalOdds = selections.reduce(
+    (acc, sel) => acc * (Number(sel.odds) || 1),
+    1,
+  );
+  const expectedPayout = numericStake * totalOdds;
+
   // moves to next step to finalize bet confirmation, but first does a quick JIT balance check to prevent users from going to the confirm screen if they don't have enough funds. This is because the confirm screen shows the final cost and is where users expect to see any last-minute errors before placing the bet.
   const handleReviewClick = async () => {
     if (checkoutError && setCheckoutError) {
@@ -129,14 +137,20 @@ const BetSlipFooter = ({
 
       {/* Bottom Row: Dynamic UI based on state and Error/Warnings */}
       <div className="w-full flex flex-col sm:flex-row justify-between items-center border-t border-gray-800 pt-3 mt-1 gap-3">
-        {/* Left Side: Balance (Hidden during success screen to keep it clean) */}
-
-        <div className="flex-1 flex items-center whitespace-nowrap gap-2 text-md font-semibold tracking-wide">
-          <span className="text-gray-400">Available Balance:</span>
-          <span className="text-white">
-            ${user?.balance ? Number(user.balance).toFixed(2) : '0.00'}
-          </span>
+        {/* Left Side: Balance & Live Expected Payout */}
+        <div className="flex-1 flex flex-col gap-1 text-md font-semibold tracking-wide whitespace-nowrap">
+          <div className="flex items-center gap-2">
+            <span className="text-gray-400">Balance:</span>
+            <span className="text-white">
+              ${user?.balance ? Number(user.balance).toFixed(2) : '0.00'}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-gray-400">Expected Payout:</span>
+            <span className="text-[#00f6ff]">${expectedPayout.toFixed(2)}</span>
+          </div>
         </div>
+
         <div className="flex flex-col gap-2 sm:items-end">
           {slipWarning && (
             <div className="bg-amber-950/50 border border-amber-700/50 text-amber-300 text-[11px] font-medium px-3 py-1 rounded-md max-w-md shadow-inner flex items-center gap-1.5">
