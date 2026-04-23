@@ -5,12 +5,35 @@ import axios from 'axios';
 import { poolPromise } from '../../components/db-connect.js';
 
 // Helper to strip out spaces, "and", "&" for perfect matching in the database
+// Helper to strip out spaces and map tricky teams to a core "root" word
 function normalizeName(name) {
   if (!name) return '';
-  return name
-    .toLowerCase()
-    .replace(/ and | & /g, '')
-    .replace(/[^a-z]/g, '');
+
+  const lowerName = name.toLowerCase();
+
+  // 1. The Alias Dictionary (Entity Resolution)
+  // If the incoming API or ESPN name contains these keywords,
+  // immediately boil it down to a single root word.
+  if (lowerName.includes('brighton') || lowerName.includes('hove albion'))
+    return 'brighton';
+  if (lowerName.includes('manchester united') || lowerName.includes('man utd'))
+    return 'manchesterunited';
+  if (lowerName.includes('manchester city') || lowerName.includes('man city'))
+    return 'manchestercity';
+  if (lowerName.includes('tottenham') || lowerName.includes('spurs'))
+    return 'tottenham';
+  if (lowerName.includes('nottingham') || lowerName.includes("nott'm"))
+    return 'nottingham';
+  if (lowerName.includes('wolverhampton') || lowerName.includes('wolves'))
+    return 'wolves';
+  if (lowerName.includes('newcastle')) return 'newcastle';
+
+  // 2. Default fallback for standard teams (Arsenal, Chelsea, etc.)
+  return lowerName
+    .replace(/fc/g, '') // strip FC
+    .replace(/afc/g, '') // strip AFC (e.g., AFC Bournemouth -> bournemouth)
+    .replace(/ and | & /g, '') // strip and/&
+    .replace(/[^a-z]/g, ''); // strip spaces and special chars
 }
 
 // READ-ONLY: Only fetches the League. Will NOT create it.
@@ -47,7 +70,6 @@ async function getTeam(pool, teamName) {
 }
 
 // Odds-api team IDs for home and away team along with the games start time
-// It is perfectly fine for Odds API to create the EVENT, as long as the teams exist.
 async function getOrCreateEvent(
   pool,
   leagueId,
@@ -56,13 +78,56 @@ async function getOrCreateEvent(
   startTime,
   apiId,
 ) {
+  // 1. Try to find the exact match by Odds API ID
   let res = await pool
     .request()
     .input('apiId', sql.VarChar, apiId)
     .query('SELECT id FROM events WHERE api_id = @apiId');
 
-  if (res.recordset.length > 0) return res.recordset[0].id;
+  if (res.recordset.length > 0) {
+    const existingId = res.recordset[0].id;
+    await pool
+      .request()
+      .input('id', sql.BigInt, existingId)
+      .input('startTime', sql.DateTime2, new Date(startTime))
+      .query('UPDATE events SET start_time = @startTime WHERE id = @id');
 
+    return existingId;
+  }
+
+  // 2. If API ID is not found, look for the same teams playing roughly the same time
+  res = await pool
+    .request()
+    .input('leagueId', sql.Int, leagueId)
+    .input('homeTeamId', sql.Int, homeTeamId)
+    .input('awayTeamId', sql.Int, awayTeamId)
+    .input('startTime', sql.DateTime2, new Date(startTime)).query(`
+        SELECT id from events
+        WHERE league_id = @leagueId
+          AND home_team_id = @homeTeamId
+          AND away_team_id = @awayTeamId
+          -- Removed the status check! If it's completed, we still want to grab it, not duplicate it.
+          AND ABS(DATEDIFF(day, start_time, @startTime)) <= 5
+        `);
+
+  if (res.recordset.length > 0) {
+    // Update the old record with the new API ID and Time
+    const existingEventId = res.recordset[0].id;
+
+    await pool
+      .request()
+      .input('id', sql.BigInt, existingEventId)
+      .input('newApiId', sql.VarChar, apiId)
+      .input('newStartTime', sql.DateTime2, new Date(startTime)).query(`
+              UPDATE events
+              SET api_id = @newApiId, start_time = @newStartTime
+              WHERE id = @id
+              `);
+
+    return existingEventId;
+  }
+
+  // 3. Brand new game
   res = await pool
     .request()
     .input('leagueId', sql.Int, leagueId)
@@ -74,6 +139,7 @@ async function getOrCreateEvent(
       OUTPUT INSERTED.id 
       VALUES (@leagueId, @homeTeamId, @awayTeamId, @startTime, 'scheduled', @apiId)
     `);
+
   return res.recordset[0].id;
 }
 
@@ -98,37 +164,28 @@ async function getOrCreateMarket(pool, eventId, type) {
 
 // Adds or updates the odds in the selections table
 async function upsertSelection(pool, marketId, label, odds, lineValue) {
-  let res = await pool
-    .request()
-    .input('marketId', sql.BigInt, marketId)
-    .input('label', sql.NVarChar, label)
-    .query(
-      'SELECT id FROM selections WHERE market_id = @marketId AND label = @label',
-    );
-
-  if (res.recordset.length > 0) {
-    const selectionId = res.recordset[0].id;
-    await pool
-      .request()
-      .input('id', sql.BigInt, selectionId)
-      .input('odds', sql.Decimal(10, 4), odds)
-      .input('lineValue', sql.Decimal(10, 2), lineValue)
-      .query(
-        'UPDATE selections SET odds = @odds, line_value = @lineValue WHERE id = @id',
-      );
-    return selectionId;
-  }
-
-  res = await pool
+  const res = await pool
     .request()
     .input('marketId', sql.BigInt, marketId)
     .input('label', sql.NVarChar, label)
     .input('odds', sql.Decimal(10, 4), odds)
     .input('lineValue', sql.Decimal(10, 2), lineValue).query(`
-      INSERT INTO selections (market_id, label, odds, line_value) 
-      OUTPUT INSERTED.id 
-      VALUES (@marketId, @label, @odds, @lineValue)
+      MERGE INTO selections AS target
+      USING (SELECT @marketId AS market_id, @label AS label) AS source
+      ON (target.market_id = source.market_id AND target.label = source.label)
+      
+      WHEN MATCHED THEN
+        UPDATE SET 
+          odds = @odds, 
+          line_value = @lineValue
+          
+      WHEN NOT MATCHED THEN
+        INSERT (market_id, label, odds, line_value, result)
+        VALUES (@marketId, @label, @odds, @lineValue, 'pending')
+      
+      OUTPUT INSERTED.id;
     `);
+
   return res.recordset[0].id;
 }
 
@@ -247,45 +304,45 @@ app.timer('ingestOddsTimer', {
         }
 
         // Fetch Player Props
-        try {
-          context.log(`Fetching player props for event: ${apiGame.id}`);
-          const propsResponse = await axios.get(
-            `https://api.the-odds-api.com/v4/sports/soccer_epl/events/${apiGame.id}/odds/?apiKey=${apiKey}&regions=us&markets=player_goal_scorer_anytime`,
-          );
+        // try {
+        //   context.log(`Fetching player props for event: ${apiGame.id}`);
+        //   const propsResponse = await axios.get(
+        //     `https://api.the-odds-api.com/v4/sports/soccer_epl/events/${apiGame.id}/odds/?apiKey=${apiKey}&regions=us&markets=player_goal_scorer_anytime`,
+        //   );
 
-          const propsData = propsResponse.data;
+        //   const propsData = propsResponse.data;
 
-          if (propsData.bookmakers && propsData.bookmakers.length > 0) {
-            const propsBookmaker = propsData.bookmakers[0];
+        //   if (propsData.bookmakers && propsData.bookmakers.length > 0) {
+        //     const propsBookmaker = propsData.bookmakers[0];
 
-            for (const market of propsBookmaker.markets) {
-              if (market.key !== 'player_goal_scorer_anytime') continue;
+        //     for (const market of propsBookmaker.markets) {
+        //       if (market.key !== 'player_goal_scorer_anytime') continue;
 
-              const marketId = await getOrCreateMarket(
-                pool,
-                eventId,
-                market.key,
-              );
+        //       const marketId = await getOrCreateMarket(
+        //         pool,
+        //         eventId,
+        //         market.key,
+        //       );
 
-              for (const outcome of market.outcomes) {
-                const playerLabel = outcome.description || outcome.name;
+        //       for (const outcome of market.outcomes) {
+        //         const playerLabel = outcome.description || outcome.name;
 
-                await upsertSelection(
-                  pool,
-                  marketId,
-                  playerLabel,
-                  outcome.price,
-                  outcome.point ?? null,
-                );
-              }
-            }
-          }
-        } catch (propError) {
-          context.error(
-            `Could not fetch props for game ${apiGame.id}:`,
-            propError.message,
-          );
-        }
+        //         await upsertSelection(
+        //           pool,
+        //           marketId,
+        //           playerLabel,
+        //           outcome.price,
+        //           outcome.point ?? null,
+        //         );
+        //       }
+        //     }
+        //   }
+        // } catch (propError) {
+        //   context.error(
+        //     `Could not fetch props for game ${apiGame.id}:`,
+        //     propError.message,
+        //   );
+        // }
       }
       context.log('✅ Odds ingestion completed successfully.');
     } catch (error) {
