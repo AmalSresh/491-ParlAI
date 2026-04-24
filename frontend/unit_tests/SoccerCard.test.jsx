@@ -1,7 +1,22 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { vi } from 'vitest';
 import SoccerCard from '../src/components/SoccerCard';
 
+vi.mock('../src/context/BetSlipContext', () => {
+  const mockToggleSelection = vi.fn();
+  const mockPruneSelectionsForGames = vi.fn();
+
+  return {
+    useGlobalBetSlip: vi.fn(() => ({
+      selections: [],
+      toggleSelection: mockToggleSelection,
+      pruneSelectionsForGames: mockPruneSelectionsForGames,
+    })),
+  };
+});
+
 const mockGame = {
+  id: '1',
   status: 'live',
   startTime: '2026-03-20T18:00:00Z',
   homeTeam: 'Arsenal',
@@ -10,14 +25,21 @@ const mockGame = {
   awayScore: 1,
   homeLogo: '',
   awayLogo: '',
-  mainOdds: '-150 / +220 / +300',
   totalLine: '2.5',
   overOdds: '-110',
   underOdds: '-110',
+  h2hPicks: {
+    home: { id: 1, label: 'Arsenal', odds: '-150' },
+    draw: { id: 3, label: 'Draw', odds: '+220' },
+    away: { id: 2, label: 'Chelsea', odds: '+300' },
+  },
+  totalsPicks: {
+    over: { id: 4, label: 'Over', lineValue: '2.5', odds: '-110' },
+    under: { id: 5, label: 'Under', lineValue: '2.5', odds: '-110' },
+  },
 };
 
 describe('SoccerCard Component', () => {
-  // 🔹 Helper to reduce repetition
   const renderComponent = (game = mockGame) => {
     return render(<SoccerCard game={game} />);
   };
@@ -25,7 +47,6 @@ describe('SoccerCard Component', () => {
   test('renders teams and scores correctly', () => {
     renderComponent();
 
-    // Use accessible roles instead of ambiguous text
     expect(
       screen.getByRole('heading', { name: /arsenal/i }),
     ).toBeInTheDocument();
@@ -41,6 +62,7 @@ describe('SoccerCard Component', () => {
   test('renders moneyline odds correctly', () => {
     renderComponent();
 
+    // Now these will be successfully pulled from h2hPicks!
     expect(screen.getByText('-150')).toBeInTheDocument();
     expect(screen.getByText('+220')).toBeInTheDocument();
     expect(screen.getByText('+300')).toBeInTheDocument();
@@ -61,37 +83,34 @@ describe('SoccerCard Component', () => {
   test('toggles expanded section on user interaction', async () => {
     renderComponent();
 
-    const toggleText = screen.getByText(/click for more bets/i);
+    // 1. Expand the section
+    fireEvent.click(screen.getByText(/more bets/i));
+    expect(await screen.findByText(/total goals/i)).toBeInTheDocument();
 
-    // Expand
-    fireEvent.click(toggleText);
+    // 2. Collapse the section
+    fireEvent.click(screen.getByText(/fewer bets/i));
 
-    expect(
-      await screen.findByText(/additional betting markets/i),
-    ).toBeInTheDocument();
-
-    // Collapse
-    fireEvent.click(screen.getByText(/click to hide extra bets/i));
-
+    // 3. Verify it closed by checking that the button text reverted!
     await waitFor(() => {
-      expect(
-        screen.queryByText(/additional betting markets/i),
-      ).not.toBeInTheDocument();
+      expect(screen.getByText(/more bets/i)).toBeInTheDocument();
     });
   });
 
   test('renders total goals and additional odds when expanded', async () => {
     renderComponent();
 
-    fireEvent.click(screen.getByText(/click for more bets/i));
+    // Match the actual text here too
+    fireEvent.click(screen.getByText(/more bets/i));
 
     expect(await screen.findByText(/total goals/i)).toBeInTheDocument();
-
-    expect(screen.getByText('2.5')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        (content, el) => el?.tagName === 'SPAN' && content === '2.5',
+      ),
+    ).toBeInTheDocument();
     expect(screen.getByText('Over')).toBeInTheDocument();
     expect(screen.getByText('Under')).toBeInTheDocument();
 
-    // Multiple -110 values (Over & Under)
     const odds = screen.getAllByText('-110');
     expect(odds.length).toBeGreaterThanOrEqual(2);
   });

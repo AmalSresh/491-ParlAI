@@ -30,7 +30,7 @@ export function AuthProvider({ children }) {
 
       setUser({
         id: dbUser.id,
-        name: dbUser.name,
+        name: dbUser.nickname,
         email: dbUser.email,
         provider: principal.identityProvider,
         onboardingStage: dbUser.onboardingStage,
@@ -84,6 +84,7 @@ export function AuthProvider({ children }) {
     user,
     loading,
     isAuthenticated: !!user,
+    setUser,
     loginWithGoogle,
     loginWithFacebook,
     loginWithTwitter,
