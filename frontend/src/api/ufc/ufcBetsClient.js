@@ -1,18 +1,21 @@
-const API_BASE = "/api";
-const ENV_API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "").trim();
+const API_BASE = '/api';
+const ENV_API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').trim();
 const RESOLVED_API_BASE = ENV_API_BASE_URL || API_BASE;
 const ENDPOINTS = {
   placeBet: `${RESOLVED_API_BASE}/ufc/bets`,
 };
 
-const ESPN_UFC_SCOREBOARD_URL = "https://site.api.espn.com/apis/site/v2/sports/mma/ufc/scoreboard";
-const ESPN_UFC_SUMMARY_BASE = "https://site.api.espn.com/apis/site/v2/sports/mma/ufc/summary";
-const ESPN_UFC_RANKINGS_URL = "https://site.api.espn.com/apis/site/v2/sports/mma/ufc/rankings";
+const ESPN_UFC_SCOREBOARD_URL =
+  'https://site.api.espn.com/apis/site/v2/sports/mma/ufc/scoreboard';
+const ESPN_UFC_SUMMARY_BASE =
+  'https://site.api.espn.com/apis/site/v2/sports/mma/ufc/summary';
+const ESPN_UFC_RANKINGS_URL =
+  'https://site.api.espn.com/apis/site/v2/sports/mma/ufc/rankings';
 
 function toYYYYMMDD(d) {
   const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
   return `${year}${month}${day}`;
 }
 
@@ -41,23 +44,27 @@ export function getUfcWeekDateKeys(refDate = new Date()) {
  * @returns {string} YYYY-MM-DD
  */
 export function yyyymmddToIsoDate(yyyymmdd) {
-  if (!yyyymmdd || yyyymmdd.length < 8) return "";
+  if (!yyyymmdd || yyyymmdd.length < 8) return '';
   return `${yyyymmdd.slice(0, 4)}-${yyyymmdd.slice(4, 6)}-${yyyymmdd.slice(6, 8)}`;
 }
 
 function getOverallRecord(athleteComp) {
   const recs = athleteComp?.records;
-  if (!recs || !recs.length) return "—";
-  const t = recs.find((r) => r.name === "overall" || r.abbreviation === "TOT") || recs[0];
-  return t?.summary || "—";
+  if (!recs || !recs.length) return '—';
+  const t =
+    recs.find((r) => r.name === 'overall' || r.abbreviation === 'TOT') ||
+    recs[0];
+  return t?.summary || '—';
 }
 
 function athleteName(c) {
-  return c?.athlete?.displayName || c?.athlete?.fullName || "—";
+  return c?.athlete?.displayName || c?.athlete?.fullName || '—';
 }
 
 function athleteAbbr(c) {
-  return c?.athlete?.shortName || c?.athlete?.displayName?.split(" ").pop() || "—";
+  return (
+    c?.athlete?.shortName || c?.athlete?.displayName?.split(' ').pop() || '—'
+  );
 }
 
 /**
@@ -69,42 +76,43 @@ function athleteAbbr(c) {
  * @returns {object | null}
  */
 function competitionToViewModel(comp, event, league0, venueLine, seasonName) {
-  const athletes = (comp.competitors || []).filter((c) => c.type === "athlete");
+  const athletes = (comp.competitors || []).filter((c) => c.type === 'athlete');
   if (athletes.length < 2) return null;
 
   const a = athletes.find((c) => c.order === 1) || athletes[0];
   const b = athletes.find((c) => c.order === 2) || athletes[1];
   if (!a || !b) return null;
 
-  const typeState = comp?.status?.type?.state || "pre";
-  const clock = comp?.status?.type?.shortDetail || comp?.status?.type?.detail || null;
+  const typeState = comp?.status?.type?.state || 'pre';
+  const clock =
+    comp?.status?.type?.shortDetail || comp?.status?.type?.detail || null;
 
   const awayWinner = a.winner === true;
   const homeWinner = b.winner === true;
   let winnerSide = null;
-  if (awayWinner && !homeWinner) winnerSide = "away";
-  if (homeWinner && !awayWinner) winnerSide = "home";
+  if (awayWinner && !homeWinner) winnerSide = 'away';
+  if (homeWinner && !awayWinner) winnerSide = 'home';
 
   const rounds = comp.format?.regulation?.periods;
   const isLongBout = rounds === 5;
 
   return {
     id: String(comp.id),
-    eventId: String(event?.id ?? ""),
-    source: "espn",
-    league: league0?.abbreviation || "UFC",
-    seasonDisplay: seasonName || event?.name || "UFC",
+    eventId: String(event?.id ?? ''),
+    source: 'espn',
+    league: league0?.abbreviation || 'UFC',
+    seasonDisplay: seasonName || event?.name || 'UFC',
     startDate: comp.startDate || comp.date || event?.date,
     eventDate: event?.date || null,
     venueLine: venueLine || null,
-    weightClass: comp.type?.abbreviation || comp.type?.name || "—",
+    weightClass: comp.type?.abbreviation || comp.type?.name || '—',
     isMainEvent: Boolean(isLongBout),
     isTitleFight: false,
     cardSegment: null,
     winnerSide,
     status: {
       typeState,
-      clock: clock || (typeState === "pre" ? "Scheduled" : ""),
+      clock: clock || (typeState === 'pre' ? 'Scheduled' : ''),
     },
     away: {
       abbr: athleteAbbr(a),
@@ -125,7 +133,8 @@ function competitionToViewModel(comp, event, league0, venueLine, seasonName) {
  */
 function parseUfcScoreboardPayload(payload) {
   const league0 = payload?.leagues?.[0];
-  const seasonDisplay = league0?.season?.displayName || league0?.season?.year || "—";
+  const seasonDisplay =
+    league0?.season?.displayName || league0?.season?.year || '—';
   const events = payload?.events || [];
   const out = [];
 
@@ -134,11 +143,17 @@ function parseUfcScoreboardPayload(payload) {
     const vCity = venue0?.address?.city;
     const vState = venue0?.address?.state;
     const vName = venue0?.fullName;
-    const venueLine = [vName, vCity, vState].filter(Boolean).join(" · ");
+    const venueLine = [vName, vCity, vState].filter(Boolean).join(' · ');
     const seasonName = event?.name || event?.shortName;
 
     for (const comp of event.competitions || []) {
-      const vm = competitionToViewModel(comp, event, league0, venueLine, seasonName || seasonDisplay);
+      const vm = competitionToViewModel(
+        comp,
+        event,
+        league0,
+        venueLine,
+        seasonName || seasonDisplay,
+      );
       if (vm) out.push(vm);
     }
   }
@@ -151,7 +166,9 @@ function parseUfcScoreboardPayload(payload) {
  * @returns {Promise<object[]>}
  */
 export async function fetchUfcScoreboard({ date } = {}) {
-  const url = date ? `${ESPN_UFC_SCOREBOARD_URL}?dates=${date}` : ESPN_UFC_SCOREBOARD_URL;
+  const url = date
+    ? `${ESPN_UFC_SCOREBOARD_URL}?dates=${date}`
+    : ESPN_UFC_SCOREBOARD_URL;
   const res = await fetch(url);
   if (!res.ok) {
     throw new Error(`ESPN UFC scoreboard failed (${res.status})`);
@@ -168,7 +185,7 @@ export async function fetchUfcScoreboard({ date } = {}) {
  * @returns {Promise<object | null>}
  */
 export async function fetchUfcEventSummary(eventId) {
-  if (eventId == null || String(eventId).trim() === "") {
+  if (eventId == null || String(eventId).trim() === '') {
     return null;
   }
   const url = `${ESPN_UFC_SUMMARY_BASE}?event=${encodeURIComponent(String(eventId))}`;
@@ -188,7 +205,9 @@ export async function fetchUfcEventSummary(eventId) {
  */
 export async function fetchUfcFightsWeek({ refDate } = {}) {
   const keys = getUfcWeekDateKeys(refDate ?? new Date());
-  const dayResults = await Promise.all(keys.map((date) => fetchUfcScoreboard({ date })));
+  const dayResults = await Promise.all(
+    keys.map((date) => fetchUfcScoreboard({ date })),
+  );
   const byId = new Map();
   for (const dayBouts of dayResults) {
     for (const b of dayBouts) {
@@ -213,7 +232,7 @@ function mapUfcRankingsForUi(payload) {
 
   return blocks
     .map((b) => {
-      const name = b.name || b.shortName || "Rankings";
+      const name = b.name || b.shortName || 'Rankings';
       const wc = b.weightClass;
       const weight_class = {
         name: wc?.text || name,
@@ -226,10 +245,20 @@ function mapUfcRankingsForUi(payload) {
           rank: r.current ?? r.rank,
           is_champion: Boolean(r.champion) || r.hasAccolade === true,
           is_interim_champion: Boolean(r.interim),
-          fighter: { name: athlete?.displayName || athlete?.fullName || "—", id: athlete?.id },
+          fighter: {
+            name: athlete?.displayName || athlete?.fullName || '—',
+            id: athlete?.id,
+          },
         };
       });
-      return { id: b.id, name, weight_class, rankings, type: b.type, headline: b.headline };
+      return {
+        id: b.id,
+        name,
+        weight_class,
+        rankings,
+        type: b.type,
+        headline: b.headline,
+      };
     })
     .filter((b) => b.rankings && b.rankings.length > 0);
 }
@@ -248,15 +277,15 @@ export async function fetchUfcRankings() {
 
 /** @deprecated use fetchUfcFightsWeek */
 export function normalizeUfcFight(x) {
-  if (!x || typeof x !== "object") return null;
+  if (!x || typeof x !== 'object') return null;
   if (x.id && x.home && x.away && x.league) return x;
   return null;
 }
 
 export async function placeUfcBet(bet) {
   const res = await fetch(ENDPOINTS.placeBet, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(bet),
   });
 
