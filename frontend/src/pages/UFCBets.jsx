@@ -239,8 +239,9 @@ export default function UFCBets() {
         if (!alive) return;
         setError(e?.message || "Failed to load UFC matchups from ESPN.");
       } finally {
-        if (!alive) return;
-        setLoading(false);
+        if (alive) {
+          setLoading(false);
+        }
       }
     }
     load();
@@ -266,8 +267,9 @@ export default function UFCBets() {
         if (!alive) return;
         setRankingsError(e?.message || "Failed to load rankings.");
       } finally {
-        if (!alive) return;
-        setRankingsLoading(false);
+        if (alive) {
+          setRankingsLoading(false);
+        }
       }
     })();
     return () => {
