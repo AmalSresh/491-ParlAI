@@ -1,119 +1,86 @@
 import { useState } from 'react';
-import {
-  Card,
-  CardContent,
-  Typography,
-  CardActionArea,
-  Collapse,
-  Divider,
-  Box,
-  Button,
-} from '@mui/material';
+import { MARKET_KEYS, formatSpreadLine } from '../utils/betPayload.js';
 
+//Animated element for showing live games
 const LiveIndicator = () => (
-  <Box
-    sx={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: 1,
-    }}
-  >
-    <Box
-      sx={{
-        width: 8,
-        height: 8,
-        borderRadius: '50%',
-        backgroundColor: '#d32f2f',
-        animation: 'pulse 2s infinite',
-        '@keyframes pulse': {
-          '0%': {
-            transform: 'scale(0.95)',
-            boxShadow: '0 0 0 0 rgba(211, 47, 47, 0.7)',
-          },
-          '70%': {
-            transform: 'scale(1)',
-            boxShadow: '0 0 0 6px rgba(211, 47, 47, 0)',
-          },
-          '100%': {
-            transform: 'scale(0.95)',
-            boxShadow: '0 0 0 0 rgba(211, 47, 47, 0)',
-          },
-        },
-      }}
-    />
-    <Typography
-      variant="caption"
-      sx={{
-        color: '#d32f2f',
-        fontWeight: 'bold',
-        textTransform: 'uppercase',
-        letterSpacing: 1,
-      }}
-    >
+  <div className="flex items-center justify-center gap-1.5 px-2 py-0.5 rounded-full bg-red-950/50 border border-red-700/50">
+    <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_4px_rgba(239,68,68,0.3)]" />
+    <span className="text-red-400 text-[10px] font-bold uppercase tracking-wider">
       Live
-    </Typography>
-  </Box>
+    </span>
+  </div>
 );
 
-const MoneylineBox = ({ label, odds }) => (
-  <Box
-    sx={{
-      backgroundColor: 'rgba(0,0,0,0.05)',
-      borderRadius: '4px',
-      p: 1,
-      textAlign: 'center',
-      border: '1px solid rgba(0,0,0,0.1)',
-    }}
-  >
-    <Typography
-      variant="caption"
-      sx={{
-        display: 'block',
-        whiteSpace: 'nowrap',
-        overflow: 'hidden',
-        textOverflow: 'ellipsis',
-      }}
+// Button styling for when they're pressed or not pressed/not press-able.
+const SelectionButton = ({
+  label,
+  secondaryLabel,
+  odds,
+  isSelected,
+  onClick,
+  disabled,
+}) => {
+  const invalid = odds === '-' || odds == null || odds === '';
+
+  // Common styles
+  const baseClass =
+    'flex flex-col items-center justify-center border rounded transition-all duration-200 h-full w-full';
+  const stateClass = isSelected
+    ? 'bg-[#00f6ff] border-[#00f6ff] text-black font-extrabold shadow-[0_0_15px_rgba(0,246,255,0.4)]' // Active state
+    : 'bg-[#1e2129] border-[#2d3343] text-white hover:border-[#00f6ff] hover:bg-[#252933] active:scale-[0.97]'; // Default state
+  const cursorClass =
+    disabled || invalid ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer';
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled || invalid}
+      className={`${baseClass} ${stateClass} ${cursorClass}`}
     >
-      {label}
-    </Typography>
-    <Typography variant="body2" sx={{ fontWeight: 'black' }}>
-      {odds}
-    </Typography>
-  </Box>
-);
+      {/* Label (Team Name or 'Over'/'Under') */}
+      <span
+        className={`block truncate text-[11px] leading-tight w-full text-center px-1 ${
+          isSelected ? 'text-black font-semibold' : 'text-gray-300'
+        }`}
+      >
+        {label}
+      </span>
 
-const OddsButton = ({ label, odds }) => (
-  <Button
-    variant="outlined"
-    sx={{
-      display: 'flex',
-      flexDirection: 'column',
-      backgroundColor: '#000000',
-      borderColor: '#2d3343',
-      color: 'white',
-      borderRadius: '4px',
-      padding: '8px',
-      textTransform: 'none',
-      '&:hover': { backgroundColor: '#1f2430', borderColor: '#00f6ff' },
-    }}
-  >
-    <Typography variant="caption" sx={{ color: '#ffffff', lineHeight: 1.2 }}>
-      {label}
-    </Typography>
-    <Typography variant="body1" sx={{ fontWeight: 'bold', lineHeight: 1.2 }}>
-      {odds}
-    </Typography>
-  </Button>
-);
+      {/* Optional secondary label (like Spread line +1.5 or Over line 2.5) */}
+      {secondaryLabel && (
+        <span
+          className={`text-sm font-bold leading-tight ${
+            isSelected ? 'text-black' : 'text-white'
+          }`}
+        >
+          {secondaryLabel}
+        </span>
+      )}
+
+      {/* The Price/Odds */}
+      <span
+        className={`font-black tracking-tight ${secondaryLabel ? 'text-xs' : 'text-lg'} ${
+          isSelected ? 'text-black' : 'text-[#00f6ff]'
+        }`}
+      >
+        {invalid ? '-' : odds}
+      </span>
+    </button>
+  );
+};
 
 // --- MAIN COMPONENT ---
-
-const GameCard = ({ game }) => {
+export default function SoccerCard({
+  game,
+  onToggleBet,
+  selectedBets = [],
+  bettingClosed,
+}) {
   const [expanded, setExpanded] = useState(false);
-
-  // 1. Destructure for cleaner variable access (ADDED: playerProps = [])
+  // initialize all element/variables of a game object
   const {
+    id,
     status,
     startTime,
     homeTeam,
@@ -122,301 +89,336 @@ const GameCard = ({ game }) => {
     awayScore,
     homeLogo,
     awayLogo,
-    mainOdds = '',
     totalLine,
     overOdds,
     underOdds,
-    playerProps = [], // Default to empty array to prevent crashes
+    spread = { home: null, away: null },
+    h2hPicks = { home: null, draw: null, away: null },
+    totalsPicks = { over: null, under: null },
+    sport,
+    leagueId,
   } = game;
 
-  // 2. Pre-split the odds so we don't do it inside the JSX
-  const [homeOdds = '-', drawOdds = '-', awayOdds = '-'] =
-    mainOdds.split(' / ');
+  const homeOdds = h2hPicks?.home?.odds || '-';
+  const awayOdds = h2hPicks?.away?.odds || '-';
+  const drawOdds = h2hPicks?.draw?.odds || '-';
 
-  const renderGameStatus = () => {
-    if (status === 'completed' || status === 'finished') {
-      return (
-        <Typography
-          variant="caption"
-          sx={{
-            color: '#555',
-            fontWeight: 'bold',
-            textTransform: 'uppercase',
-            letterSpacing: 1,
-          }}
-        >
-          FINAL
-        </Typography>
-      );
-    }
-    if (status === 'in_progress' || status === 'live') {
-      return <LiveIndicator />;
-    }
-    if (!startTime) return null;
+  const isFinal = status === 'completed' || status === 'finished';
+  const isLive = status === 'in_progress' || status === 'live';
+  const dateObj = startTime ? new Date(startTime) : null;
 
-    const dateObj = new Date(startTime);
-    return (
-      <Typography variant="caption" sx={{ color: '#333', fontWeight: 'bold' }}>
-        {dateObj.toLocaleDateString([], { month: 'short', day: 'numeric' })}{' '}
-        <span style={{ margin: '0 4px' }}>•</span>{' '}
-        {dateObj.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
-      </Typography>
+  const handleBetClick = (
+    e,
+    marketKey,
+    outcomeLabel,
+    odds,
+    lineValue,
+    selectionId,
+  ) => {
+    e.stopPropagation();
+    if (bettingClosed || odds === '-' || !onToggleBet) return;
+    if (selectionId == null) return;
+
+    let betType = 'Prop';
+    if (marketKey === MARKET_KEYS.H2H) betType = 'Moneyline';
+    if (marketKey === MARKET_KEYS.SPREADS) betType = 'Spread';
+    if (marketKey === MARKET_KEYS.TOTALS) betType = 'Over/Under';
+
+    // For totals, we usually leave the "team" blank in the UI
+    let betTeam = outcomeLabel;
+    if (marketKey === MARKET_KEYS.TOTALS) betTeam = '';
+    // ------------------------------------
+
+    // add and remove bet to global bet slip
+    onToggleBet({
+      gameId: id,
+      leagueId,
+      sport,
+      marketKey,
+      selectionId,
+      outcomeLabel,
+      odds,
+      lineValue: lineValue ?? null,
+      gameName: `${homeTeam} vs ${awayTeam}`,
+      betType,
+      betTeam,
+    });
+  };
+
+  // Uses this to track which button should be toggled on or off according ot the bet slip
+  const isBetSelected = (marketKey, outcomeLabel) => {
+    return selectedBets.some(
+      (bet) =>
+        bet.gameId === id &&
+        bet.marketKey === marketKey &&
+        bet.outcomeLabel === outcomeLabel,
     );
   };
 
   return (
-    <Card sx={{ backgroundColor: '#00f6ff', color: 'black' }}>
-      <CardActionArea
+    <div className="bg-[#14161b] text-white rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.5),0_0_10px_rgba(0,246,255,0.05)] overflow-hidden font-sans flex flex-col h-fit border border-gray-800/50 hover:border-gray-700/50 transition-colors duration-300">
+      <div
         onClick={() => setExpanded(!expanded)}
-        sx={{ padding: '8px' }}
+        className="w-full text-left p-4 hover:bg-[#1c2029] transition-colors focus:outline-none cursor-pointer"
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setExpanded(!expanded);
+          }
+        }}
       >
-        <CardContent>
-          {/* Status Header */}
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'center',
-              mb: 1.5,
-              borderBottom: '1px solid rgba(0,0,0,0.1)',
-              pb: 0.5,
-            }}
-          >
-            {renderGameStatus()}
-          </Box>
+        {/* Status Header */}
+        <div className="flex justify-center mb-4 pb-2 border-b border-gray-800">
+          {isFinal ? (
+            <span className="text-gray-500 text-xs font-bold tracking-widest uppercase">
+              Final
+            </span>
+          ) : isLive ? (
+            <LiveIndicator />
+          ) : dateObj ? (
+            <span className="text-gray-300 text-xs font-medium bg-gray-800/50 px-3 py-1 rounded-full">
+              {dateObj.toLocaleDateString([], {
+                month: 'short',
+                day: 'numeric',
+              })}{' '}
+              •{' '}
+              {dateObj.toLocaleTimeString([], {
+                hour: 'numeric',
+                minute: '2-digit',
+              })}
+            </span>
+          ) : null}
+        </div>
 
-          {/* Teams Header */}
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              mb: 1,
-              minHeight: '2.8em',
-            }}
-          >
-            <Typography
-              variant="subtitle1"
-              sx={{
-                fontWeight: 'bold',
-                flex: 1,
-                lineHeight: 1.2,
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden',
-              }}
-            >
-              {homeTeam}
-            </Typography>
-
-            <Typography
-              variant="caption"
-              sx={{ color: '#333', mx: 1, fontWeight: 'bold', mt: 0.25 }}
-            >
-              VS
-            </Typography>
-
-            <Typography
-              variant="subtitle1"
-              sx={{
-                fontWeight: 'bold',
-                flex: 1,
-                textAlign: 'right',
-                lineHeight: 1.2,
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden',
-              }}
-            >
-              {awayTeam}
-            </Typography>
-          </Box>
-
-          {/* Scores & Logos */}
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              mb: 2,
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <img
-                src={homeLogo || 'https://via.placeholder.com/40'}
-                alt={homeTeam}
-                style={{ width: 40, height: 40, objectFit: 'contain' }}
-              />
-              <Typography variant="h5" sx={{ fontWeight: 'black' }}>
+        {/* Teams & Logos & Scores Container */}
+        <div className="grid grid-cols-[1fr,auto,1fr] gap-2 items-center mb-4">
+          {/* Home Team */}
+          <div className="flex items-center gap-3">
+            <img
+              src={homeLogo || 'https://via.placeholder.com/40'}
+              alt={homeTeam}
+              className="w-10 h-10 object-contain flex-shrink-0"
+            />
+            <div className="flex flex-col flex-1 overflow-hidden">
+              <h3 className="font-bold text-base leading-tight text-white truncate">
+                {homeTeam}
+              </h3>
+              <span className="text-2xl font-black text-white mt-1">
                 {homeScore ?? '-'}
-              </Typography>
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Typography variant="h5" sx={{ fontWeight: 'black' }}>
+              </span>
+            </div>
+          </div>
+
+          {/* VS Separator */}
+          <div className="text-xs font-bold text-gray-600 px-1 mt-6">VS</div>
+
+          {/* Away Team */}
+          <div className="flex items-center gap-3 justify-end text-right">
+            <div className="flex flex-col flex-1 overflow-hidden items-end">
+              <h3 className="font-bold text-base leading-tight text-white truncate">
+                {awayTeam}
+              </h3>
+              <span className="text-2xl font-black text-white mt-1">
                 {awayScore ?? '-'}
-              </Typography>
-              <img
-                src={awayLogo || 'https://via.placeholder.com/40'}
-                alt={awayTeam}
-                style={{ width: 40, height: 40, objectFit: 'contain' }}
+              </span>
+            </div>
+            <img
+              src={awayLogo || 'https://via.placeholder.com/40'}
+              alt={awayTeam}
+              className="w-10 h-10 object-contain flex-shrink-0"
+            />
+          </div>
+        </div>
+
+        {/* 3-Way Moneyline / Match Result */}
+        <div className="w-full mt-3">
+          <span className="block text-center text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">
+            Match Result (3-Way)
+          </span>
+
+          {bettingClosed ? (
+            <div className="text-center bg-[#33DBFF] rounded border border-gray-800 py-4 mb-2 mt-1">
+              <p className="text-sm font-semibold text-black">Betting closed</p>
+            </div>
+          ) : (
+            // Moneyline buttons now have a specific min-height for uniform look
+            <div className="grid grid-cols-3 gap-2.5 min-h-[56px]">
+              <SelectionButton
+                label={homeTeam}
+                odds={homeOdds}
+                isSelected={isBetSelected(MARKET_KEYS.H2H, homeTeam)}
+                disabled={bettingClosed || !h2hPicks?.home?.id}
+                onClick={(e) =>
+                  handleBetClick(
+                    e,
+                    MARKET_KEYS.H2H,
+                    homeTeam,
+                    homeOdds,
+                    undefined,
+                    h2hPicks?.home?.id,
+                  )
+                }
               />
-            </Box>
-          </Box>
-
-          {/* 3-Way Moneyline */}
-          <Box sx={{ width: '100%', mt: 1, mb: 1 }}>
-            <Typography
-              variant="caption"
-              sx={{
-                color: '#333',
-                fontWeight: 'bold',
-                display: 'block',
-                textAlign: 'center',
-                mb: 0.5,
-              }}
-            >
-              Match Result (3-Way)
-            </Typography>
-            <Box
-              sx={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr 1fr',
-                gap: 1,
-              }}
-            >
-              <MoneylineBox label={homeTeam} odds={homeOdds} />
-              <MoneylineBox label="Draw" odds={drawOdds} />
-              <MoneylineBox label={awayTeam} odds={awayOdds} />
-            </Box>
-          </Box>
-
-          <Typography
-            variant="body2"
-            sx={{ color: '#000000', marginTop: '8px', textAlign: 'center' }}
-          >
-            {expanded ? 'Click to hide extra bets ▲' : 'Click for more bets ▼'}
-          </Typography>
-        </CardContent>
-      </CardActionArea>
-
-      {/* Expandable Section */}
-      <Collapse in={expanded} timeout="auto" unmountOnExit>
-        <Divider sx={{ borderColor: '#000000' }} />
-        <CardContent sx={{ backgroundColor: '#010d14' }}>
-          <Typography
-            variant="subtitle2"
-            align="center"
-            sx={{ color: '#ffffff', mb: 2 }}
-          >
-            Additional Betting Markets
-          </Typography>
-
-          {/* TOTAL GOALS BOX */}
-          <Box
-            sx={{
-              backgroundColor: '#00f6ff',
-              borderRadius: '4px',
-              padding: '16px',
-              border: '1px solid #3b4d80',
-              mb: 2, // Added margin bottom to separate from player props
-            }}
-          >
-            <Typography
-              variant="body2"
-              sx={{ color: '#000000', textAlign: 'center', mb: 2 }}
-            >
-              Total Goals:{' '}
-              <Typography
-                component="span"
-                sx={{ color: 'black', fontWeight: 'bold' }}
-              >
-                {totalLine}
-              </Typography>
-            </Typography>
-            <Box
-              sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}
-            >
-              <OddsButton label="Over" odds={overOdds} />
-              <OddsButton label="Under" odds={underOdds} />
-            </Box>
-          </Box>
-
-          {/* NEW: ANYTIME GOALSCORER PROPS */}
-          {playerProps.length > 0 && (
-            <Box
-              sx={{
-                backgroundColor: '#00f6ff',
-                borderRadius: '4px',
-                padding: '16px',
-                border: '1px solid #3b4d80',
-              }}
-            >
-              <Typography
-                variant="body2"
-                sx={{
-                  color: '#000000',
-                  textAlign: 'center',
-                  mb: 2,
-                  fontWeight: 'bold',
-                }}
-              >
-                Anytime Goalscorer
-              </Typography>
-
-              {/* Scrollable Container */}
-              <Box
-                sx={{
-                  maxHeight: '180px',
-                  overflowY: 'auto',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 1,
-                  pr: 1,
-                  '&::-webkit-scrollbar': { width: '6px' },
-                  '&::-webkit-scrollbar-track': { background: 'transparent' },
-                  '&::-webkit-scrollbar-thumb': {
-                    background: '#000000',
-                    borderRadius: '4px',
-                  },
-                }}
-              >
-                {playerProps.map((player, index) => (
-                  <Box
-                    key={index}
-                    sx={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      backgroundColor: '#000000',
-                      padding: '8px 12px',
-                      borderRadius: '4px',
-                    }}
-                  >
-                    <Typography
-                      variant="body2"
-                      sx={{ color: '#ffffff', fontSize: '0.85rem' }}
-                    >
-                      {player.label}
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        color: '#00f6ff',
-                        fontWeight: 'bold',
-                        fontSize: '0.9rem',
-                      }}
-                    >
-                      {player.odds}
-                    </Typography>
-                  </Box>
-                ))}
-              </Box>
-            </Box>
+              <SelectionButton
+                label="Draw"
+                odds={drawOdds}
+                isSelected={isBetSelected(MARKET_KEYS.H2H, 'Draw')}
+                disabled={bettingClosed || !h2hPicks?.draw?.id}
+                onClick={(e) =>
+                  handleBetClick(
+                    e,
+                    MARKET_KEYS.H2H,
+                    'Draw',
+                    drawOdds,
+                    undefined,
+                    h2hPicks?.draw?.id,
+                  )
+                }
+              />
+              <SelectionButton
+                label={awayTeam}
+                odds={awayOdds}
+                isSelected={isBetSelected(MARKET_KEYS.H2H, awayTeam)}
+                disabled={bettingClosed || !h2hPicks?.away?.id}
+                onClick={(e) =>
+                  handleBetClick(
+                    e,
+                    MARKET_KEYS.H2H,
+                    awayTeam,
+                    awayOdds,
+                    undefined,
+                    h2hPicks?.away?.id,
+                  )
+                }
+              />
+            </div>
           )}
-        </CardContent>
-      </Collapse>
-    </Card>
-  );
-};
+        </div>
 
-export default GameCard;
+        {/* Sleeker 'More Bets' indicator */}
+        <div className="flex justify-center mt-4 pt-1 border-t border-gray-800/50">
+          <div className="text-[#00f6ff] text-[11px] font-bold uppercase tracking-widest flex items-center gap-1.5 opacity-80 hover:opacity-100">
+            {expanded ? 'Fewer Bets' : 'More Bets'}
+            <span
+              className={`transition-transform duration-300 ${expanded ? 'rotate-180' : ''}`}
+            >
+              ▼
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Expandable Section - Unified background */}
+      <div
+        className={`overflow-hidden transition-all duration-300 ease-in-out ${
+          expanded ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'
+        }`}
+      >
+        <div className="border-t border-gray-800 p-4 space-y-5">
+          {/* Point spread / handicap */}
+          {(spread?.home || spread?.away) && (
+            <div className="bg-[#1c2029] rounded-lg p-4 border border-gray-800">
+              <p className="text-gray-300 text-[11px] font-bold text-center uppercase tracking-wider mb-3">
+                Point Spread (handicap)
+              </p>
+              <div className="grid grid-cols-2 gap-3 min-h-[70px]">
+                {spread?.home ? (
+                  <SelectionButton
+                    label={homeTeam}
+                    secondaryLabel={formatSpreadLine(spread.home.lineValue)}
+                    odds={spread.home.odds}
+                    isSelected={isBetSelected(MARKET_KEYS.SPREADS, homeTeam)}
+                    disabled={bettingClosed || spread.home.selectionId == null}
+                    onClick={(e) =>
+                      handleBetClick(
+                        e,
+                        MARKET_KEYS.SPREADS,
+                        homeTeam,
+                        spread.home.odds,
+                        spread.home.lineValue,
+                        spread.home.selectionId,
+                      )
+                    }
+                  />
+                ) : (
+                  <div className="flex items-center justify-center border border-dashed border-gray-700 rounded py-4 text-center text-[10px] text-gray-600 bg-gray-900/50">
+                    Home line N/A
+                  </div>
+                )}
+                {spread?.away ? (
+                  <SelectionButton
+                    label={awayTeam}
+                    secondaryLabel={formatSpreadLine(spread.away.lineValue)}
+                    odds={spread.away.odds}
+                    isSelected={isBetSelected(MARKET_KEYS.SPREADS, awayTeam)}
+                    disabled={bettingClosed || spread.away.selectionId == null}
+                    onClick={(e) =>
+                      handleBetClick(
+                        e,
+                        MARKET_KEYS.SPREADS,
+                        awayTeam,
+                        spread.away.odds,
+                        spread.away.lineValue,
+                        spread.away.selectionId,
+                      )
+                    }
+                  />
+                ) : (
+                  <div className="flex items-center justify-center border border-dashed border-gray-700 rounded py-4 text-center text-[10px] text-gray-600 bg-gray-900/50">
+                    Away line N/A
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Total Goals Box */}
+          <div className="bg-[#1c2029] rounded-lg p-4 border border-gray-800">
+            <p className="text-gray-300 text-[11px] font-bold text-center uppercase tracking-wider mb-3">
+              Total Goals:{' '}
+              <span className="text-white text-sm font-black ml-1 bg-gray-700 px-2 py-0.5 rounded">
+                {totalLine}
+              </span>
+            </p>
+            <div className="grid grid-cols-2 gap-3 min-h-[56px]">
+              <SelectionButton
+                label="Over"
+                odds={overOdds}
+                isSelected={isBetSelected(MARKET_KEYS.TOTALS, 'Over')}
+                disabled={bettingClosed || !totalsPicks?.over?.id}
+                onClick={(e) =>
+                  handleBetClick(
+                    e,
+                    MARKET_KEYS.TOTALS,
+                    'Over',
+                    overOdds,
+                    totalsPicks?.over?.lineValue ?? undefined,
+                    totalsPicks?.over?.id,
+                  )
+                }
+              />
+              <SelectionButton
+                label="Under"
+                odds={underOdds}
+                isSelected={isBetSelected(MARKET_KEYS.TOTALS, 'Under')}
+                disabled={bettingClosed || !totalsPicks?.under?.id}
+                onClick={(e) =>
+                  handleBetClick(
+                    e,
+                    MARKET_KEYS.TOTALS,
+                    'Under',
+                    underOdds,
+                    totalsPicks?.under?.lineValue ?? undefined,
+                    totalsPicks?.under?.id,
+                  )
+                }
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -2,7 +2,7 @@ import { createBrowserRouter } from 'react-router-dom';
 import App from './App';
 import Login from './pages/login';
 import Home from './pages/home';
-import Dashboard from './pages/dashboard';
+//import Dashboard from './pages/dashboard';
 import HowToPlay from './pages/HowToPlay';
 import Onboarding from './pages/onboarding';
 import Settings from './pages/Settings';
@@ -21,83 +21,31 @@ import NotFound from './pages/NotFound';
 import Hockey from './pages/Hockey';
 import Support from './pages/Support';
 
+import SportsLayout from './sportsLayout';
+
 const router = createBrowserRouter([
   {
     path: '/',
     element: <App />,
     children: [
-      // Home page
+      { index: true, element: <Home /> },
+
+      // Pages that will have bet slip footer
       {
-        index: true,
-        element: <Home />,
+        element: <SportsLayout />,
+        children: [
+          { path: 'soccer', element: <SoccerPage /> },
+          { path: 'nfl', element: <NFLBets /> },
+          { path: 'nba', element: <NBABets /> },
+          { path: 'ufc', element: <UFCBets /> },
+          { path: 'hockey', element: <Hockey /> },
+        ],
       },
 
-      // ⭐ New pages you added
-      {
-        path: 'games',
-        element: <Games />,
-      },
-      {
-        path: 'players',
-        element: <Players />,
-      },
-      {
-        path: 'bets',
-        element: <MyBets />,
-      },
-
-      {
-        path: 'hockey',
-        element: <Hockey />,
-      },
-      {
-        path: 'support',
-        element: <Support />,
-      },
-
-      // Existing pages
-      {
-        path: 'nba',
-        element: <NBABets />,
-      },
-      {
-        path: 'ufc',
-        element: <UFCBets />,
-      },
-      {
-        path: 'login',
-        element: <Login />,
-      },
-      {
-        path: 'how-to-play',
-        element: <HowToPlay />,
-      },
-      {
-        path: 'onboarding',
-        element: (
-          <ProtectedRoute>
-            <Onboarding />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: 'dashboard',
-        element: (
-          <ProtectedRoute>
-            <Dashboard />
-          </ProtectedRoute>
-        ),
-      },
-
-      // ⭐ Catch-all route for unknown pages
-      {
-        path: 'settings',
-        element: (
-          <ProtectedRoute>
-            <Settings />
-          </ProtectedRoute>
-        ),
-      },
+      { path: 'login', element: <Login /> },
+      { path: 'onboarding', element: <Onboarding /> },
+      { path: 'how-to-play', element: <HowToPlay /> },
+      { path: 'support', element: <Support /> },
       {
         path: 'profile',
         element: (
@@ -107,17 +55,18 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: 'soccer',
-        element: <SoccerPage />,
+        path: 'settings',
+        element: (
+          <ProtectedRoute>
+            <Settings />
+          </ProtectedRoute>
+        ),
       },
-      {
-        path: 'nfl',
-        element: <NFLBets />,
-      },
-      {
-        path: '*',
-        element: <NotFound />,
-      },
+      { path: 'games', element: <Games /> },
+      { path: 'players', element: <Players /> },
+      { path: 'bets', element: <MyBets /> },
+
+      { path: '*', element: <NotFound /> },
     ],
   },
 ]);
