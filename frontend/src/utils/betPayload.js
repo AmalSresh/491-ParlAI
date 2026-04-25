@@ -14,6 +14,25 @@ export const MARKET_KEYS = {
 // This is used for setting the betting status of a game to a disabled state
 export function isBettingClosed(game) {
   if (!game) return true;
+
+  // ESPN site scoreboard shape (NBA / similar): { status: { typeState }, startDate }
+  if (
+    game.status &&
+    typeof game.status === 'object' &&
+    game.status.typeState != null
+  ) {
+    const ts = String(game.status.typeState || '').toLowerCase();
+    if (ts === 'post' || ts === 'in') return true;
+    const startIso = game.startDate || game.startTime;
+    if (startIso) {
+      const kick = new Date(startIso).getTime();
+      if (!Number.isNaN(kick) && kick <= Date.now() && ts === 'pre') {
+        return true;
+      }
+    }
+    return false;
+  }
+
   const status = String(game.status || '').toLowerCase();
 
   // These statuses are standard across almost all sports
