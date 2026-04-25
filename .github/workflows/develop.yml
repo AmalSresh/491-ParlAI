@@ -66,7 +66,6 @@ jobs:
         run: npm run format
 
   e2e-tests:
-    # Only run this job if the frontend and backend validation jobs pass
     needs: [frontend-validate, backend-validate]
     runs-on: ubuntu-latest
 
@@ -76,31 +75,31 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v5
         with:
-          node-version: 24
+          node-version: 20 # DOWNGRADED TO 20 FOR AZURE FUNCTIONS SUPPORT
           cache: "npm"
-          # Uses the root package-lock.json since E2E runs at the root
           cache-dependency-path: ./package-lock.json
 
       - name: Install Azure Functions Core Tools & SWA CLI
-        # GitHub Actions runners don't have these installed by default!
         run: |
           npm i -g azure-functions-core-tools@4 --unsafe-perm true
           npm i -g @azure/static-web-apps-cli
 
+      - name: Generate Backend local.settings.json
+        # THIS PREVENTS THE "CHOOSE WORKER RUNTIME" PROMPT
+        run: |
+          echo '{ "IsEncrypted": false, "Values": { "FUNCTIONS_WORKER_RUNTIME": "node", "AzureWebJobsStorage": "UseDevelopmentStorage=true" } }' > ./backend/local.settings.json
+
       - name: Install Dependencies
-        # This will install root dependencies AND frontend/backend via workspaces
         run: npm ci
 
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
 
       - name: Run E2E Tests
-        # Runs the concurrent script we built to start the backend, frontend, swa, and tests
         run: npm run test:e2e:full
 
       - name: Upload Playwright Report
         uses: actions/upload-artifact@v4
-        # always() ensures we get the report even if the tests fail
         if: always()
         with:
           name: playwright-report
