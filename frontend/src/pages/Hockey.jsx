@@ -66,29 +66,57 @@ const TABS = [
 function getDisplayStat(player, filter) {
   if (filter === 'goals')
     return player.goals
-      ? { val: calcPropLine(player.goals), raw: player.goals, lbl: '2025 Goals' }
+      ? {
+          val: calcPropLine(player.goals),
+          raw: player.goals,
+          lbl: '2025 Goals',
+        }
       : null;
   if (filter === 'assists')
     return player.assists
-      ? { val: calcPropLine(player.assists), raw: player.assists, lbl: '2025 Assists' }
+      ? {
+          val: calcPropLine(player.assists),
+          raw: player.assists,
+          lbl: '2025 Assists',
+        }
       : null;
   if (filter === 'points')
     return player.points
-      ? { val: calcPropLine(player.points), raw: player.points, lbl: '2025 Points' }
+      ? {
+          val: calcPropLine(player.points),
+          raw: player.points,
+          lbl: '2025 Points',
+        }
       : null;
 
   // Default by position
   if (player.position === 'G')
     return player.goals
-      ? { val: calcPropLine(player.goals), raw: player.goals, lbl: '2025 Goals' }
+      ? {
+          val: calcPropLine(player.goals),
+          raw: player.goals,
+          lbl: '2025 Goals',
+        }
       : null;
 
   if (player.points)
-    return { val: calcPropLine(player.points), raw: player.points, lbl: '2025 Points' };
+    return {
+      val: calcPropLine(player.points),
+      raw: player.points,
+      lbl: '2025 Points',
+    };
   if (player.goals)
-    return { val: calcPropLine(player.goals), raw: player.goals, lbl: '2025 Goals' };
+    return {
+      val: calcPropLine(player.goals),
+      raw: player.goals,
+      lbl: '2025 Goals',
+    };
   if (player.assists)
-    return { val: calcPropLine(player.assists), raw: player.assists, lbl: '2025 Assists' };
+    return {
+      val: calcPropLine(player.assists),
+      raw: player.assists,
+      lbl: '2025 Assists',
+    };
 
   return null;
 }
@@ -176,7 +204,13 @@ function BetModal({ bet, onClose, onConfirm }) {
         >
           Place Bet
         </h3>
-        <p style={{ fontSize: '0.82rem', color: '#9ca3af', marginBottom: '0.4rem' }}>
+        <p
+          style={{
+            fontSize: '0.82rem',
+            color: '#9ca3af',
+            marginBottom: '0.4rem',
+          }}
+        >
           {bet.playerName}
         </p>
         <p
@@ -188,7 +222,8 @@ function BetModal({ bet, onClose, onConfirm }) {
           }}
         >
           {bet.direction === 'more' ? '↑ More' : '↓ Less'} than{' '}
-          <span style={{ color: '#00f6ff' }}>{bet.statValue}</span> {bet.statLabel}
+          <span style={{ color: '#00f6ff' }}>{bet.statValue}</span>{' '}
+          {bet.statLabel}
         </p>
 
         <p
@@ -201,7 +236,8 @@ function BetModal({ bet, onClose, onConfirm }) {
             borderRadius: '6px',
           }}
         >
-          📊 2024 actual: {Math.round(bet.rawValue)} {bet.statLabel.replace('2025 ', '')}
+          📊 2024 actual: {Math.round(bet.rawValue)}{' '}
+          {bet.statLabel.replace('2025 ', '')}
         </p>
 
         <label
@@ -242,7 +278,9 @@ function BetModal({ bet, onClose, onConfirm }) {
           }}
         >
           <span>Odds</span>
-          <span style={{ color: '#00f6ff', fontWeight: 700 }}>{odds} (~-110)</span>
+          <span style={{ color: '#00f6ff', fontWeight: 700 }}>
+            {odds} (~-110)
+          </span>
         </div>
         <div
           style={{
@@ -256,7 +294,13 @@ function BetModal({ bet, onClose, onConfirm }) {
           <span>Potential Payout</span>
           <span style={{ color: '#00c853', fontWeight: 700 }}>${payout}</span>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: '0.5rem',
+          }}
+        >
           <button
             onClick={onClose}
             style={{
@@ -348,7 +392,9 @@ function PlayerCard({ player, filter, onBet }) {
             marginBottom: '0.6rem',
           }}
         >
-          <span style={{ fontSize: '1.4rem', fontWeight: 800, color }}>{initials}</span>
+          <span style={{ fontSize: '1.4rem', fontWeight: 800, color }}>
+            {initials}
+          </span>
         </div>
         <span
           style={{
@@ -379,10 +425,19 @@ function PlayerCard({ player, filter, onBet }) {
 
       <div style={{ padding: '0.9rem 1rem', borderTop: '1px solid #1f2430' }}>
         <div style={{ textAlign: 'center', marginBottom: '0.6rem' }}>
-          <div style={{ fontSize: '2rem', fontWeight: 800, color: '#f3f4f6', lineHeight: 1 }}>
+          <div
+            style={{
+              fontSize: '2rem',
+              fontWeight: 800,
+              color: '#f3f4f6',
+              lineHeight: 1,
+            }}
+          >
             {stat.val}
           </div>
-          <div style={{ fontSize: '0.7rem', color: '#9ca3af', marginTop: 2 }}>{stat.lbl}</div>
+          <div style={{ fontSize: '0.7rem', color: '#9ca3af', marginTop: 2 }}>
+            {stat.lbl}
+          </div>
           <div style={{ fontSize: '0.65rem', color: '#6b7494', marginTop: 4 }}>
             2024 actual: {Math.round(stat.raw)}
           </div>
@@ -400,8 +455,16 @@ function PlayerCard({ player, filter, onBet }) {
                   borderBottom: '1px solid #1f243033',
                 }}
               >
-                <span style={{ fontSize: '0.65rem', color: '#9ca3af' }}>{s.lbl}</span>
-                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#6b7494' }}>
+                <span style={{ fontSize: '0.65rem', color: '#9ca3af' }}>
+                  {s.lbl}
+                </span>
+                <span
+                  style={{
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    color: '#6b7494',
+                  }}
+                >
                   {s.val}
                 </span>
               </div>
@@ -409,7 +472,13 @@ function PlayerCard({ player, filter, onBet }) {
           </div>
         )}
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: '0.5rem',
+          }}
+        >
           <button
             onClick={() =>
               onBet({
@@ -431,8 +500,12 @@ function PlayerCard({ player, filter, onBet }) {
               fontWeight: 700,
               transition: 'background 0.18s',
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,61,87,0.22)')}
-            onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255,61,87,0.1)')}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.background = 'rgba(255,61,87,0.22)')
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.background = 'rgba(255,61,87,0.1)')
+            }
           >
             ↓ Less
           </button>
@@ -457,8 +530,12 @@ function PlayerCard({ player, filter, onBet }) {
               fontWeight: 700,
               transition: 'background 0.18s',
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(0,246,255,0.18)')}
-            onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(0,246,255,0.08)')}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.background = 'rgba(0,246,255,0.18)')
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.background = 'rgba(0,246,255,0.08)')
+            }
           >
             ↑ More
           </button>
@@ -482,7 +559,8 @@ function SkeletonCard() {
       <div
         style={{
           height: 160,
-          background: 'linear-gradient(90deg, #1a1e2a 25%, #1f2435 50%, #1a1e2a 75%)',
+          background:
+            'linear-gradient(90deg, #1a1e2a 25%, #1f2435 50%, #1a1e2a 75%)',
           backgroundSize: '200% 100%',
           animation: 'shimmer 1.4s infinite',
         }}
@@ -495,7 +573,8 @@ function SkeletonCard() {
               height: 12,
               width: `${w}%`,
               borderRadius: 6,
-              background: 'linear-gradient(90deg, #1a1e2a 25%, #1f2435 50%, #1a1e2a 75%)',
+              background:
+                'linear-gradient(90deg, #1a1e2a 25%, #1f2435 50%, #1a1e2a 75%)',
               backgroundSize: '200% 100%',
               animation: 'shimmer 1.4s infinite',
               marginBottom: 8,
@@ -555,9 +634,15 @@ function LiveScores() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3 flex-1">
                 {away.team.logo && (
-                  <img src={away.team.logo} alt={away.team.displayName} className="w-8 h-8 object-contain" />
+                  <img
+                    src={away.team.logo}
+                    alt={away.team.displayName}
+                    className="w-8 h-8 object-contain"
+                  />
                 )}
-                <span className="font-bold text-sb-text text-sm">{away.team.displayName}</span>
+                <span className="font-bold text-sb-text text-sm">
+                  {away.team.displayName}
+                </span>
               </div>
               <div className="text-center px-4">
                 {isLive || isFinished ? (
@@ -566,14 +651,23 @@ function LiveScores() {
                   </span>
                 ) : (
                   <span className="text-sb-muted text-sm">
-                    {new Date(game.date).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                    {new Date(game.date).toLocaleTimeString('en-US', {
+                      hour: 'numeric',
+                      minute: '2-digit',
+                    })}
                   </span>
                 )}
               </div>
               <div className="flex items-center gap-3 flex-1 justify-end">
-                <span className="font-bold text-sb-text text-sm">{home.team.displayName}</span>
+                <span className="font-bold text-sb-text text-sm">
+                  {home.team.displayName}
+                </span>
                 {home.team.logo && (
-                  <img src={home.team.logo} alt={home.team.displayName} className="w-8 h-8 object-contain" />
+                  <img
+                    src={home.team.logo}
+                    alt={home.team.displayName}
+                    className="w-8 h-8 object-contain"
+                  />
                 )}
               </div>
             </div>
@@ -691,7 +785,9 @@ export default function Hockey() {
           🔮 2025 Season Projections
         </span>
         {loading && tab === 'props' && (
-          <span style={{ fontSize: '0.75rem', color: '#9ca3af' }}>Loading…</span>
+          <span style={{ fontSize: '0.75rem', color: '#9ca3af' }}>
+            Loading…
+          </span>
         )}
       </div>
 
@@ -712,7 +808,8 @@ export default function Hockey() {
               padding: '0.5rem 1.2rem',
               background: 'transparent',
               border: 'none',
-              borderBottom: tab === t.key ? '2px solid #00f6ff' : '2px solid transparent',
+              borderBottom:
+                tab === t.key ? '2px solid #00f6ff' : '2px solid transparent',
               color: tab === t.key ? '#00f6ff' : '#9ca3af',
               fontSize: '0.88rem',
               fontWeight: 600,
@@ -741,8 +838,10 @@ export default function Hockey() {
             }}
           >
             📊 Prop lines are{' '}
-            <strong style={{ color: '#00f6ff' }}>2025 season projections</strong> based
-            on 2024 actual stats.
+            <strong style={{ color: '#00f6ff' }}>
+              2025 season projections
+            </strong>{' '}
+            based on 2024 actual stats.
           </div>
 
           <div className="mb-4">
@@ -775,8 +874,12 @@ export default function Hockey() {
                 style={{
                   padding: '0.4rem 1rem',
                   borderRadius: '20px',
-                  border: filter === f.key ? '1px solid #00f6ff' : '1px solid #404040',
-                  background: filter === f.key ? 'rgba(0,246,255,0.1)' : '#11131a',
+                  border:
+                    filter === f.key
+                      ? '1px solid #00f6ff'
+                      : '1px solid #404040',
+                  background:
+                    filter === f.key ? 'rgba(0,246,255,0.1)' : '#11131a',
                   color: filter === f.key ? '#00f6ff' : '#9ca3af',
                   fontSize: '0.82rem',
                   fontWeight: 600,
@@ -792,7 +895,8 @@ export default function Hockey() {
 
           <div className="flex items-center gap-3 mb-4">
             <span className="text-xs font-bold tracking-widest text-sb-muted uppercase">
-              Player Props — {loading ? 'loading…' : `${filtered.length} players`}
+              Player Props —{' '}
+              {loading ? 'loading…' : `${filtered.length} players`}
             </span>
             <div className="flex-1 h-px bg-[#1f2430]" />
           </div>
@@ -812,7 +916,12 @@ export default function Hockey() {
               <p className="text-sb-muted">No players found.</p>
             ) : (
               filtered.map((p) => (
-                <PlayerCard key={p.id} player={p} filter={filter} onBet={setPendingBet} />
+                <PlayerCard
+                  key={p.id}
+                  player={p}
+                  filter={filter}
+                  onBet={setPendingBet}
+                />
               ))
             )}
           </div>

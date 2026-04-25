@@ -82,7 +82,8 @@ app.http('nhl-players', {
       // Fetch fresh data from Sleeper API
       context.log('Fetching fresh NHL players from Sleeper API...');
       const playersRes = await fetch(SLEEPER_PLAYERS_URL);
-      if (!playersRes.ok) throw new Error('Failed to fetch Sleeper NHL players');
+      if (!playersRes.ok)
+        throw new Error('Failed to fetch Sleeper NHL players');
       const allPlayers = await playersRes.json();
 
       // Filter to target players only
@@ -169,7 +170,8 @@ app.http('nhl-players', {
           .input('points', sql.Decimal(10, 2), s.pts ?? s.points ?? null)
           .input('shots', sql.Decimal(10, 2), s.shots ?? null)
           .input('plusMinus', sql.Decimal(10, 2), s.plus_minus ?? null)
-          .input('toiPerGame', sql.Decimal(10, 2), s.toi_per_game ?? null).query(`
+          .input('toiPerGame', sql.Decimal(10, 2), s.toi_per_game ?? null)
+          .query(`
             MERGE nhl_player_stats AS target
             USING (SELECT @playerId AS player_id) AS source
             ON target.player_id = source.player_id
