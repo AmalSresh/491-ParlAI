@@ -1,52 +1,64 @@
 import { app } from '@azure/functions';
 import sql from 'mssql';
 
-const SLEEPER_PLAYERS_URL = 'https://api.sleeper.app/v1/players/nhl';
+const SLEEPER_PLAYERS_URL = 'https://api.sleeper.app/v1/players/nfl';
 const SLEEPER_STATS_URL = (id) =>
-  `https://api.sleeper.app/stats/nhl/player/${id}?season_type=regular&season=2024`;
+  `https://api.sleeper.app/stats/nfl/player/${id}?season_type=regular&season=2025`;
 
 const TARGET_PLAYERS = [
-  'Connor McDavid',
-  'Nathan MacKinnon',
-  'Auston Matthews',
-  'Leon Draisaitl',
-  'David Pastrnak',
-  'Cale Makar',
-  'Nikita Kucherov',
-  'Sidney Crosby',
-  'Alex Ovechkin',
-  'Artemi Panarin',
-  'Mitch Marner',
-  'William Nylander',
-  'Matthew Tkachuk',
-  'Brady Tkachuk',
-  'Mikko Rantanen',
-  'Elias Pettersson',
-  'Jack Hughes',
-  'Quinn Hughes',
-  'Brayden Point',
-  'Andrei Vasilevskiy',
-  'Igor Shesterkin',
-  'Jake Oettinger',
-  'Juuse Saros',
-  'Linus Ullmark',
-  'Frederik Andersen',
-  'Kyle Connor',
-  'Mark Scheifele',
-  'Sebastian Aho',
-  'Tage Thompson',
-  'Jason Robertson',
-  'Roope Hintz',
-  'Kirill Kaprizov',
-  'Sam Reinhart',
-  'Aleksander Barkov',
-  'Sam Bennett',
-  'Evan Bouchard',
-  'Adam Fox',
-  'Rasmus Dahlin',
-  'Roman Josi',
-  'Victor Hedman',
+  'Patrick Mahomes',
+  'Josh Allen',
+  'Lamar Jackson',
+  'Joe Burrow',
+  'Jalen Hurts',
+  'Dak Prescott',
+  'Jared Goff',
+  'Brock Purdy',
+  'Justin Herbert',
+  'Tua Tagovailoa',
+  'Jordan Love',
+  'C.J. Stroud',
+  'Caleb Williams',
+  'Jayden Daniels',
+  'Trevor Lawrence',
+  'Kyler Murray',
+  'Christian McCaffrey',
+  'Saquon Barkley',
+  'Derrick Henry',
+  'Bijan Robinson',
+  'Jahmyr Gibbs',
+  "De'Von Achane",
+  'Breece Hall',
+  'Jonathan Taylor',
+  'Josh Jacobs',
+  'James Cook',
+  'Isiah Pacheco',
+  'Travis Etienne',
+  'Kyren Williams',
+  'Najee Harris',
+  'Tyreek Hill',
+  'CeeDee Lamb',
+  "Ja'Marr Chase",
+  'Justin Jefferson',
+  'Amon-Ra St. Brown',
+  'A.J. Brown',
+  'Davante Adams',
+  'DK Metcalf',
+  'Jaylen Waddle',
+  'Garrett Wilson',
+  'Stefon Diggs',
+  'Mike Evans',
+  'Tee Higgins',
+  'Puka Nacua',
+  'DeVonta Smith',
+  'Marvin Harrison',
+  'George Pickens',
+  'Rashee Rice',
+  'Drake London',
+  'Chris Olave',
 ];
+
+const NFL_LEAGUE_ID = 701; // ID of NFL in the leagues table
 
 const sqlConfig = {
   server: process.env.DB_SERVER,
@@ -56,39 +68,40 @@ const sqlConfig = {
   options: { encrypt: true, trustServerCertificate: false },
 };
 
-app.http('nhl-players', {
+app.http('nfl-players', {
   methods: ['GET'],
-  route: 'nhl/players',
+  route: 'nfl/players',
   authLevel: 'anonymous',
   handler: async (request, context) => {
     try {
       const pool = await sql.connect(sqlConfig);
 
-      // Check if we already have fresh NHL player data in DB (within 24hrs)
+      // Check if we already have fresh NFL player data in DB (within 24hrs)
       const existing = await pool.request().query(`
         SELECT p.id, p.sleeper_id, p.name, p.position, p.team,
-               ps.goals, ps.assists, ps.points, ps.shots,
-               ps.plus_minus, ps.toi_per_game, ps.updated_at
-        FROM nhl_players p
-        LEFT JOIN nhl_player_stats ps ON ps.player_id = p.id
+               ps.pass_yd, ps.pass_td, ps.rush_yd, ps.rush_td,
+               ps.rec_yd, ps.rec_td, ps.receptions, ps.updated_at
+        FROM nfl_players p
+        LEFT JOIN nfl_player_stats ps ON ps.player_id = p.id
         WHERE ps.updated_at >= DATEADD(hour, -24, SYSDATETIME())
       `);
 
       if (existing.recordset.length > 0) {
-        context.log('Returning cached NHL players from DB');
+        context.log('Returning cached NFL players from DB');
         return { status: 200, jsonBody: existing.recordset };
       }
 
       // Fetch fresh data from Sleeper API
-      context.log('Fetching fresh NHL players from Sleeper API...');
+      context.log('Fetching fresh NFL players from Sleeper API...');
       const playersRes = await fetch(SLEEPER_PLAYERS_URL);
-      if (!playersRes.ok) throw new Error('Failed to fetch Sleeper NHL players');
+      if (!playersRes.ok) throw new Error('Failed to fetch Sleeper players');
       const allPlayers = await playersRes.json();
 
       // Filter to target players only
       const targets = [];
       Object.entries(allPlayers).forEach(([id, p]) => {
         if (!p.full_name || !p.position || !p.team) return;
+        if (!['QB', 'RB', 'WR', 'TE'].includes(p.position)) return;
         const isTarget = TARGET_PLAYERS.some(
           (name) =>
             p.full_name.toLowerCase().includes(name.toLowerCase()) ||
@@ -117,36 +130,17 @@ app.http('nhl-players', {
         .filter((r) => r.status === 'fulfilled' && r.value.stats)
         .map((r) => r.value);
 
-      // Get or create NHL league
-      const leagueResult = await pool
-        .request()
-        .query(`SELECT id FROM leagues WHERE name = 'NHL'`);
-
-      let leagueId;
-      if (leagueResult.recordset.length === 0) {
-        const insertLeague = await pool
-          .request()
-          .input('name', sql.NVarChar, 'NHL')
-          .input('country', sql.NVarChar, 'USA').query(`
-            INSERT INTO leagues (name, country)
-            OUTPUT INSERTED.id
-            VALUES (@name, @country)
-          `);
-        leagueId = insertLeague.recordset[0].id;
-      } else {
-        leagueId = leagueResult.recordset[0].id;
-      }
-
       // Upsert players and stats into DB
       for (const p of players) {
+        // Upsert player — include league_id linking to NFL (701)
         const playerResult = await pool
           .request()
           .input('sleeperId', sql.NVarChar, p.sleeperId)
           .input('name', sql.NVarChar, p.name)
           .input('position', sql.NVarChar, p.pos)
           .input('team', sql.NVarChar, p.team)
-          .input('leagueId', sql.Int, leagueId).query(`
-            MERGE nhl_players AS target
+          .input('leagueId', sql.Int, NFL_LEAGUE_ID).query(`
+            MERGE nfl_players AS target
             USING (SELECT @sleeperId AS sleeper_id) AS source
             ON target.sleeper_id = source.sleeper_id
             WHEN MATCHED THEN
@@ -154,7 +148,7 @@ app.http('nhl-players', {
             WHEN NOT MATCHED THEN
               INSERT (sleeper_id, name, position, team, league_id)
               VALUES (@sleeperId, @name, @position, @team, @leagueId);
-            SELECT id FROM nhl_players WHERE sleeper_id = @sleeperId;
+            SELECT id FROM nfl_players WHERE sleeper_id = @sleeperId;
           `);
 
         const playerId = playerResult.recordset[0].id;
@@ -164,38 +158,39 @@ app.http('nhl-players', {
         await pool
           .request()
           .input('playerId', sql.Int, playerId)
-          .input('goals', sql.Decimal(10, 2), s.goals ?? null)
-          .input('assists', sql.Decimal(10, 2), s.assists ?? null)
-          .input('points', sql.Decimal(10, 2), s.pts ?? s.points ?? null)
-          .input('shots', sql.Decimal(10, 2), s.shots ?? null)
-          .input('plusMinus', sql.Decimal(10, 2), s.plus_minus ?? null)
-          .input('toiPerGame', sql.Decimal(10, 2), s.toi_per_game ?? null).query(`
-            MERGE nhl_player_stats AS target
+          .input('passYd', sql.Decimal(10, 2), s.pass_yd ?? null)
+          .input('passTd', sql.Decimal(10, 2), s.pass_td ?? null)
+          .input('rushYd', sql.Decimal(10, 2), s.rush_yd ?? null)
+          .input('rushTd', sql.Decimal(10, 2), s.rush_td ?? null)
+          .input('recYd', sql.Decimal(10, 2), s.rec_yd ?? null)
+          .input('recTd', sql.Decimal(10, 2), s.rec_td ?? null)
+          .input('rec', sql.Decimal(10, 2), s.rec ?? null).query(`
+            MERGE nfl_player_stats AS target
             USING (SELECT @playerId AS player_id) AS source
             ON target.player_id = source.player_id
             WHEN MATCHED THEN
-              UPDATE SET goals=@goals, assists=@assists, points=@points,
-                         shots=@shots, plus_minus=@plusMinus,
-                         toi_per_game=@toiPerGame, updated_at=SYSDATETIME()
+              UPDATE SET pass_yd=@passYd, pass_td=@passTd, rush_yd=@rushYd,
+                         rush_td=@rushTd, rec_yd=@recYd, rec_td=@recTd,
+                         receptions=@rec, updated_at=SYSDATETIME()
             WHEN NOT MATCHED THEN
-              INSERT (player_id, goals, assists, points, shots, plus_minus, toi_per_game, updated_at)
-              VALUES (@playerId, @goals, @assists, @points, @shots, @plusMinus, @toiPerGame, SYSDATETIME());
+              INSERT (player_id, pass_yd, pass_td, rush_yd, rush_td, rec_yd, rec_td, receptions, updated_at)
+              VALUES (@playerId, @passYd, @passTd, @rushYd, @rushTd, @recYd, @recTd, @rec, SYSDATETIME());
           `);
       }
 
       // Return fresh data
       const fresh = await pool.request().query(`
         SELECT p.id, p.sleeper_id, p.name, p.position, p.team,
-               ps.goals, ps.assists, ps.points, ps.shots,
-               ps.plus_minus, ps.toi_per_game, ps.updated_at
-        FROM nhl_players p
-        LEFT JOIN nhl_player_stats ps ON ps.player_id = p.id
+               ps.pass_yd, ps.pass_td, ps.rush_yd, ps.rush_td,
+               ps.rec_yd, ps.rec_td, ps.receptions, ps.updated_at
+        FROM nfl_players p
+        LEFT JOIN nfl_player_stats ps ON ps.player_id = p.id
         WHERE ps.updated_at >= DATEADD(hour, -24, SYSDATETIME())
       `);
 
       return { status: 200, jsonBody: fresh.recordset };
     } catch (error) {
-      context.error('Error in nhl-players:', error);
+      context.error('Error in nfl-players:', error);
       return { status: 500, jsonBody: { error: 'Internal Server Error' } };
     }
   },
