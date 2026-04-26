@@ -47,7 +47,7 @@ const BetSlipFooter = ({
     }
 
     try {
-      const res = await fetch('/api/users/balance');
+      const res = await fetch('/api/user/balance');
       const data = await res.json();
 
       if (res.ok) {
