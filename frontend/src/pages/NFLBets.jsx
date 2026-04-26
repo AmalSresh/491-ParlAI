@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react';
+import { useGlobalBetSlip } from '../context/BetSlipContext';
 
 // ── BACKEND API ───────────────────────────────────────────────────────────────
 const API_BASE = '/api';
+
+// ── NFL LEAGUE ID ─────────────────────────────────────────────────────────────
+const NFL_LEAGUE_ID = 701;
 
 // ── TEAM COLORS ───────────────────────────────────────────────────────────────
 const TEAM_COLORS = {
@@ -40,9 +44,6 @@ const TEAM_COLORS = {
 };
 
 // ── PROP LINE CALCULATOR ──────────────────────────────────────────────────────
-// Takes last season's real stat and converts it to a projected 2026 prop line
-// Applies a slight regression (95%) and adds .5 hook to avoid pushes
-// This mirrors how real sportsbooks set opening lines
 function calcPropLine(value) {
   if (!value) return null;
   const projected = Math.round(value * 0.95);
@@ -73,6 +74,7 @@ function getDisplayStat(player, filter) {
           val: calcPropLine(player.pass_yd),
           raw: player.pass_yd,
           lbl: '2026 Pass Yards',
+          statType: 'pass_yd',
         }
       : null;
   if (filter === 'rushing')
@@ -81,6 +83,7 @@ function getDisplayStat(player, filter) {
           val: calcPropLine(player.rush_yd),
           raw: player.rush_yd,
           lbl: '2026 Rush Yards',
+          statType: 'rush_yd',
         }
       : null;
   if (filter === 'receiving')
@@ -89,6 +92,7 @@ function getDisplayStat(player, filter) {
           val: calcPropLine(player.rec_yd),
           raw: player.rec_yd,
           lbl: '2026 Rec Yards',
+          statType: 'rec_yd',
         }
       : null;
 
@@ -97,24 +101,28 @@ function getDisplayStat(player, filter) {
       val: calcPropLine(player.pass_yd),
       raw: player.pass_yd,
       lbl: '2026 Pass Yards',
+      statType: 'pass_yd',
     };
   if (player.position === 'RB' && player.rush_yd)
     return {
       val: calcPropLine(player.rush_yd),
       raw: player.rush_yd,
       lbl: '2026 Rush Yards',
+      statType: 'rush_yd',
     };
   if (player.position === 'WR' && player.rec_yd)
     return {
       val: calcPropLine(player.rec_yd),
       raw: player.rec_yd,
       lbl: '2026 Rec Yards',
+      statType: 'rec_yd',
     };
   if (player.position === 'TE' && player.rec_yd)
     return {
       val: calcPropLine(player.rec_yd),
       raw: player.rec_yd,
       lbl: '2026 Rec Yards',
+      statType: 'rec_yd',
     };
 
   if (player.pass_yd)
@@ -122,18 +130,21 @@ function getDisplayStat(player, filter) {
       val: calcPropLine(player.pass_yd),
       raw: player.pass_yd,
       lbl: '2026 Pass Yards',
+      statType: 'pass_yd',
     };
   if (player.rush_yd)
     return {
       val: calcPropLine(player.rush_yd),
       raw: player.rush_yd,
       lbl: '2026 Rush Yards',
+      statType: 'rush_yd',
     };
   if (player.rec_yd)
     return {
       val: calcPropLine(player.rec_yd),
       raw: player.rec_yd,
       lbl: '2026 Rec Yards',
+      statType: 'rec_yd',
     };
   return null;
 }
@@ -158,212 +169,11 @@ function getExtraStats(player, mainLbl) {
   return extras;
 }
 
-// ── TOAST ─────────────────────────────────────────────────────────────────────
-function Toast({ message, onDone }) {
-  useEffect(() => {
-    const t = window.setTimeout(onDone, 3000);
-    return () => window.clearTimeout(t);
-  }, [onDone]);
-  return (
-    <div
-      style={{
-        position: 'fixed',
-        bottom: '2rem',
-        right: '2rem',
-        zIndex: 999,
-        background: '#11131a',
-        border: '1px solid #00f6ff',
-        color: '#f3f4f6',
-        padding: '0.85rem 1.2rem',
-        borderRadius: '12px',
-        fontSize: '0.84rem',
-        lineHeight: 1.5,
-        whiteSpace: 'pre-line',
-        boxShadow: '0 0 24px rgba(0,246,255,0.2)',
-        maxWidth: '280px',
-        animation: 'fadeSlideIn 0.3s ease',
-      }}
-    >
-      {message}
-    </div>
-  );
-}
-
-// ── BET MODAL ─────────────────────────────────────────────────────────────────
-function BetModal({ bet, onClose, onConfirm }) {
-  const [stake, setStake] = useState(10);
-  const odds = 1.9;
-  const payout = (stake * odds).toFixed(2);
-
-  return (
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        background: 'rgba(0,0,0,0.7)',
-        zIndex: 1000,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      <div
-        style={{
-          background: '#11131a',
-          border: '1px solid #00f6ff',
-          borderRadius: '16px',
-          padding: '1.5rem',
-          width: '320px',
-          boxShadow: '0 0 40px rgba(0,246,255,0.2)',
-        }}
-      >
-        <h3
-          style={{
-            fontSize: '1.1rem',
-            fontWeight: 700,
-            marginBottom: '0.5rem',
-            color: '#f3f4f6',
-          }}
-        >
-          Place Bet
-        </h3>
-        <p
-          style={{
-            fontSize: '0.82rem',
-            color: '#9ca3af',
-            marginBottom: '0.4rem',
-          }}
-        >
-          {bet.playerName}
-        </p>
-        <p
-          style={{
-            fontSize: '0.9rem',
-            color: '#f3f4f6',
-            fontWeight: 600,
-            marginBottom: '1rem',
-          }}
-        >
-          {bet.direction === 'more' ? '↑ More' : '↓ Less'} than{' '}
-          <span style={{ color: '#00f6ff' }}>{bet.statValue}</span>{' '}
-          {bet.statLabel}
-        </p>
-
-        {/* Last season reference */}
-        <p
-          style={{
-            fontSize: '0.7rem',
-            color: '#9ca3af',
-            marginBottom: '1rem',
-            background: '#0d0f14',
-            padding: '6px 10px',
-            borderRadius: '6px',
-          }}
-        >
-          📊 2025 actual: {Math.round(bet.rawValue)}{' '}
-          {bet.statLabel.replace('2026 ', '')}
-        </p>
-
-        <label
-          style={{
-            fontSize: '0.75rem',
-            color: '#9ca3af',
-            display: 'block',
-            marginBottom: '0.3rem',
-          }}
-        >
-          Stake ($)
-        </label>
-        <input
-          type="number"
-          min="1"
-          value={stake}
-          onChange={(e) => setStake(Number(e.target.value))}
-          style={{
-            width: '100%',
-            background: '#0d0f14',
-            border: '1px solid #404040',
-            borderRadius: '8px',
-            padding: '0.5rem 0.75rem',
-            color: '#f3f4f6',
-            fontSize: '1rem',
-            outline: 'none',
-            marginBottom: '0.8rem',
-          }}
-        />
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            fontSize: '0.8rem',
-            color: '#9ca3af',
-            marginBottom: '0.6rem',
-          }}
-        >
-          <span>Odds</span>
-          <span style={{ color: '#00f6ff', fontWeight: 700 }}>
-            {odds} (~-110)
-          </span>
-        </div>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            fontSize: '0.8rem',
-            color: '#9ca3af',
-            marginBottom: '1.2rem',
-          }}
-        >
-          <span>Potential Payout</span>
-          <span style={{ color: '#00c853', fontWeight: 700 }}>${payout}</span>
-        </div>
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gap: '0.5rem',
-          }}
-        >
-          <button
-            onClick={onClose}
-            style={{
-              padding: '0.6rem',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              background: 'transparent',
-              border: '1px solid #404040',
-              color: '#9ca3af',
-              fontWeight: 600,
-              fontSize: '0.85rem',
-            }}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={() => onConfirm({ ...bet, stake })}
-            style={{
-              padding: '0.6rem',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              background: '#00f6ff',
-              border: 'none',
-              color: '#000',
-              fontWeight: 700,
-              fontSize: '0.85rem',
-            }}
-          >
-            Confirm Bet
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ── PLAYER CARD ───────────────────────────────────────────────────────────────
-function PlayerCard({ player, filter, onBet }) {
+function PlayerCard({ player, filter, selections, onToggleBet }) {
   const stat = getDisplayStat(player, filter);
   if (!stat) return null;
+
   const color = TEAM_COLORS[player.team] || '#00f6ff';
   const initials = player.name
     .split(' ')
@@ -371,6 +181,33 @@ function PlayerCard({ player, filter, onBet }) {
     .join('')
     .slice(0, 2);
   const extras = getExtraStats(player, stat.lbl);
+
+  // Check if over or under is already selected in the bet slip
+  const overId = `${player.id}_${stat.statType}_over`;
+  const underId = `${player.id}_${stat.statType}_under`;
+  const overSelected = selections.some(
+    (s) => s.gameId === String(player.id) && s.selectionId === overId,
+  );
+  const underSelected = selections.some(
+    (s) => s.gameId === String(player.id) && s.selectionId === underId,
+  );
+
+  const handleBet = (direction) => {
+    const selectionId = direction === 'more' ? overId : underId;
+    onToggleBet({
+      gameId: String(player.id),
+      leagueId: NFL_LEAGUE_ID,
+      sport: 'nfl',
+      marketKey: 'player_prop',
+      selectionId,
+      outcomeLabel: `${player.name} ${direction === 'more' ? 'Over' : 'Under'} ${stat.val} ${stat.lbl.replace('2026 ', '')}`,
+      odds: 1.9,
+      lineValue: stat.val,
+      gameName: `${player.name} - ${stat.lbl}`,
+      betType: 'Player Prop',
+      betTeam: player.name,
+    });
+  };
 
   return (
     <div
@@ -383,7 +220,8 @@ function PlayerCard({ player, filter, onBet }) {
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.borderColor = '#00f6ff';
-        e.currentTarget.style.boxShadow = '0 0 20px rgba(0,246,255,0.15)';
+        e.currentTarget.style.boxShadow =
+          '0 0 20px rgba(0,246,255,0.15)';
         e.currentTarget.style.transform = 'translateY(-2px)';
       }}
       onMouseLeave={(e) => {
@@ -461,7 +299,6 @@ function PlayerCard({ player, filter, onBet }) {
           <div style={{ fontSize: '0.7rem', color: '#9ca3af', marginTop: 2 }}>
             {stat.lbl}
           </div>
-          {/* Last season reference */}
           <div style={{ fontSize: '0.65rem', color: '#6b7494', marginTop: 4 }}>
             2025 actual: {Math.round(stat.raw)}
           </div>
@@ -498,28 +335,20 @@ function PlayerCard({ player, filter, onBet }) {
         )}
 
         <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gap: '0.5rem',
-          }}
+          style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}
         >
           <button
-            onClick={() =>
-              onBet({
-                playerName: player.name,
-                statLabel: stat.lbl,
-                statValue: stat.val,
-                rawValue: stat.raw,
-                direction: 'less',
-              })
-            }
+            onClick={() => handleBet('less')}
             style={{
               padding: '0.5rem',
               borderRadius: '8px',
               cursor: 'pointer',
-              background: 'rgba(255,61,87,0.1)',
-              border: '1px solid rgba(255,61,87,0.3)',
+              background: underSelected
+                ? 'rgba(255,61,87,0.25)'
+                : 'rgba(255,61,87,0.1)',
+              border: underSelected
+                ? '1px solid #ff3d57'
+                : '1px solid rgba(255,61,87,0.3)',
               color: '#ff3d57',
               fontSize: '0.78rem',
               fontWeight: 700,
@@ -529,27 +358,25 @@ function PlayerCard({ player, filter, onBet }) {
               (e.currentTarget.style.background = 'rgba(255,61,87,0.22)')
             }
             onMouseLeave={(e) =>
-              (e.currentTarget.style.background = 'rgba(255,61,87,0.1)')
+              (e.currentTarget.style.background = underSelected
+                ? 'rgba(255,61,87,0.25)'
+                : 'rgba(255,61,87,0.1)')
             }
           >
             ↓ Less
           </button>
           <button
-            onClick={() =>
-              onBet({
-                playerName: player.name,
-                statLabel: stat.lbl,
-                statValue: stat.val,
-                rawValue: stat.raw,
-                direction: 'more',
-              })
-            }
+            onClick={() => handleBet('more')}
             style={{
               padding: '0.5rem',
               borderRadius: '8px',
               cursor: 'pointer',
-              background: 'rgba(0,246,255,0.08)',
-              border: '1px solid rgba(0,246,255,0.3)',
+              background: overSelected
+                ? 'rgba(0,246,255,0.2)'
+                : 'rgba(0,246,255,0.08)',
+              border: overSelected
+                ? '1px solid #00f6ff'
+                : '1px solid rgba(0,246,255,0.3)',
               color: '#00f6ff',
               fontSize: '0.78rem',
               fontWeight: 700,
@@ -559,7 +386,9 @@ function PlayerCard({ player, filter, onBet }) {
               (e.currentTarget.style.background = 'rgba(0,246,255,0.18)')
             }
             onMouseLeave={(e) =>
-              (e.currentTarget.style.background = 'rgba(0,246,255,0.08)')
+              (e.currentTarget.style.background = overSelected
+                ? 'rgba(0,246,255,0.2)'
+                : 'rgba(0,246,255,0.08)')
             }
           >
             ↑ More
@@ -596,21 +425,11 @@ function FuturesTable({ category, data, onBet }) {
         </div>
         <div className="flex-1 h-px bg-[#1f2430]" />
       </div>
-      <p
-        style={{
-          fontSize: '0.72rem',
-          color: '#9ca3af',
-          marginBottom: '0.8rem',
-        }}
-      >
+      <p style={{ fontSize: '0.72rem', color: '#9ca3af', marginBottom: '0.8rem' }}>
         {subtitle}
       </p>
       <div
-        style={{
-          borderRadius: '12px',
-          border: '1px solid #1f2430',
-          overflow: 'hidden',
-        }}
+        style={{ borderRadius: '12px', border: '1px solid #1f2430', overflow: 'hidden' }}
       >
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
@@ -706,11 +525,17 @@ function FuturesTable({ category, data, onBet }) {
                     <button
                       onClick={() =>
                         onBet({
-                          playerName: item.label,
-                          statLabel: title,
-                          statValue: item.odds,
-                          rawValue: item.odds,
-                          direction: 'future',
+                          gameId: `future_${item.label.replace(/\s/g, '_')}`,
+                          leagueId: NFL_LEAGUE_ID,
+                          sport: 'nfl',
+                          marketKey: 'futures',
+                          selectionId: `future_${item.label.replace(/\s/g, '_')}`,
+                          outcomeLabel: item.label,
+                          odds: parseFloat(item.odds),
+                          lineValue: null,
+                          gameName: title,
+                          betType: 'Futures',
+                          betTeam: item.label,
                         })
                       }
                       style={{
@@ -810,15 +635,14 @@ function SkeletonCard() {
 
 // ── MAIN COMPONENT ────────────────────────────────────────────────────────────
 export default function NFLBets() {
+  const { selections, toggleSelection } = useGlobalBetSlip();
   const [players, setPlayers] = useState([]);
   const [futures, setFutures] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
-  const [toast, setToast] = useState(null);
   const [tab, setTab] = useState('props');
-  const [pendingBet, setPendingBet] = useState(null);
 
   useEffect(() => {
     async function loadData() {
@@ -849,28 +673,6 @@ export default function NFLBets() {
     }
     loadData();
   }, []);
-
-  async function handleConfirmBet(bet) {
-    try {
-      const res = await fetch(`${API_BASE}/nfl/bets`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(bet),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setToast(`❌ ${data.error || 'Failed to place bet'}`);
-      } else {
-        setToast(
-          `✅ Bet placed!\n${bet.playerName}\n${bet.direction === 'more' ? '↑ More' : '↓ Less'} ${bet.statValue} ${bet.statLabel}\nPayout: $${data.potentialPayout}\nBalance: $${data.newBalance}`,
-        );
-      }
-    } catch {
-      setToast('❌ Failed to place bet. Please try again.');
-    } finally {
-      setPendingBet(null);
-    }
-  }
 
   const filtered = players.filter((p) => {
     const matchesSearch =
@@ -973,9 +775,7 @@ export default function NFLBets() {
             }}
           >
             📊 Prop lines are{' '}
-            <strong style={{ color: '#00f6ff' }}>
-              2026 season projections
-            </strong>{' '}
+            <strong style={{ color: '#00f6ff' }}>2026 season projections</strong>{' '}
             based on 2025 actual stats. Each card shows the 2025 reference below
             the line.
           </div>
@@ -1033,6 +833,12 @@ export default function NFLBets() {
             <span className="text-xs font-bold tracking-widest text-sb-muted uppercase">
               Player Props —{' '}
               {loading ? 'loading…' : `${filtered.length} players`}
+              {selections.filter((s) => s.sport === 'nfl').length > 0 && (
+                <span style={{ marginLeft: 8, color: '#00f6ff' }}>
+                  · {selections.filter((s) => s.sport === 'nfl').length}{' '}
+                  selected
+                </span>
+              )}
             </span>
             <div className="flex-1 h-px bg-[#1f2430]" />
           </div>
@@ -1046,20 +852,21 @@ export default function NFLBets() {
               gap: '1rem',
             }}
           >
-            {loading ? (
-              Array.from({ length: 12 }).map((_, i) => <SkeletonCard key={i} />)
-            ) : filtered.length === 0 ? (
-              <p className="text-sb-muted">No players found.</p>
-            ) : (
-              filtered.map((p) => (
-                <PlayerCard
-                  key={p.id}
-                  player={p}
-                  filter={filter}
-                  onBet={setPendingBet}
-                />
-              ))
-            )}
+            {loading
+              ? Array.from({ length: 12 }).map((_, i) => (
+                  <SkeletonCard key={i} />
+                ))
+              : filtered.length === 0
+                ? <p className="text-sb-muted">No players found.</p>
+                : filtered.map((p) => (
+                    <PlayerCard
+                      key={p.id}
+                      player={p}
+                      filter={filter}
+                      selections={selections}
+                      onToggleBet={toggleSelection}
+                    />
+                  ))}
           </div>
         </>
       )}
@@ -1090,22 +897,11 @@ export default function NFLBets() {
               key={cat}
               category={cat}
               data={futures}
-              onBet={setPendingBet}
+              onBet={toggleSelection}
             />
           ))}
         </div>
       )}
-
-      {/* Bet Modal */}
-      {pendingBet && (
-        <BetModal
-          bet={pendingBet}
-          onClose={() => setPendingBet(null)}
-          onConfirm={handleConfirmBet}
-        />
-      )}
-
-      {toast && <Toast message={toast} onDone={() => setToast(null)} />}
     </div>
   );
 }
