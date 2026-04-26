@@ -77,7 +77,7 @@ const BetSlipFooter = ({
   };
 
   return (
-    <div className="fixed bottom-0 left-0 w-full bg-[#181a20] border-t border-[#00f6ff]/30 p-4 flex flex-col gap-3 z-50 shadow-[0_-4px_15px_rgba(0,0,0,0.6),0_0_10px_rgba(0,246,255,0.1)] transition-transform duration-300">
+    <div className="fixed bottom-0 left-0 w-full max-w-full bg-[#181a20] border-t border-[#00f6ff]/30 p-4 flex flex-col gap-3 z-[200] pointer-events-auto shadow-[0_-4px_15px_rgba(0,0,0,0.6),0_0_10px_rgba(0,246,255,0.1)] transition-transform duration-300">
       {/* Top Row: Header */}
       <div className="text-white flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">

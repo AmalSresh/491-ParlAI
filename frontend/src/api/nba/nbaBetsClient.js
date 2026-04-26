@@ -39,10 +39,11 @@ function parseNbaScoreboard(payload) {
       if (!home || !away) return null;
 
       return {
-        id:
-          event?.id ||
-          comp?.id ||
-          `${away?.team?.abbreviation}@${home?.team?.abbreviation}`,
+        id: String(
+          event?.id ??
+            comp?.id ??
+            `${away?.team?.abbreviation}@${home?.team?.abbreviation}`,
+        ),
         league: league?.abbreviation || 'NBA',
         seasonDisplay,
         startDate: comp?.startDate || event?.date || null,

@@ -84,7 +84,7 @@ function GameCard({ game, onToggleBet, selectedBets, bettingClosed }) {
   const isSel = (marketKey, outcomeLabel) =>
     selectedBets.some(
       (b) =>
-        b.gameId === game.id &&
+        String(b.gameId) === String(game.id) &&
         b.marketKey === marketKey &&
         b.outcomeLabel === outcomeLabel,
     );
@@ -170,7 +170,7 @@ function GameCard({ game, onToggleBet, selectedBets, bettingClosed }) {
               disabled={closed}
               onClick={() =>
                 fire({
-                  gameId: game.id,
+                  gameId: String(game.id),
                   leagueId: 'nba',
                   sport: 'basketball',
                   marketKey: MARKET_KEYS.H2H,
@@ -196,7 +196,7 @@ function GameCard({ game, onToggleBet, selectedBets, bettingClosed }) {
               disabled={closed}
               onClick={() =>
                 fire({
-                  gameId: game.id,
+                  gameId: String(game.id),
                   leagueId: 'nba',
                   sport: 'basketball',
                   marketKey: MARKET_KEYS.H2H,
@@ -233,7 +233,7 @@ function GameCard({ game, onToggleBet, selectedBets, bettingClosed }) {
               disabled={closed}
               onClick={() =>
                 fire({
-                  gameId: game.id,
+                  gameId: String(game.id),
                   leagueId: 'nba',
                   sport: 'basketball',
                   marketKey: MARKET_KEYS.SPREADS,
@@ -263,7 +263,7 @@ function GameCard({ game, onToggleBet, selectedBets, bettingClosed }) {
               disabled={closed}
               onClick={() =>
                 fire({
-                  gameId: game.id,
+                  gameId: String(game.id),
                   leagueId: 'nba',
                   sport: 'basketball',
                   marketKey: MARKET_KEYS.SPREADS,
@@ -298,7 +298,7 @@ function GameCard({ game, onToggleBet, selectedBets, bettingClosed }) {
               disabled={closed}
               onClick={() =>
                 fire({
-                  gameId: game.id,
+                  gameId: String(game.id),
                   leagueId: 'nba',
                   sport: 'basketball',
                   marketKey: MARKET_KEYS.TOTALS,
@@ -324,7 +324,7 @@ function GameCard({ game, onToggleBet, selectedBets, bettingClosed }) {
               disabled={closed}
               onClick={() =>
                 fire({
-                  gameId: game.id,
+                  gameId: String(game.id),
                   leagueId: 'nba',
                   sport: 'basketball',
                   marketKey: MARKET_KEYS.TOTALS,
@@ -468,7 +468,22 @@ export default function NBABets() {
           </span>
         ) : null}
         {loading && <span className="text-sb-muted text-sm">Loading…</span>}
+        {selections.length > 0 ? (
+          <span className="text-[0.7rem] font-extrabold tracking-widest uppercase border border-[#00f6ff]/40 text-[#00f6ff] px-3 py-1.5 rounded-full bg-[#00f6ff]/10">
+            Bet slip: {selections.length} pick
+            {selections.length === 1 ? '' : 's'}
+          </span>
+        ) : null}
       </div>
+
+      {tab === 'games' && (
+        <p className="text-sb-muted text-sm mb-4 m-0">
+          Tap <span className="text-sb-text font-semibold">Moneyline</span>,{' '}
+          <span className="text-sb-text font-semibold">Spread</span>, or{' '}
+          <span className="text-sb-text font-semibold">Total</span> on a game —
+          the bet slip opens at the bottom of the screen.
+        </p>
+      )}
 
       <div className="flex gap-2 mb-6 border-b border-sb-border flex-wrap">
         <button
