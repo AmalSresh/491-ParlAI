@@ -220,8 +220,7 @@ function PlayerCard({ player, filter, selections, onToggleBet }) {
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.borderColor = '#00f6ff';
-        e.currentTarget.style.boxShadow =
-          '0 0 20px rgba(0,246,255,0.15)';
+        e.currentTarget.style.boxShadow = '0 0 20px rgba(0,246,255,0.15)';
         e.currentTarget.style.transform = 'translateY(-2px)';
       }}
       onMouseLeave={(e) => {
@@ -335,7 +334,11 @@ function PlayerCard({ player, filter, selections, onToggleBet }) {
         )}
 
         <div
-          style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: '0.5rem',
+          }}
         >
           <button
             onClick={() => handleBet('less')}
@@ -425,11 +428,21 @@ function FuturesTable({ category, data, onBet }) {
         </div>
         <div className="flex-1 h-px bg-[#1f2430]" />
       </div>
-      <p style={{ fontSize: '0.72rem', color: '#9ca3af', marginBottom: '0.8rem' }}>
+      <p
+        style={{
+          fontSize: '0.72rem',
+          color: '#9ca3af',
+          marginBottom: '0.8rem',
+        }}
+      >
         {subtitle}
       </p>
       <div
-        style={{ borderRadius: '12px', border: '1px solid #1f2430', overflow: 'hidden' }}
+        style={{
+          borderRadius: '12px',
+          border: '1px solid #1f2430',
+          overflow: 'hidden',
+        }}
       >
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
@@ -775,7 +788,9 @@ export default function NFLBets() {
             }}
           >
             📊 Prop lines are{' '}
-            <strong style={{ color: '#00f6ff' }}>2026 season projections</strong>{' '}
+            <strong style={{ color: '#00f6ff' }}>
+              2026 season projections
+            </strong>{' '}
             based on 2025 actual stats. Each card shows the 2025 reference below
             the line.
           </div>
@@ -852,21 +867,21 @@ export default function NFLBets() {
               gap: '1rem',
             }}
           >
-            {loading
-              ? Array.from({ length: 12 }).map((_, i) => (
-                  <SkeletonCard key={i} />
-                ))
-              : filtered.length === 0
-                ? <p className="text-sb-muted">No players found.</p>
-                : filtered.map((p) => (
-                    <PlayerCard
-                      key={p.id}
-                      player={p}
-                      filter={filter}
-                      selections={selections}
-                      onToggleBet={toggleSelection}
-                    />
-                  ))}
+            {loading ? (
+              Array.from({ length: 12 }).map((_, i) => <SkeletonCard key={i} />)
+            ) : filtered.length === 0 ? (
+              <p className="text-sb-muted">No players found.</p>
+            ) : (
+              filtered.map((p) => (
+                <PlayerCard
+                  key={p.id}
+                  player={p}
+                  filter={filter}
+                  selections={selections}
+                  onToggleBet={toggleSelection}
+                />
+              ))
+            )}
           </div>
         </>
       )}
