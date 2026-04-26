@@ -27,7 +27,7 @@
     "start:frontend": "cd frontend && npm run dev",
     "start:swa": "swa start",
     "test:run-when-ready": "wait-on tcp:7071 tcp:5173 tcp:4280 && playwright test",
-    "test:e2e:full": "concurrently -k -s first \"npm run start:backend\" \"npm run start:frontend\" \"npm run start:swa\" \"npm run test:run-when-ready\""
+    "test:e2e:full": "concurrently -k --kill-signal SIGKILL -s first \"npm run start:backend\" \"npm run start:frontend\" \"npm run start:swa\" \"npm run test:run-when-ready\""
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1",
