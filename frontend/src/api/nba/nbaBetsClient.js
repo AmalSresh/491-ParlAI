@@ -74,18 +74,22 @@ function toYYYYMMDDUtc(d) {
 }
 
 /**
- * ESPN `dates` uses YYYYMMDD. Use UTC-day boundaries to avoid missing late-night
- * games that roll over past midnight UTC while still being "today" locally.
+ * ESPN `dates` uses YYYYMMDD. We want "today" to mean the user's local calendar day,
+ * but we still need stable YYYYMMDD keys. This helper anchors the local date at
+ * 12:00 UTC so it won't shift weeks at night for US timezones.
  * @param {Date} [refDate]
  * @returns {string[]}
  */
 export function getNbaWeekDateKeys(refDate = new Date()) {
-  const d = new Date(refDate);
-  d.setUTCHours(12, 0, 0, 0);
-  const day = d.getUTCDay();
+  // Convert the *local* Y/M/D into a stable UTC-noon anchor date.
+  const localY = refDate.getFullYear();
+  const localM = refDate.getMonth();
+  const localD = refDate.getDate();
+  const d = new Date(Date.UTC(localY, localM, localD, 12, 0, 0, 0));
+
+  const day = d.getUTCDay(); // day-of-week for the local date
   const sunday = new Date(d);
   sunday.setUTCDate(d.getUTCDate() - day);
-  sunday.setUTCHours(12, 0, 0, 0);
   const keys = [];
   for (let i = 0; i < 7; i++) {
     const x = new Date(sunday);
@@ -111,14 +115,26 @@ export async function fetchNbaScoreboard({ date } = {}) {
  * All games scheduled Sun–Sat for the week containing `refDate`, de-duped and sorted by tip time.
  */
 export async function fetchNbaScoreboardWeek({ refDate } = {}) {
-  const keys = getNbaWeekDateKeys(refDate ?? new Date());
-  // Buffer day: helps catch events that ESPN files under adjacent UTC date.
-  const tomorrow = new Date(refDate ?? new Date());
-  tomorrow.setUTCHours(12, 0, 0, 0);
-  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
-  keys.push(toYYYYMMDDUtc(tomorrow));
+  // Fetch the current local Sun–Sat week, plus a small rolling buffer window so
+  // late-night games never disappear.
+  const base = refDate ?? new Date();
+  const weekKeys = getNbaWeekDateKeys(base);
+
+  const localY = base.getFullYear();
+  const localM = base.getMonth();
+  const localD = base.getDate();
+  const anchor = new Date(Date.UTC(localY, localM, localD, 12, 0, 0, 0));
+
+  const bufferKeys = [];
+  for (let i = -2; i <= 2; i++) {
+    const d = new Date(anchor);
+    d.setUTCDate(anchor.getUTCDate() + i);
+    bufferKeys.push(toYYYYMMDDUtc(d));
+  }
+
+  const keys = Array.from(new Set([...weekKeys, ...bufferKeys]));
   const dayResults = await Promise.all(
-    Array.from(new Set(keys)).map((date) => fetchNbaScoreboard({ date })),
+    keys.map((date) => fetchNbaScoreboard({ date })),
   );
   const byId = new Map();
   for (const dayGames of dayResults) {
