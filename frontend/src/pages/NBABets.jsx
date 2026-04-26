@@ -460,7 +460,7 @@ export default function NBABets() {
       <div className="flex items-center gap-3 mb-6 flex-wrap">
         <h1 className="text-3xl font-extrabold tracking-wide">🏀 NBA</h1>
         <span className="text-[0.7rem] font-bold tracking-widest uppercase border border-sb-blue/50 text-sb-blue px-3 py-1.5 rounded-full bg-sb-bg/60">
-          🔎 This week (Sun–Sat) • ESPN
+          🔄 This week (Sun–Sat) • ESPN
         </span>
         {weekRangeLabel ? (
           <span className="text-sb-muted text-sm font-semibold">
@@ -559,9 +559,9 @@ export default function NBABets() {
             Futures & awards
           </h2>
           <p className="text-sb-muted text-sm mt-2 m-0">
-            ESPN’s NBA scoreboard endpoint provides matchups and scores, but it
-            doesn’t include futures/awards markets. Connect your existing odds
-            API (or futures endpoint) and we’ll render them here.
+            ESPN's NBA scoreboard endpoint provides matchups and scores, but it
+            doesn't include futures/awards markets. Connect your existing odds
+            API (or futures endpoint) and we'll render them here.
           </p>
         </div>
       )}
