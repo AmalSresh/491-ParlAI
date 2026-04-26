@@ -1,8 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import {
-  fetchNbaScoreboardWeek,
-  getNbaWeekDateKeys,
-} from '../api/nba/nbaBetsClient';
 import { useGlobalBetSlip } from '../context/BetSlipContext';
 import {
   MARKET_KEYS,
@@ -10,22 +6,9 @@ import {
   isBettingClosed,
 } from '../utils/betPayload.js';
 
-/** Demo prices until a real odds feed is wired (decimal odds). */
-const DEMO_ODDS = {
-  moneyline: 1.91,
-  side: 1.91,
-};
-
-/** Demo lines (static). */
-const DEMO_LINES = {
-  spreadAway: 5.5,
-  spreadHome: -5.5,
-  total: 224.5,
-};
-
-function formatKickoff(iso) {
-  if (!iso) return '—';
-  const dt = new Date(iso);
+function formatKickoff(isoOrDate) {
+  if (!isoOrDate) return '—';
+  const dt = new Date(isoOrDate);
   if (Number.isNaN(dt.getTime())) return '—';
   return dt.toLocaleString(undefined, {
     weekday: 'short',
@@ -34,9 +17,9 @@ function formatKickoff(iso) {
   });
 }
 
-function formatDayHeading(iso) {
-  if (!iso) return 'Date TBA';
-  const dt = new Date(iso);
+function formatDayHeading(isoOrDate) {
+  if (!isoOrDate) return 'Date TBA';
+  const dt = new Date(isoOrDate);
   if (Number.isNaN(dt.getTime())) return 'Date TBA';
   return dt.toLocaleDateString(undefined, {
     weekday: 'long',
@@ -45,22 +28,11 @@ function formatDayHeading(iso) {
   });
 }
 
-function daySortKey(iso) {
-  if (!iso) return '';
-  const dt = new Date(iso);
+function daySortKey(isoOrDate) {
+  if (!isoOrDate) return '';
+  const dt = new Date(isoOrDate);
   if (Number.isNaN(dt.getTime())) return '';
   return dt.toDateString();
-}
-
-function getStatusLabel(state) {
-  switch (state) {
-    case 'pre':
-    case 'post':
-    case 'in':
-      return state.toUpperCase();
-    default:
-      return state ? String(state).toUpperCase() : '—';
-  }
 }
 
 function pickButtonClass(selected, disabled) {
@@ -75,18 +47,42 @@ function pickButtonClass(selected, disabled) {
   return `${base} border-sb-border bg-sb-bg text-sb-text hover:border-sb-blue hover:text-sb-blue cursor-pointer`;
 }
 
+function toAbbr(teamName) {
+  if (!teamName) return '—';
+  const parts = String(teamName).trim().split(/\s+/);
+  const last = parts[parts.length - 1] || '';
+  return last.length <= 4 ? last.toUpperCase() : last.slice(0, 3).toUpperCase();
+}
+
+function formatDecimalOdds(odds) {
+  const n = Number(odds);
+  if (!Number.isFinite(n) || n <= 0) return '—';
+  return n.toFixed(2);
+}
+
+function getMarket(game, key) {
+  return (game.markets || []).find((m) => m.type === key) || null;
+}
+
+function getSelections(market) {
+  return Array.isArray(market?.selections) ? market.selections : [];
+}
+
 function GameCard({ game, onToggleBet, selectedBets, bettingClosed }) {
-  const homeScore = game.home.score ?? null;
-  const awayScore = game.away.score ?? null;
-  const isFinal = game.status?.typeState === 'post';
+  const homeScore = game.scores?.home ?? null;
+  const awayScore = game.scores?.away ?? null;
+  const isFinal = String(game.status || '').toLowerCase() === 'completed';
   const closed = bettingClosed || isFinal;
 
-  const isSel = (marketKey, outcomeLabel) =>
+  const awayAbbr = toAbbr(game.awayTeam);
+  const homeAbbr = toAbbr(game.homeTeam);
+
+  const isSel = (marketKey, selectionId) =>
     selectedBets.some(
       (b) =>
         b.gameId === game.id &&
         b.marketKey === marketKey &&
-        b.outcomeLabel === outcomeLabel,
+        String(b.selectionId) === String(selectionId),
     );
 
   const fire = (payload) => {
@@ -94,33 +90,53 @@ function GameCard({ game, onToggleBet, selectedBets, bettingClosed }) {
     onToggleBet(payload);
   };
 
-  const awayMlLabel = game.away.abbr;
-  const homeMlLabel = game.home.abbr;
-  const awaySpreadLine = DEMO_LINES.spreadAway;
-  const homeSpreadLine = DEMO_LINES.spreadHome;
-  const totalLine = DEMO_LINES.total;
+  const h2h = getMarket(game, MARKET_KEYS.H2H);
+  const spreads = getMarket(game, MARKET_KEYS.SPREADS);
+  const totals = getMarket(game, MARKET_KEYS.TOTALS);
+
+  const h2hSel = getSelections(h2h);
+  const spreadsSel = getSelections(spreads);
+  const totalsSel = getSelections(totals);
+
+  const h2hAway = h2hSel.find((s) => s.label === game.awayTeam) || null;
+  const h2hHome = h2hSel.find((s) => s.label === game.homeTeam) || null;
+
+  const spreadAway = spreadsSel.find((s) => s.label === game.awayTeam) || null;
+  const spreadHome = spreadsSel.find((s) => s.label === game.homeTeam) || null;
+
+  const totalOver =
+    totalsSel.find((s) =>
+      String(s.label || '')
+        .toLowerCase()
+        .includes('over'),
+    ) || null;
+  const totalUnder =
+    totalsSel.find((s) =>
+      String(s.label || '')
+        .toLowerCase()
+        .includes('under'),
+    ) || null;
+  const totalLine = totalOver?.lineValue ?? totalUnder?.lineValue ?? null;
 
   return (
     <div className="rounded-xl border border-sb-border bg-sb-bg/60 overflow-hidden">
       <div className="p-4 border-b border-sb-border flex items-start justify-between gap-4 flex-wrap">
         <div className="min-w-0 flex-1">
           <div className="text-xs uppercase tracking-widest text-sb-muted font-bold">
-            {game.league} • {game.seasonDisplay}
+            {game.league?.name || 'NBA'}
           </div>
           <div className="text-sb-text font-extrabold text-lg mt-1">
-            {game.away.abbr} @ {game.home.abbr}
+            {awayAbbr} @ {homeAbbr}
           </div>
           <div className="text-sb-muted text-sm mt-1">
-            {formatKickoff(game.startDate)} •{' '}
-            {getStatusLabel(game.status?.typeState)}
+            {formatKickoff(game.startTime)} •{' '}
+            {String(game.status || '—').toUpperCase()}
           </div>
         </div>
 
         <div className="flex items-center gap-6">
           <div className="text-right">
-            <div className="text-sb-muted text-xs font-bold">
-              {game.home.abbr}
-            </div>
+            <div className="text-sb-muted text-xs font-bold">{homeAbbr}</div>
             <div
               className={`text-2xl font-extrabold ${isFinal ? 'text-sb-text' : 'text-sb-blue'}`}
             >
@@ -128,9 +144,7 @@ function GameCard({ game, onToggleBet, selectedBets, bettingClosed }) {
             </div>
           </div>
           <div className="text-left">
-            <div className="text-sb-muted text-xs font-bold">
-              {game.away.abbr}
-            </div>
+            <div className="text-sb-muted text-xs font-bold">{awayAbbr}</div>
             <div
               className={`text-2xl font-extrabold ${isFinal ? 'text-sb-text' : 'text-sb-blue'}`}
             >
@@ -142,17 +156,11 @@ function GameCard({ game, onToggleBet, selectedBets, bettingClosed }) {
 
       <div className="p-4 border-b border-sb-border/80">
         <div className="text-sb-text font-extrabold text-sm">
-          {game.away.name} vs {game.home.name}
+          {game.awayTeam} vs {game.homeTeam}
         </div>
         <div className="text-sb-muted text-xs mt-1">
-          {game.status?.clock
-            ? `Clock: ${game.status.clock}`
-            : 'Tip-off clock not provided'}
+          Tip-off: {formatKickoff(game.startTime)}
         </div>
-        <p className="text-sb-muted text-[0.65rem] mt-2 mb-0">
-          Lines below are placeholders for slip checkout until a real odds API
-          is connected.
-        </p>
       </div>
 
       <div className="p-4 flex flex-col gap-4">
@@ -164,54 +172,62 @@ function GameCard({ game, onToggleBet, selectedBets, bettingClosed }) {
             <button
               type="button"
               className={pickButtonClass(
-                isSel(MARKET_KEYS.H2H, awayMlLabel),
-                closed,
+                isSel(MARKET_KEYS.H2H, h2hAway?.id),
+                closed || !h2hAway,
               )}
-              disabled={closed}
+              disabled={closed || !h2hAway}
               onClick={() =>
-                fire({
-                  gameId: game.id,
-                  leagueId: 'nba',
-                  sport: 'basketball',
-                  marketKey: MARKET_KEYS.H2H,
-                  selectionId: `nba-${game.id}-h2h-away`,
-                  outcomeLabel: awayMlLabel,
-                  odds: DEMO_ODDS.moneyline,
-                  lineValue: null,
-                  gameName: `${game.away.abbr} @ ${game.home.abbr}`,
-                  betType: 'Moneyline',
-                  betTeam: game.away.name,
-                })
+                h2hAway
+                  ? fire({
+                      gameId: game.id,
+                      leagueId: game.league?.id,
+                      sport: game.league?.sport || 'basketball',
+                      marketKey: MARKET_KEYS.H2H,
+                      selectionId: h2hAway.id,
+                      outcomeLabel: h2hAway.label,
+                      odds: Number(h2hAway.odds),
+                      lineValue: null,
+                      gameName: `${awayAbbr} @ ${homeAbbr}`,
+                      betType: 'Moneyline',
+                      betTeam: game.awayTeam,
+                    })
+                  : null
               }
             >
-              <span className="block">{awayMlLabel}</span>
-              <span className="block text-sb-blue">{DEMO_ODDS.moneyline}</span>
+              <span className="block">{awayAbbr}</span>
+              <span className="block text-sb-blue">
+                {formatDecimalOdds(h2hAway?.odds)}
+              </span>
             </button>
             <button
               type="button"
               className={pickButtonClass(
-                isSel(MARKET_KEYS.H2H, homeMlLabel),
-                closed,
+                isSel(MARKET_KEYS.H2H, h2hHome?.id),
+                closed || !h2hHome,
               )}
-              disabled={closed}
+              disabled={closed || !h2hHome}
               onClick={() =>
-                fire({
-                  gameId: game.id,
-                  leagueId: 'nba',
-                  sport: 'basketball',
-                  marketKey: MARKET_KEYS.H2H,
-                  selectionId: `nba-${game.id}-h2h-home`,
-                  outcomeLabel: homeMlLabel,
-                  odds: DEMO_ODDS.moneyline,
-                  lineValue: null,
-                  gameName: `${game.away.abbr} @ ${game.home.abbr}`,
-                  betType: 'Moneyline',
-                  betTeam: game.home.name,
-                })
+                h2hHome
+                  ? fire({
+                      gameId: game.id,
+                      leagueId: game.league?.id,
+                      sport: game.league?.sport || 'basketball',
+                      marketKey: MARKET_KEYS.H2H,
+                      selectionId: h2hHome.id,
+                      outcomeLabel: h2hHome.label,
+                      odds: Number(h2hHome.odds),
+                      lineValue: null,
+                      gameName: `${awayAbbr} @ ${homeAbbr}`,
+                      betType: 'Moneyline',
+                      betTeam: game.homeTeam,
+                    })
+                  : null
               }
             >
-              <span className="block">{homeMlLabel}</span>
-              <span className="block text-sb-blue">{DEMO_ODDS.moneyline}</span>
+              <span className="block">{homeAbbr}</span>
+              <span className="block text-sb-blue">
+                {formatDecimalOdds(h2hHome?.odds)}
+              </span>
             </button>
           </div>
         </div>
@@ -224,122 +240,146 @@ function GameCard({ game, onToggleBet, selectedBets, bettingClosed }) {
             <button
               type="button"
               className={pickButtonClass(
-                isSel(
-                  MARKET_KEYS.SPREADS,
-                  `${game.away.abbr} ${formatSpreadLine(awaySpreadLine)}`,
-                ),
-                closed,
+                isSel(MARKET_KEYS.SPREADS, spreadAway?.id),
+                closed || !spreadAway,
               )}
-              disabled={closed}
+              disabled={closed || !spreadAway}
               onClick={() =>
-                fire({
-                  gameId: game.id,
-                  leagueId: 'nba',
-                  sport: 'basketball',
-                  marketKey: MARKET_KEYS.SPREADS,
-                  selectionId: `nba-${game.id}-spreads-away`,
-                  outcomeLabel: `${game.away.abbr} ${formatSpreadLine(awaySpreadLine)}`,
-                  odds: DEMO_ODDS.side,
-                  lineValue: awaySpreadLine,
-                  gameName: `${game.away.abbr} @ ${game.home.abbr}`,
-                  betType: 'Spread',
-                  betTeam: game.away.name,
-                })
+                spreadAway
+                  ? fire({
+                      gameId: game.id,
+                      leagueId: game.league?.id,
+                      sport: game.league?.sport || 'basketball',
+                      marketKey: MARKET_KEYS.SPREADS,
+                      selectionId: spreadAway.id,
+                      outcomeLabel: `${awayAbbr} ${formatSpreadLine(spreadAway.lineValue)}`,
+                      odds: Number(spreadAway.odds),
+                      lineValue: spreadAway.lineValue ?? null,
+                      gameName: `${awayAbbr} @ ${homeAbbr}`,
+                      betType: 'Spread',
+                      betTeam: game.awayTeam,
+                    })
+                  : null
               }
             >
-              <span className="block">{game.away.abbr}</span>
-              <span className="block">{formatSpreadLine(awaySpreadLine)}</span>
-              <span className="block text-sb-blue">{DEMO_ODDS.side}</span>
+              <span className="block">{awayAbbr}</span>
+              <span className="block">
+                {spreadAway?.lineValue != null
+                  ? formatSpreadLine(spreadAway.lineValue)
+                  : '—'}
+              </span>
+              <span className="block text-sb-blue">
+                {formatDecimalOdds(spreadAway?.odds)}
+              </span>
             </button>
             <button
               type="button"
               className={pickButtonClass(
-                isSel(
-                  MARKET_KEYS.SPREADS,
-                  `${game.home.abbr} ${formatSpreadLine(homeSpreadLine)}`,
-                ),
-                closed,
+                isSel(MARKET_KEYS.SPREADS, spreadHome?.id),
+                closed || !spreadHome,
               )}
-              disabled={closed}
+              disabled={closed || !spreadHome}
               onClick={() =>
-                fire({
-                  gameId: game.id,
-                  leagueId: 'nba',
-                  sport: 'basketball',
-                  marketKey: MARKET_KEYS.SPREADS,
-                  selectionId: `nba-${game.id}-spreads-home`,
-                  outcomeLabel: `${game.home.abbr} ${formatSpreadLine(homeSpreadLine)}`,
-                  odds: DEMO_ODDS.side,
-                  lineValue: homeSpreadLine,
-                  gameName: `${game.away.abbr} @ ${game.home.abbr}`,
-                  betType: 'Spread',
-                  betTeam: game.home.name,
-                })
+                spreadHome
+                  ? fire({
+                      gameId: game.id,
+                      leagueId: game.league?.id,
+                      sport: game.league?.sport || 'basketball',
+                      marketKey: MARKET_KEYS.SPREADS,
+                      selectionId: spreadHome.id,
+                      outcomeLabel: `${homeAbbr} ${formatSpreadLine(spreadHome.lineValue)}`,
+                      odds: Number(spreadHome.odds),
+                      lineValue: spreadHome.lineValue ?? null,
+                      gameName: `${awayAbbr} @ ${homeAbbr}`,
+                      betType: 'Spread',
+                      betTeam: game.homeTeam,
+                    })
+                  : null
               }
             >
-              <span className="block">{game.home.abbr}</span>
-              <span className="block">{formatSpreadLine(homeSpreadLine)}</span>
-              <span className="block text-sb-blue">{DEMO_ODDS.side}</span>
+              <span className="block">{homeAbbr}</span>
+              <span className="block">
+                {spreadHome?.lineValue != null
+                  ? formatSpreadLine(spreadHome.lineValue)
+                  : '—'}
+              </span>
+              <span className="block text-sb-blue">
+                {formatDecimalOdds(spreadHome?.odds)}
+              </span>
             </button>
           </div>
         </div>
 
         <div className="flex flex-col gap-2">
           <span className="text-[0.65rem] font-bold text-sb-muted tracking-widest uppercase">
-            Total ({totalLine})
+            Total{totalLine != null ? ` (${totalLine})` : ''}
           </span>
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
               className={pickButtonClass(
-                isSel(MARKET_KEYS.TOTALS, `Over ${totalLine}`),
-                closed,
+                isSel(MARKET_KEYS.TOTALS, totalOver?.id),
+                closed || !totalOver,
               )}
-              disabled={closed}
+              disabled={closed || !totalOver}
               onClick={() =>
-                fire({
-                  gameId: game.id,
-                  leagueId: 'nba',
-                  sport: 'basketball',
-                  marketKey: MARKET_KEYS.TOTALS,
-                  selectionId: `nba-${game.id}-totals-over`,
-                  outcomeLabel: `Over ${totalLine}`,
-                  odds: DEMO_ODDS.side,
-                  lineValue: totalLine,
-                  gameName: `${game.away.abbr} @ ${game.home.abbr}`,
-                  betType: 'Over/Under',
-                  betTeam: '',
-                })
+                totalOver
+                  ? fire({
+                      gameId: game.id,
+                      leagueId: game.league?.id,
+                      sport: game.league?.sport || 'basketball',
+                      marketKey: MARKET_KEYS.TOTALS,
+                      selectionId: totalOver.id,
+                      outcomeLabel:
+                        totalLine != null
+                          ? `Over ${totalLine}`
+                          : totalOver.label,
+                      odds: Number(totalOver.odds),
+                      lineValue: totalOver.lineValue ?? null,
+                      gameName: `${awayAbbr} @ ${homeAbbr}`,
+                      betType: 'Over/Under',
+                      betTeam: '',
+                    })
+                  : null
               }
             >
               <span className="block">Over</span>
-              <span className="block text-sb-blue">{DEMO_ODDS.side}</span>
+              <span className="block text-sb-blue">
+                {formatDecimalOdds(totalOver?.odds)}
+              </span>
             </button>
             <button
               type="button"
               className={pickButtonClass(
-                isSel(MARKET_KEYS.TOTALS, `Under ${totalLine}`),
-                closed,
+                isSel(MARKET_KEYS.TOTALS, totalUnder?.id),
+                closed || !totalUnder,
               )}
-              disabled={closed}
+              disabled={closed || !totalUnder}
               onClick={() =>
-                fire({
-                  gameId: game.id,
-                  leagueId: 'nba',
-                  sport: 'basketball',
-                  marketKey: MARKET_KEYS.TOTALS,
-                  selectionId: `nba-${game.id}-totals-under`,
-                  outcomeLabel: `Under ${totalLine}`,
-                  odds: DEMO_ODDS.side,
-                  lineValue: totalLine,
-                  gameName: `${game.away.abbr} @ ${game.home.abbr}`,
-                  betType: 'Over/Under',
-                  betTeam: '',
-                })
+                totalUnder
+                  ? fire({
+                      gameId: game.id,
+                      leagueId: game.league?.id,
+                      sport: game.league?.sport || 'basketball',
+                      marketKey: MARKET_KEYS.TOTALS,
+                      selectionId: totalUnder.id,
+                      outcomeLabel:
+                        totalLine != null
+                          ? `Under ${totalLine}`
+                          : totalUnder.label,
+                      odds: Number(totalUnder.odds),
+                      lineValue: totalUnder.lineValue ?? null,
+                      gameName: `${awayAbbr} @ ${homeAbbr}`,
+                      betType: 'Over/Under',
+                      betTeam: '',
+                    })
+                  : null
               }
             >
               <span className="block">Under</span>
-              <span className="block text-sb-blue">{DEMO_ODDS.side}</span>
+              <span className="block text-sb-blue">
+                {formatDecimalOdds(totalUnder?.odds)}
+              </span>
             </button>
           </div>
         </div>
@@ -357,27 +397,18 @@ export default function NBABets() {
   const [search, setSearch] = useState('');
   const [tab, setTab] = useState('games');
   const weekRangeLabel = useMemo(() => {
-    const keys = getNbaWeekDateKeys(new Date());
-    if (keys.length < 2) return '';
-    const start = keys[0];
-    const end = keys[6];
-    const fmt = (ymd) => {
-      const y = Number(ymd.slice(0, 4));
-      const m = Number(ymd.slice(4, 6)) - 1;
-      const day = Number(ymd.slice(6, 8));
-      return new Date(y, m, day);
-    };
-    const a = fmt(start);
-    const b = fmt(end);
-    const sameMonth = a.getMonth() === b.getMonth();
-    const left = a.toLocaleDateString(undefined, {
+    const start = new Date();
+    start.setDate(start.getDate() - 2);
+    const end = new Date();
+    end.setDate(end.getDate() + 14);
+    const left = start.toLocaleDateString(undefined, {
       month: 'short',
       day: 'numeric',
     });
-    const right = b.toLocaleDateString(
-      undefined,
-      sameMonth ? { day: 'numeric' } : { month: 'short', day: 'numeric' },
-    );
+    const right = end.toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+    });
     return `${left} – ${right}`;
   }, []);
 
@@ -387,13 +418,28 @@ export default function NBABets() {
       setLoading(true);
       setError('');
       try {
-        const result = await fetchNbaScoreboardWeek();
+        const start = new Date();
+        start.setDate(start.getDate() - 2);
+        const end = new Date();
+        end.setDate(end.getDate() + 14);
+
+        const qs = [
+          `leagueName=${encodeURIComponent('NBA')}`,
+          `sport=${encodeURIComponent('basketball')}`,
+          `startDate=${encodeURIComponent(start.toISOString())}`,
+          `endDate=${encodeURIComponent(end.toISOString())}`,
+        ].join('&');
+
+        const res = await fetch(`/api/getGames?${qs}`);
+        if (!res.ok)
+          throw new Error(`Failed to load NBA games (${res.status})`);
+        const result = await res.json();
         if (!alive) return;
         setGames(result);
       } catch (e) {
         console.error(e);
         if (!alive) return;
-        setError('Failed to load NBA matchups from ESPN.');
+        setError(e?.message || 'Failed to load NBA games.');
       } finally {
         if (alive) {
           setLoading(false);
@@ -417,10 +463,15 @@ export default function NBABets() {
     if (!q) return games;
     return games.filter((g) => {
       return (
-        g.home.abbr.toLowerCase().includes(q) ||
-        g.away.abbr.toLowerCase().includes(q) ||
-        g.home.name.toLowerCase().includes(q) ||
-        g.away.name.toLowerCase().includes(q)
+        String(g.homeTeam || '')
+          .toLowerCase()
+          .includes(q) ||
+        String(g.awayTeam || '')
+          .toLowerCase()
+          .includes(q) ||
+        String(g.league?.name || '')
+          .toLowerCase()
+          .includes(q)
       );
     });
   }, [games, search]);
@@ -430,12 +481,12 @@ export default function NBABets() {
     let currentKey = null;
     let bucket = [];
     for (const g of filteredGames) {
-      const key = daySortKey(g.startDate) || 'unknown';
+      const key = daySortKey(g.startTime) || 'unknown';
       if (key !== currentKey) {
         if (bucket.length) {
           sections.push({
             dayKey: currentKey,
-            heading: formatDayHeading(bucket[0].startDate),
+            heading: formatDayHeading(bucket[0].startTime),
             games: bucket,
           });
         }
@@ -448,7 +499,7 @@ export default function NBABets() {
     if (bucket.length) {
       sections.push({
         dayKey: currentKey,
-        heading: formatDayHeading(bucket[0].startDate),
+        heading: formatDayHeading(bucket[0].startTime),
         games: bucket,
       });
     }
