@@ -66,30 +66,31 @@ function parseNbaScoreboard(payload) {
     .filter(Boolean);
 }
 
-function toYYYYMMDD(d) {
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
+function toYYYYMMDDUtc(d) {
+  const year = d.getUTCFullYear();
+  const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(d.getUTCDate()).padStart(2, '0');
   return `${year}${month}${day}`;
 }
 
 /**
- * ESPN `dates` uses YYYYMMDD. Week is Sunday → Saturday (local calendar).
+ * ESPN `dates` uses YYYYMMDD. Use UTC-day boundaries to avoid missing late-night
+ * games that roll over past midnight UTC while still being "today" locally.
  * @param {Date} [refDate]
  * @returns {string[]}
  */
 export function getNbaWeekDateKeys(refDate = new Date()) {
   const d = new Date(refDate);
-  d.setHours(12, 0, 0, 0);
-  const day = d.getDay();
+  d.setUTCHours(12, 0, 0, 0);
+  const day = d.getUTCDay();
   const sunday = new Date(d);
-  sunday.setDate(d.getDate() - day);
-  sunday.setHours(12, 0, 0, 0);
+  sunday.setUTCDate(d.getUTCDate() - day);
+  sunday.setUTCHours(12, 0, 0, 0);
   const keys = [];
   for (let i = 0; i < 7; i++) {
     const x = new Date(sunday);
-    x.setDate(sunday.getDate() + i);
-    keys.push(toYYYYMMDD(x));
+    x.setUTCDate(sunday.getUTCDate() + i);
+    keys.push(toYYYYMMDDUtc(x));
   }
   return keys;
 }
@@ -111,8 +112,13 @@ export async function fetchNbaScoreboard({ date } = {}) {
  */
 export async function fetchNbaScoreboardWeek({ refDate } = {}) {
   const keys = getNbaWeekDateKeys(refDate ?? new Date());
+  // Buffer day: helps catch events that ESPN files under adjacent UTC date.
+  const tomorrow = new Date(refDate ?? new Date());
+  tomorrow.setUTCHours(12, 0, 0, 0);
+  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+  keys.push(toYYYYMMDDUtc(tomorrow));
   const dayResults = await Promise.all(
-    keys.map((date) => fetchNbaScoreboard({ date })),
+    Array.from(new Set(keys)).map((date) => fetchNbaScoreboard({ date })),
   );
   const byId = new Map();
   for (const dayGames of dayResults) {
