@@ -60,9 +60,7 @@ export const getMLBGames = (pruneSelectionsForGames) => {
           }
 
           // Totals market (Over/Under runs)
-          const totalsMarket = dbGame.markets?.find(
-            (m) => m.type === 'totals',
-          );
+          const totalsMarket = dbGame.markets?.find((m) => m.type === 'totals');
           let totalsPicks = { over: null, under: null };
           let totalLine = 8.5;
 

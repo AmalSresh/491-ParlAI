@@ -452,10 +452,7 @@ function GameCard({ game, selections, onToggleBet, bettingClosed }) {
                   <OddsButton
                     sublabel="Over"
                     odds={game.totalsPicks.over.odds}
-                    isSelected={isSelected(
-                      game.totalsPicks.over.id,
-                      'totals',
-                    )}
+                    isSelected={isSelected(game.totalsPicks.over.id, 'totals')}
                     onClick={() => handleTotal('over')}
                     disabled={bettingClosed}
                   />
@@ -464,10 +461,7 @@ function GameCard({ game, selections, onToggleBet, bettingClosed }) {
                   <OddsButton
                     sublabel="Under"
                     odds={game.totalsPicks.under.odds}
-                    isSelected={isSelected(
-                      game.totalsPicks.under.id,
-                      'totals',
-                    )}
+                    isSelected={isSelected(game.totalsPicks.under.id, 'totals')}
                     onClick={() => handleTotal('under')}
                     disabled={bettingClosed}
                   />
