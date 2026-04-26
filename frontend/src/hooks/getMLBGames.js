@@ -23,7 +23,7 @@ export const getMLBGames = (pruneSelectionsForGames) => {
         const end = new Date();
         end.setDate(end.getDate() + 14);
 
-        const params = new URLSearchParams({
+        const params = new window.URLSearchParams({
           leagueId: MLB_LEAGUE_ID,
           startDate: start.toISOString(),
           endDate: end.toISOString(),
