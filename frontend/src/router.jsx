@@ -13,6 +13,7 @@ import Games from './pages/Games';
 import Players from './pages/Players';
 import MyBets from './pages/MyBets';
 import NBABets from './pages/NBABets';
+import UFCBets from './pages/UFCBets';
 import NotFound from './pages/NotFound';
 import MLBBets from './pages/MLBBets';
 import Hockey from './pages/Hockey';
@@ -33,6 +34,7 @@ const router = createBrowserRouter([
           { path: 'soccer', element: <SoccerPage /> },
           { path: 'nfl', element: <NFLBets /> },
           { path: 'nba', element: <NBABets /> },
+          { path: 'ufc', element: <UFCBets /> },
           { path: 'hockey', element: <Hockey /> },
           { path: 'mlb', element: <MLBBets /> },
         ],
