@@ -4,7 +4,7 @@ import { poolPromise } from '../../components/db-connect.js';
 
 app.http('user-balance', {
   methods: ['GET'],
-  route: 'users/balance',
+  route: 'user/balance',
   authLevel: 'anonymous', // Make sure this matches your app's auth setup
   handler: async (request, context) => {
     try {

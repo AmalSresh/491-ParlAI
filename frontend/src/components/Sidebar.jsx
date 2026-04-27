@@ -15,13 +15,14 @@ export default function Sidebar() {
             🏈 NFL
           </Link>
         </li>
-        <li>⚾ MLB</li>
+        <li>
+          <Link to="/mlb">⚾ MLB</Link>
+        </li>
         <li>
           <Link to="/hockey" className="no-underline">
             🏒 NHL
           </Link>
         </li>
-        <li>🏒 NHL</li>
         <li>
           <Link to="/soccer">⚽ Soccer</Link>
         </li>

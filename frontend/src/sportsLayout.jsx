@@ -61,7 +61,7 @@ const GlobalBetSlipFooter = () => {
 
       // After placing the bet, get updated balance and pass it to the bet slip footer.
       try {
-        const balanceRes = await fetch('/api/users/balance');
+        const balanceRes = await fetch('/api/user/balance');
         const balanceData = await balanceRes.json();
 
         if (balanceRes.ok) {
