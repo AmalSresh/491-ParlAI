@@ -3,7 +3,6 @@ import App from './App';
 import Login from './pages/login';
 import Home from './pages/home';
 import HowToPlay from './pages/HowToPlay';
-import Support from './pages/support';
 import Onboarding from './pages/onboarding';
 import Settings from './pages/Settings';
 import Profile from './pages/Profile';
