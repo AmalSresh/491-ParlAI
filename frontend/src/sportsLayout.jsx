@@ -1,5 +1,6 @@
 // src/sportsLayout.jsx
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Outlet } from 'react-router-dom';
 import { useGlobalBetSlip } from './context/BetSlipContext';
 import { useAuth } from './context/AuthContext';
@@ -79,7 +80,9 @@ const GlobalBetSlipFooter = () => {
     }
   };
 
-  return (
+  // Render in document.body so `position: fixed` is not trapped by a parent
+  // transform/stacking context (was hiding the slip under the main app shell).
+  return createPortal(
     <BetSlipFooter
       selections={selections}
       slipWarning={slipWarning}
@@ -87,7 +90,8 @@ const GlobalBetSlipFooter = () => {
       setCheckoutError={setCheckoutError}
       clearSlip={clearSlip}
       onCheckout={handleCheckout}
-    />
+    />,
+    document.body,
   );
 };
 

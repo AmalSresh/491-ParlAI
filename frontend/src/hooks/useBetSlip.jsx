@@ -15,10 +15,11 @@ export const useBetSlip = () => {
     setSlipWarning(null);
 
     setSelections((prevSelections) => {
+      const newGid = String(newBet.gameId);
       // 1. Same game, same market check (e.g., swapping Spread from Home to Away, or toggling off)
       const existingBetIndex = prevSelections.findIndex(
         (bet) =>
-          bet.gameId === newBet.gameId && bet.marketKey === newBet.marketKey,
+          String(bet.gameId) === newGid && bet.marketKey === newBet.marketKey,
       );
 
       if (existingBetIndex >= 0) {
@@ -40,7 +41,7 @@ export const useBetSlip = () => {
       // 2. Same game, DIFFERENT market check (e.g., trying to bet Moneyline AND Spread on the same game)
       const sameGameOtherMarketIdx = prevSelections.findIndex(
         (bet) =>
-          bet.gameId === newBet.gameId && bet.marketKey !== newBet.marketKey,
+          String(bet.gameId) === newGid && bet.marketKey !== newBet.marketKey,
       );
 
       if (sameGameOtherMarketIdx >= 0) {
@@ -57,11 +58,12 @@ export const useBetSlip = () => {
 
   // similar to the toggle selection logic, but this is meant for the bet slip UI
   const removeSelection = (gameId, marketKey, outcomeLabel) => {
+    const gid = String(gameId);
     setSelections((prev) =>
       prev.filter(
         (bet) =>
           !(
-            bet.gameId === gameId &&
+            String(bet.gameId) === gid &&
             bet.marketKey === marketKey &&
             bet.outcomeLabel === outcomeLabel
           ),
@@ -79,7 +81,7 @@ export const useBetSlip = () => {
     if (!gamesList?.length) return;
     setSelections((prev) =>
       prev.filter((bet) => {
-        const g = gamesList.find((x) => x.id === bet.gameId);
+        const g = gamesList.find((x) => String(x.id) === String(bet.gameId));
         if (!g) return false;
         return !isBettingClosed(g);
       }),

@@ -3,6 +3,25 @@ import {
   fetchNbaScoreboardWeek,
   getNbaWeekDateKeys,
 } from '../api/nba/nbaBetsClient';
+import { useGlobalBetSlip } from '../context/BetSlipContext';
+import {
+  MARKET_KEYS,
+  formatSpreadLine,
+  isBettingClosed,
+} from '../utils/betPayload.js';
+
+/** Demo prices until a real odds feed is wired (decimal odds). */
+const DEMO_ODDS = {
+  moneyline: 1.91,
+  side: 1.91,
+};
+
+/** Demo lines (static). */
+const DEMO_LINES = {
+  spreadAway: 5.5,
+  spreadHome: -5.5,
+  total: 224.5,
+};
 
 function formatKickoff(iso) {
   if (!iso) return '—';
@@ -44,10 +63,42 @@ function getStatusLabel(state) {
   }
 }
 
-function GameCard({ game }) {
+function pickButtonClass(selected, disabled) {
+  const base =
+    'rounded-lg border px-3 py-2 text-xs font-extrabold transition-colors min-w-[5.5rem]';
+  if (disabled) {
+    return `${base} border-sb-border bg-sb-bg/40 text-sb-muted cursor-not-allowed opacity-50`;
+  }
+  if (selected) {
+    return `${base} border-sb-blue bg-sb-blue/15 text-sb-blue ring-1 ring-sb-blue cursor-pointer`;
+  }
+  return `${base} border-sb-border bg-sb-bg text-sb-text hover:border-sb-blue hover:text-sb-blue cursor-pointer`;
+}
+
+function GameCard({ game, onToggleBet, selectedBets, bettingClosed }) {
   const homeScore = game.home.score ?? null;
   const awayScore = game.away.score ?? null;
   const isFinal = game.status?.typeState === 'post';
+  const closed = bettingClosed || isFinal;
+
+  const isSel = (marketKey, outcomeLabel) =>
+    selectedBets.some(
+      (b) =>
+        String(b.gameId) === String(game.id) &&
+        b.marketKey === marketKey &&
+        b.outcomeLabel === outcomeLabel,
+    );
+
+  const fire = (payload) => {
+    if (closed || !onToggleBet) return;
+    onToggleBet(payload);
+  };
+
+  const awayMlLabel = game.away.abbr;
+  const homeMlLabel = game.home.abbr;
+  const awaySpreadLine = DEMO_LINES.spreadAway;
+  const homeSpreadLine = DEMO_LINES.spreadHome;
+  const totalLine = DEMO_LINES.total;
 
   return (
     <div className="rounded-xl border border-sb-border bg-sb-bg/60 overflow-hidden">
@@ -89,43 +140,208 @@ function GameCard({ game }) {
         </div>
       </div>
 
-      <div className="p-4 flex items-center justify-between gap-4 flex-wrap">
-        <div className="min-w-0">
-          <div className="text-sb-text font-extrabold text-sm">
-            {game.away.name} vs {game.home.name}
-          </div>
-          <div className="text-sb-muted text-xs mt-1">
-            {game.status?.clock
-              ? `Clock: ${game.status.clock}`
-              : 'Tip-off clock not provided'}
+      <div className="p-4 border-b border-sb-border/80">
+        <div className="text-sb-text font-extrabold text-sm">
+          {game.away.name} vs {game.home.name}
+        </div>
+        <div className="text-sb-muted text-xs mt-1">
+          {game.status?.clock
+            ? `Clock: ${game.status.clock}`
+            : 'Tip-off clock not provided'}
+        </div>
+        <p className="text-sb-muted text-[0.65rem] mt-2 mb-0">
+          Lines below are placeholders for slip checkout until a real odds API
+          is connected.
+        </p>
+      </div>
+
+      <div className="p-4 flex flex-col gap-4">
+        <div className="flex flex-col gap-2">
+          <span className="text-[0.65rem] font-bold text-sb-muted tracking-widest uppercase">
+            Moneyline
+          </span>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              className={pickButtonClass(
+                isSel(MARKET_KEYS.H2H, awayMlLabel),
+                closed,
+              )}
+              disabled={closed}
+              onClick={() =>
+                fire({
+                  gameId: String(game.id),
+                  leagueId: 'nba',
+                  sport: 'basketball',
+                  marketKey: MARKET_KEYS.H2H,
+                  selectionId: `nba-${game.id}-h2h-away`,
+                  outcomeLabel: awayMlLabel,
+                  odds: DEMO_ODDS.moneyline,
+                  lineValue: null,
+                  gameName: `${game.away.abbr} @ ${game.home.abbr}`,
+                  betType: 'Moneyline',
+                  betTeam: game.away.name,
+                })
+              }
+            >
+              <span className="block">{awayMlLabel}</span>
+              <span className="block text-sb-blue">{DEMO_ODDS.moneyline}</span>
+            </button>
+            <button
+              type="button"
+              className={pickButtonClass(
+                isSel(MARKET_KEYS.H2H, homeMlLabel),
+                closed,
+              )}
+              disabled={closed}
+              onClick={() =>
+                fire({
+                  gameId: String(game.id),
+                  leagueId: 'nba',
+                  sport: 'basketball',
+                  marketKey: MARKET_KEYS.H2H,
+                  selectionId: `nba-${game.id}-h2h-home`,
+                  outcomeLabel: homeMlLabel,
+                  odds: DEMO_ODDS.moneyline,
+                  lineValue: null,
+                  gameName: `${game.away.abbr} @ ${game.home.abbr}`,
+                  betType: 'Moneyline',
+                  betTeam: game.home.name,
+                })
+              }
+            >
+              <span className="block">{homeMlLabel}</span>
+              <span className="block text-sb-blue">{DEMO_ODDS.moneyline}</span>
+            </button>
           </div>
         </div>
 
-        <div className="flex gap-2">
-          <button
-            type="button"
-            className="rounded-lg border border-sb-border bg-sb-bg px-3 py-2 text-xs font-extrabold text-sb-text hover:border-sb-blue hover:text-sb-blue transition-colors cursor-pointer"
-            disabled
-            title="Connect your Odds API to show moneyline/spread/total lines."
-          >
-            Moneyline
-          </button>
-          <button
-            type="button"
-            className="rounded-lg border border-sb-border bg-sb-bg px-3 py-2 text-xs font-extrabold text-sb-text hover:border-sb-blue hover:text-sb-blue transition-colors cursor-pointer"
-            disabled
-            title="Connect your Odds API to show spread line."
-          >
+        <div className="flex flex-col gap-2">
+          <span className="text-[0.65rem] font-bold text-sb-muted tracking-widest uppercase">
             Spread
-          </button>
-          <button
-            type="button"
-            className="rounded-lg border border-sb-border bg-sb-bg px-3 py-2 text-xs font-extrabold text-sb-text hover:border-sb-blue hover:text-sb-blue transition-colors cursor-pointer"
-            disabled
-            title="Connect your Odds API to show total line."
-          >
-            Total
-          </button>
+          </span>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              className={pickButtonClass(
+                isSel(
+                  MARKET_KEYS.SPREADS,
+                  `${game.away.abbr} ${formatSpreadLine(awaySpreadLine)}`,
+                ),
+                closed,
+              )}
+              disabled={closed}
+              onClick={() =>
+                fire({
+                  gameId: String(game.id),
+                  leagueId: 'nba',
+                  sport: 'basketball',
+                  marketKey: MARKET_KEYS.SPREADS,
+                  selectionId: `nba-${game.id}-spreads-away`,
+                  outcomeLabel: `${game.away.abbr} ${formatSpreadLine(awaySpreadLine)}`,
+                  odds: DEMO_ODDS.side,
+                  lineValue: awaySpreadLine,
+                  gameName: `${game.away.abbr} @ ${game.home.abbr}`,
+                  betType: 'Spread',
+                  betTeam: game.away.name,
+                })
+              }
+            >
+              <span className="block">{game.away.abbr}</span>
+              <span className="block">{formatSpreadLine(awaySpreadLine)}</span>
+              <span className="block text-sb-blue">{DEMO_ODDS.side}</span>
+            </button>
+            <button
+              type="button"
+              className={pickButtonClass(
+                isSel(
+                  MARKET_KEYS.SPREADS,
+                  `${game.home.abbr} ${formatSpreadLine(homeSpreadLine)}`,
+                ),
+                closed,
+              )}
+              disabled={closed}
+              onClick={() =>
+                fire({
+                  gameId: String(game.id),
+                  leagueId: 'nba',
+                  sport: 'basketball',
+                  marketKey: MARKET_KEYS.SPREADS,
+                  selectionId: `nba-${game.id}-spreads-home`,
+                  outcomeLabel: `${game.home.abbr} ${formatSpreadLine(homeSpreadLine)}`,
+                  odds: DEMO_ODDS.side,
+                  lineValue: homeSpreadLine,
+                  gameName: `${game.away.abbr} @ ${game.home.abbr}`,
+                  betType: 'Spread',
+                  betTeam: game.home.name,
+                })
+              }
+            >
+              <span className="block">{game.home.abbr}</span>
+              <span className="block">{formatSpreadLine(homeSpreadLine)}</span>
+              <span className="block text-sb-blue">{DEMO_ODDS.side}</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <span className="text-[0.65rem] font-bold text-sb-muted tracking-widest uppercase">
+            Total ({totalLine})
+          </span>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              className={pickButtonClass(
+                isSel(MARKET_KEYS.TOTALS, `Over ${totalLine}`),
+                closed,
+              )}
+              disabled={closed}
+              onClick={() =>
+                fire({
+                  gameId: String(game.id),
+                  leagueId: 'nba',
+                  sport: 'basketball',
+                  marketKey: MARKET_KEYS.TOTALS,
+                  selectionId: `nba-${game.id}-totals-over`,
+                  outcomeLabel: `Over ${totalLine}`,
+                  odds: DEMO_ODDS.side,
+                  lineValue: totalLine,
+                  gameName: `${game.away.abbr} @ ${game.home.abbr}`,
+                  betType: 'Over/Under',
+                  betTeam: '',
+                })
+              }
+            >
+              <span className="block">Over</span>
+              <span className="block text-sb-blue">{DEMO_ODDS.side}</span>
+            </button>
+            <button
+              type="button"
+              className={pickButtonClass(
+                isSel(MARKET_KEYS.TOTALS, `Under ${totalLine}`),
+                closed,
+              )}
+              disabled={closed}
+              onClick={() =>
+                fire({
+                  gameId: String(game.id),
+                  leagueId: 'nba',
+                  sport: 'basketball',
+                  marketKey: MARKET_KEYS.TOTALS,
+                  selectionId: `nba-${game.id}-totals-under`,
+                  outcomeLabel: `Under ${totalLine}`,
+                  odds: DEMO_ODDS.side,
+                  lineValue: totalLine,
+                  gameName: `${game.away.abbr} @ ${game.home.abbr}`,
+                  betType: 'Over/Under',
+                  betTeam: '',
+                })
+              }
+            >
+              <span className="block">Under</span>
+              <span className="block text-sb-blue">{DEMO_ODDS.side}</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -133,6 +349,8 @@ function GameCard({ game }) {
 }
 
 export default function NBABets() {
+  const { toggleSelection, pruneSelectionsForGames, selections } =
+    useGlobalBetSlip();
   const [games, setGames] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -177,7 +395,9 @@ export default function NBABets() {
         if (!alive) return;
         setError('Failed to load NBA matchups from ESPN.');
       } finally {
-        setLoading(false);
+        if (alive) {
+          setLoading(false);
+        }
       }
     }
     load();
@@ -185,6 +405,12 @@ export default function NBABets() {
       alive = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (games.length > 0) {
+      pruneSelectionsForGames(games);
+    }
+  }, [games, pruneSelectionsForGames]);
 
   const filteredGames = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -230,7 +456,7 @@ export default function NBABets() {
   }, [filteredGames]);
 
   return (
-    <div className="text-sb-text">
+    <div className={`text-sb-text ${tab === 'games' ? 'pb-48' : ''}`}>
       <div className="flex items-center gap-3 mb-6 flex-wrap">
         <h1 className="text-3xl font-extrabold tracking-wide">🏀 NBA</h1>
         <span className="text-[0.7rem] font-bold tracking-widest uppercase border border-sb-blue/50 text-sb-blue px-3 py-1.5 rounded-full bg-sb-bg/60">
@@ -242,7 +468,22 @@ export default function NBABets() {
           </span>
         ) : null}
         {loading && <span className="text-sb-muted text-sm">Loading…</span>}
+        {selections.length > 0 ? (
+          <span className="text-[0.7rem] font-extrabold tracking-widest uppercase border border-[#00f6ff]/40 text-[#00f6ff] px-3 py-1.5 rounded-full bg-[#00f6ff]/10">
+            Bet slip: {selections.length} pick
+            {selections.length === 1 ? '' : 's'}
+          </span>
+        ) : null}
       </div>
+
+      {tab === 'games' && (
+        <p className="text-sb-muted text-sm mb-4 m-0">
+          Tap <span className="text-sb-text font-semibold">Moneyline</span>,{' '}
+          <span className="text-sb-text font-semibold">Spread</span>, or{' '}
+          <span className="text-sb-text font-semibold">Total</span> on a game —
+          the bet slip opens at the bottom of the screen.
+        </p>
+      )}
 
       <div className="flex gap-2 mb-6 border-b border-sb-border flex-wrap">
         <button
@@ -311,7 +552,13 @@ export default function NBABets() {
                   </h2>
                   <div className="grid grid-cols-1 gap-4">
                     {dayGames.map((game) => (
-                      <GameCard key={game.id} game={game} />
+                      <GameCard
+                        key={game.id}
+                        game={game}
+                        onToggleBet={toggleSelection}
+                        selectedBets={selections}
+                        bettingClosed={isBettingClosed(game)}
+                      />
                     ))}
                   </div>
                 </section>

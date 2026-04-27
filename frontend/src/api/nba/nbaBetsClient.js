@@ -39,10 +39,11 @@ function parseNbaScoreboard(payload) {
       if (!home || !away) return null;
 
       return {
-        id:
-          event?.id ||
-          comp?.id ||
-          `${away?.team?.abbreviation}@${home?.team?.abbreviation}`,
+        id: String(
+          event?.id ??
+            comp?.id ??
+            `${away?.team?.abbreviation}@${home?.team?.abbreviation}`,
+        ),
         league: league?.abbreviation || 'NBA',
         seasonDisplay,
         startDate: comp?.startDate || event?.date || null,
@@ -66,30 +67,35 @@ function parseNbaScoreboard(payload) {
     .filter(Boolean);
 }
 
-function toYYYYMMDD(d) {
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
+function toYYYYMMDDUtc(d) {
+  const year = d.getUTCFullYear();
+  const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(d.getUTCDate()).padStart(2, '0');
   return `${year}${month}${day}`;
 }
 
 /**
- * ESPN `dates` uses YYYYMMDD. Week is Sunday → Saturday (local calendar).
+ * ESPN `dates` uses YYYYMMDD. We want "today" to mean the user's local calendar day,
+ * but we still need stable YYYYMMDD keys. This helper anchors the local date at
+ * 12:00 UTC so it won't shift weeks at night for US timezones.
  * @param {Date} [refDate]
  * @returns {string[]}
  */
 export function getNbaWeekDateKeys(refDate = new Date()) {
-  const d = new Date(refDate);
-  d.setHours(12, 0, 0, 0);
-  const day = d.getDay();
+  // Convert the *local* Y/M/D into a stable UTC-noon anchor date.
+  const localY = refDate.getFullYear();
+  const localM = refDate.getMonth();
+  const localD = refDate.getDate();
+  const d = new Date(Date.UTC(localY, localM, localD, 12, 0, 0, 0));
+
+  const day = d.getUTCDay(); // day-of-week for the local date
   const sunday = new Date(d);
-  sunday.setDate(d.getDate() - day);
-  sunday.setHours(12, 0, 0, 0);
+  sunday.setUTCDate(d.getUTCDate() - day);
   const keys = [];
   for (let i = 0; i < 7; i++) {
     const x = new Date(sunday);
-    x.setDate(sunday.getDate() + i);
-    keys.push(toYYYYMMDD(x));
+    x.setUTCDate(sunday.getUTCDate() + i);
+    keys.push(toYYYYMMDDUtc(x));
   }
   return keys;
 }
@@ -110,7 +116,24 @@ export async function fetchNbaScoreboard({ date } = {}) {
  * All games scheduled Sun–Sat for the week containing `refDate`, de-duped and sorted by tip time.
  */
 export async function fetchNbaScoreboardWeek({ refDate } = {}) {
-  const keys = getNbaWeekDateKeys(refDate ?? new Date());
+  // Fetch the current local Sun–Sat week, plus a small rolling buffer window so
+  // late-night games never disappear.
+  const base = refDate ?? new Date();
+  const weekKeys = getNbaWeekDateKeys(base);
+
+  const localY = base.getFullYear();
+  const localM = base.getMonth();
+  const localD = base.getDate();
+  const anchor = new Date(Date.UTC(localY, localM, localD, 12, 0, 0, 0));
+
+  const bufferKeys = [];
+  for (let i = -2; i <= 2; i++) {
+    const d = new Date(anchor);
+    d.setUTCDate(anchor.getUTCDate() + i);
+    bufferKeys.push(toYYYYMMDDUtc(d));
+  }
+
+  const keys = Array.from(new Set([...weekKeys, ...bufferKeys]));
   const dayResults = await Promise.all(
     keys.map((date) => fetchNbaScoreboard({ date })),
   );
@@ -123,7 +146,7 @@ export async function fetchNbaScoreboardWeek({ refDate } = {}) {
   return Array.from(byId.values()).sort((a, b) => {
     const ta = a.startDate ? new Date(a.startDate).getTime() : 0;
     const tb = b.startDate ? new Date(b.startDate).getTime() : 0;
-    return ta - tb;
+    return tb - ta;
   });
 }
 
