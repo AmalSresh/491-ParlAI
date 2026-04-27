@@ -22,13 +22,57 @@ Node.js
 Node.js  
  npm  
  Git  
- An Azure account
+ An Azure account  
+ Playwright
 
 ## To build and test the app
 
 Clone the repository:  
  `git clone https://github.com/AmalSresh/491-ParlAI.git`
+
+## 🧪 End-to-End Testing (Playwright)
+
+This project uses [Playwright](https://playwright.dev/) for End-to-End (E2E) testing to ensure the frontend, backend, and authentication flows work seamlessly together.
+
+### First-Time Setup
+
+After cloning the repo and running `npm install`, you **must** install the Playwright browsers:
+`npm install
+npx playwright install --with-deps`
+
+### Running the Tests
+
+We use `concurrently` and `wait-on` to automatically spin up the Azure Functions backend, the Vite frontend, and the SWA proxy all at once before running the tests.
+
+**Run the full suite (Recommended)**
+This command boots up the entire stack, waits for the ports to be ready, runs the tests in headless mode, and kills the servers when finished:
+`npm run test:e2e:full`
+
+**Run tests with the UI (For Debugging)**
+If you already have your dev servers running (`npm run start:backend`, etc.) and want to visually step through the tests:
+`npm run test:e2e:ui`
+
+**Run in headless mode (Standalone)**
+If your local environment is already running and you just want to execute the tests in the background:
+`bash
+npm run test:e2e
+`
+
 From project root:
+
+Install dependencies:  
+ `npm install`
+
+Start up frontend and backend for local testing:  
+ `npm run start`
+
+Run Unit and Integration Tests:  
+ `npm run test:frontend`
+
+Run End-2-End Test:  
+ `npm run test:e2e:full`
+
+## For setting up and running each frontend/backend function individually perform these commands
 
 navigate to the frontend directory  
  `cd frontend`
@@ -40,9 +84,11 @@ Install dependencies
 
 navigate to the backend directory  
  `cd backend`
+
 In the terminal run  
- `npm run start`  
- If you want to simulate authentication, also run this in the root directory
+ `npm run start`
+
+If you want to simulate authentication, also run this in the root directory
 `swa start`
 and use the link to the emulator
 

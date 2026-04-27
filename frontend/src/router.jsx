@@ -2,25 +2,22 @@ import { createBrowserRouter } from 'react-router-dom';
 import App from './App';
 import Login from './pages/login';
 import Home from './pages/home';
-//import Dashboard from './pages/dashboard';
 import HowToPlay from './pages/HowToPlay';
 import Onboarding from './pages/onboarding';
 import Settings from './pages/Settings';
 import Profile from './pages/Profile';
 import ProtectedRoute from './components/ProtectedRoute';
-
 import NFLBets from './pages/NFLBets';
 import SoccerPage from './pages/SoccerPage';
-
 import Games from './pages/Games';
 import Players from './pages/Players';
 import MyBets from './pages/MyBets';
 import NBABets from './pages/NBABets';
 import UFCBets from './pages/UFCBets';
 import NotFound from './pages/NotFound';
+import MLBBets from './pages/MLBBets';
 import Hockey from './pages/Hockey';
 import Support from './pages/Support';
-
 import SportsLayout from './sportsLayout';
 
 const router = createBrowserRouter([
@@ -39,6 +36,7 @@ const router = createBrowserRouter([
           { path: 'nba', element: <NBABets /> },
           { path: 'ufc', element: <UFCBets /> },
           { path: 'hockey', element: <Hockey /> },
+          { path: 'mlb', element: <MLBBets /> },
         ],
       },
 
@@ -46,6 +44,10 @@ const router = createBrowserRouter([
       { path: 'onboarding', element: <Onboarding /> },
       { path: 'how-to-play', element: <HowToPlay /> },
       { path: 'support', element: <Support /> },
+      { path: 'games', element: <Games /> },
+      { path: 'players', element: <Players /> },
+      { path: 'bets', element: <MyBets /> },
+
       {
         path: 'profile',
         element: (
@@ -62,9 +64,6 @@ const router = createBrowserRouter([
           </ProtectedRoute>
         ),
       },
-      { path: 'games', element: <Games /> },
-      { path: 'players', element: <Players /> },
-      { path: 'bets', element: <MyBets /> },
 
       { path: '*', element: <NotFound /> },
     ],
