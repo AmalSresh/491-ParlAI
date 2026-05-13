@@ -11,13 +11,11 @@ import NFLBets from './pages/NFLBets';
 import MLBBets from './pages/MLBBets';
 import SoccerPage from './pages/SoccerPage';
 import Games from './pages/Games';
-import Players from './pages/Players';
 import MyBets from './pages/MyBets';
 import NBABets from './pages/NBABets';
 import UFCBets from './pages/UFCBets';
 import NotFound from './pages/NotFound';
 import Hockey from './pages/Hockey';
-import Support from './pages/Support';
 import SportsLayout from './sportsLayout';
 
 const router = createBrowserRouter([
@@ -43,9 +41,7 @@ const router = createBrowserRouter([
       { path: 'login', element: <Login /> },
       { path: 'onboarding', element: <Onboarding /> },
       { path: 'how-to-play', element: <HowToPlay /> },
-      { path: 'support', element: <Support /> },
       { path: 'games', element: <Games /> },
-      { path: 'players', element: <Players /> },
       { path: 'bets', element: <MyBets /> },
 
       {

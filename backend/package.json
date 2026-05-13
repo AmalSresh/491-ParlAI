@@ -32,5 +32,8 @@
     "eslint": "^10.0.3",
     "globals": "^17.4.0",
     "prettier": "^3.8.1"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }

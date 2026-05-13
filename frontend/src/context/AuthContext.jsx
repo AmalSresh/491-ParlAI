@@ -59,25 +59,9 @@ export function AuthProvider({ children }) {
       encodeURIComponent(window.location.origin + '/');
   }
 
-  function loginWithFacebook() {
-    window.location.href =
-      '/.auth/login/facebook?post_login_redirect_uri=' +
-      encodeURIComponent(window.location.origin + '/');
-  }
-
-  function loginWithTwitter() {
-    window.location.href =
-      '/.auth/login/twitter?post_login_redirect_uri=' +
-      encodeURIComponent(window.location.origin + '/');
-  }
-
   // LOGOUT
   function logout() {
-    const base = window.location.origin.includes('localhost')
-      ? 'https://lemon-bush-05638821e.1.azurestaticapps.net'
-      : window.location.origin;
-
-    window.location.href = `${base}/.auth/logout?post_logout_redirect_uri=${encodeURIComponent(base + '/')}`;
+    window.location.href = '/.auth/logout?post_logout_redirect_uri=/login';
   }
 
   const value = {
@@ -86,8 +70,6 @@ export function AuthProvider({ children }) {
     isAuthenticated: !!user,
     setUser,
     loginWithGoogle,
-    loginWithFacebook,
-    loginWithTwitter,
     logout,
     checkAuth,
   };

@@ -1,19 +1,23 @@
 const STEPS = [
   {
     title: 'Pick a League',
-    body: 'Choose NBA, NFL, or another supported League to see available games and player props.',
+    body: 'Choose from NBA, NFL, MLB, NHL, Soccer, or UFC to see all upcoming and live matchups for that league.',
   },
   {
-    title: 'Find player or team',
-    body: 'Search or browse to pull up stats, trends , and upcoming matchups.',
+    title: 'Browse the Matchups',
+    body: 'Each game card shows the two competing teams, the scheduled tip-off or game time, and live scores once the game is underway.',
   },
   {
-    title: 'Check the prediction',
-    body: ' How we check prediction is based off of historical plus recent perfomance data to predict what might happen next game.',
+    title: 'Select a Bet',
+    body: 'Pick a market — Moneyline (who wins), Spread (win by how much), or Over/Under (total score) — and tap the odds button to add it to your bet slip.',
   },
   {
-    title: 'The Risk of making money',
-    body: 'Predictions help yo make smarter choices, but not everything in this sports world is guarenteed.',
+    title: 'Build Your Bet Slip',
+    body: 'Add multiple team picks to create a parlay, or keep it to a single game for a straight bet. The potential payout updates automatically as you add selections.',
+  },
+  {
+    title: 'Place Your Bet',
+    body: 'Enter your stake in the bet slip at the bottom of the screen and confirm. Your balance updates instantly and you can track all open and settled bets under My Bets.',
   },
 ];
 

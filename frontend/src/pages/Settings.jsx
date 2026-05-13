@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { apiFetch } from '../api.js';
 
 function formatMoney(n) {
   const x = Number(n);
@@ -25,12 +26,9 @@ function formatWhen(iso) {
 
 export default function Settings() {
   const { user, setUser } = useAuth();
-  const [oddsFormat, setOddsFormat] = useState('american');
-  const [emailAlerts, setEmailAlerts] = useState(true);
-  const [betReminders, setBetReminders] = useState(false);
-  const [sessionReminder, setSessionReminder] = useState(true);
-  const [realityCheckMins, setRealityCheckMins] = useState('60');
-  const [defaultStake, setDefaultStake] = useState('');
+  const [oddsFormat, setOddsFormat] = useState(() => localStorage.getItem('pref_oddsFormat') || 'american');
+  const [defaultStake, setDefaultStake] = useState(() => localStorage.getItem('pref_defaultStake') || '');
+  const [saved, setSaved] = useState(false);
   const [bets, setBets] = useState([]);
   const [betsLoading, setBetsLoading] = useState(false);
   const [betsError, setBetsError] = useState('');
@@ -49,14 +47,13 @@ export default function Settings() {
       setBetsLoading(true);
       setBetsError('');
       try {
-        // silently refresh balance on settings open
-        const balRes = await fetch('/api/users/balance');
+        const balRes = await apiFetch('/api/user/balance');
         const bal = await balRes.json();
         if (alive && balRes.ok && bal?.balance != null) {
           setUser((prev) => ({ ...prev, balance: bal.balance }));
         }
 
-        const res = await fetch('/api/bets?limit=200');
+        const res = await apiFetch('/api/bets?limit=200');
         const data = await res.json();
         if (!res.ok)
           throw new Error(data?.error || `Failed to load bets (${res.status})`);
@@ -89,7 +86,7 @@ export default function Settings() {
     <div className="w-full min-w-0">
       <h1 className="text-2xl leading-tight text-sb-blue m-0 mb-1">Settings</h1>
       <p className="text-sb-muted text-[0.95rem] m-0 mb-6">
-        Manage your account, notifications, and betting preferences.
+        Manage your account and betting preferences.
       </p>
 
       {/* Balance + bets */}
@@ -223,82 +220,14 @@ export default function Settings() {
         </h2>
         <div className="space-y-4">
           <div>
-            <label className={labelClass}>Email</label>
-            <p className="text-sb-muted text-[0.95rem] m-0">
-              {user?.email ?? 'Not signed in'}
-            </p>
-          </div>
-          <div>
             <label className={labelClass}>Display name</label>
             <input
               type="text"
               className={inputClass}
-              placeholder={user?.name ?? user?.email ?? 'Your name'}
+              value={user?.name ?? ''}
               readOnly
               disabled
             />
-            <p className="text-sb-muted text-[0.8rem] mt-1">
-              Managed by your sign-in provider.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Notifications */}
-      <section className={sectionCard}>
-        <h2 className="text-lg font-bold text-sb-text m-0 mb-4 border-b border-sb-border pb-2">
-          Notifications
-        </h2>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <div>
-              <p className="text-sb-text font-semibold text-[0.95rem] m-0">
-                Email alerts
-              </p>
-              <p className="text-sb-muted text-[0.85rem] m-0 mt-0.5">
-                Get updates on your bets and odds changes.
-              </p>
-            </div>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={emailAlerts}
-              onClick={() => setEmailAlerts((v) => !v)}
-              className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${
-                emailAlerts ? 'bg-sb-blue' : 'bg-sb-border'
-              }`}
-            >
-              <span
-                className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-[left] ${
-                  emailAlerts ? 'left-6' : 'left-1'
-                }`}
-              />
-            </button>
-          </div>
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <div>
-              <p className="text-sb-text font-semibold text-[0.95rem] m-0">
-                Bet reminders
-              </p>
-              <p className="text-sb-muted text-[0.85rem] m-0 mt-0.5">
-                Remind me before games I have marked.
-              </p>
-            </div>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={betReminders}
-              onClick={() => setBetReminders((v) => !v)}
-              className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${
-                betReminders ? 'bg-sb-blue' : 'bg-sb-border'
-              }`}
-            >
-              <span
-                className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-[left] ${
-                  betReminders ? 'left-6' : 'left-1'
-                }`}
-              />
-            </button>
           </div>
         </div>
       </section>
@@ -337,64 +266,20 @@ export default function Settings() {
         </div>
       </section>
 
-      {/* Responsible gambling */}
-      <section className={sectionCard}>
-        <h2 className="text-lg font-bold text-sb-text m-0 mb-4 border-b border-sb-border pb-2">
-          Responsible gambling
-        </h2>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <div>
-              <p className="text-sb-text font-semibold text-[0.95rem] m-0">
-                Session reminder
-              </p>
-              <p className="text-sb-muted text-[0.85rem] m-0 mt-0.5">
-                Remind me how long I have been playing.
-              </p>
-            </div>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={sessionReminder}
-              onClick={() => setSessionReminder((v) => !v)}
-              className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${
-                sessionReminder ? 'bg-sb-blue' : 'bg-sb-border'
-              }`}
-            >
-              <span
-                className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-[left] ${
-                  sessionReminder ? 'left-6' : 'left-1'
-                }`}
-              />
-            </button>
-          </div>
-          <div>
-            <label className={labelClass}>
-              Reality check interval (minutes)
-            </label>
-            <select
-              value={realityCheckMins}
-              onChange={(e) => setRealityCheckMins(e.target.value)}
-              className={selectClass}
-            >
-              <option value="30">30 minutes</option>
-              <option value="60">60 minutes</option>
-              <option value="90">90 minutes</option>
-              <option value="120">120 minutes</option>
-              <option value="0">Off</option>
-            </select>
-            <p className="text-sb-muted text-[0.8rem] mt-1">
-              Show a summary of your session at this interval.
-            </p>
-          </div>
-        </div>
-      </section>
-
       {/* Save button */}
-      <div className="flex justify-end gap-3 mt-2">
+      <div className="flex justify-end items-center gap-3 mt-2">
+        {saved && (
+          <span className="text-sb-blue text-sm font-semibold">✓ Saved!</span>
+        )}
         <button
           type="button"
-          className="bg-sb-blue text-sb-dark font-semibold py-2.5 px-5 rounded-lg text-[0.95rem] cursor-pointer hover:bg-sb-blue-light transition-colors"
+          onClick={() => {
+            localStorage.setItem('pref_oddsFormat', oddsFormat);
+            localStorage.setItem('pref_defaultStake', defaultStake);
+            setSaved(true);
+            setTimeout(() => setSaved(false), 2000);
+          }}
+          className="bg-sb-blue text-sb-dark font-semibold py-2.5 px-5 rounded-lg text-[0.95rem] cursor-pointer hover:bg-sb-blue-dark transition-colors"
         >
           Save changes
         </button>

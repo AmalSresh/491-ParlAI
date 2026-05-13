@@ -56,6 +56,14 @@ const TARGET_PLAYERS = [
   'Rashee Rice',
   'Drake London',
   'Chris Olave',
+  // Tight Ends
+  'Travis Kelce',
+  'Sam LaPorta',
+  'Mark Andrews',
+  'Dallas Goedert',
+  'Trey McBride',
+  'Cole Kmet',
+  'Pat Freiermuth',
 ];
 
 const NFL_LEAGUE_ID = 701; // ID of NFL in the leagues table

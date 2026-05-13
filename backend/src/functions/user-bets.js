@@ -1,26 +1,7 @@
 import { app } from '@azure/functions';
 import sql from 'mssql';
 import { poolPromise } from '../../components/db-connect.js';
-
-function getUserIdFromClientPrincipal(headerValue) {
-  if (!headerValue) return null;
-  try {
-    const encoded = Buffer.from(headerValue, 'base64');
-    const decoded = encoded.toString('ascii');
-    const clientPrincipal = JSON.parse(decoded);
-
-    let finalUserId = clientPrincipal.userId;
-    if (!finalUserId && clientPrincipal.claims) {
-      const nameIdClaim = clientPrincipal.claims.find(
-        (c) => c.typ === 'sub' || c.typ.includes('nameidentifier'),
-      );
-      if (nameIdClaim) finalUserId = nameIdClaim.val;
-    }
-    return finalUserId || null;
-  } catch {
-    return null;
-  }
-}
+import { getDbUserIdFromRequest } from '../../components/auth-helper.js';
 
 app.http('user-bets', {
   methods: ['GET'],
@@ -28,26 +9,20 @@ app.http('user-bets', {
   authLevel: 'anonymous',
   handler: async (request, context) => {
     try {
-      const header = request.headers.get('x-ms-client-principal');
-      const azureUserId = getUserIdFromClientPrincipal(header);
-      if (!azureUserId) {
+      const pool = await poolPromise;
+      const userId = await getDbUserIdFromRequest(request, pool);
+
+      if (userId == null) {
         return { status: 401, jsonBody: { error: 'Not logged in' } };
       }
 
-      const pool = await poolPromise;
-
-      // Optional filters
       const url = new URL(request.url);
-      const status = (url.searchParams.get('status') || '')
-        .trim()
-        .toUpperCase();
+      const status = (url.searchParams.get('status') || '').trim().toUpperCase();
       const limitParam = Number(url.searchParams.get('limit') || '');
-      const limit = Number.isFinite(limitParam)
-        ? Math.max(1, Math.min(200, limitParam))
-        : 100;
+      const limit = Number.isFinite(limitParam) ? Math.max(1, Math.min(200, limitParam)) : 100;
 
       const req = pool.request();
-      req.input('azureUserId', sql.NVarChar, azureUserId);
+      req.input('userId', sql.Int, userId);
       req.input('limit', sql.Int, limit);
 
       let statusSql = '';
@@ -56,7 +31,6 @@ app.http('user-bets', {
         statusSql = ' AND b.status = @status';
       }
 
-      // Join bets -> legs -> selections -> markets -> events -> teams/leagues (when available).
       const result = await req.query(`
         SELECT TOP (@limit)
           b.id AS bet_id,
@@ -82,7 +56,6 @@ app.http('user-bets', {
           l.name AS league_name,
           l.sport AS league_sport
         FROM bets b
-        INNER JOIN users u ON b.user_id = u.id
         LEFT JOIN bet_legs bl ON bl.bet_id = b.id
         LEFT JOIN selections s ON TRY_CONVERT(BIGINT, bl.selection_id) = s.id
         LEFT JOIN markets m ON s.market_id = m.id
@@ -90,7 +63,7 @@ app.http('user-bets', {
         LEFT JOIN teams ht ON e.home_team_id = ht.id
         LEFT JOIN teams at ON e.away_team_id = at.id
         LEFT JOIN leagues l ON e.league_id = l.id
-        WHERE u.azure_user_id = @azureUserId
+        WHERE b.user_id = @userId
           ${statusSql}
         ORDER BY b.placed_at DESC, b.id DESC
       `);

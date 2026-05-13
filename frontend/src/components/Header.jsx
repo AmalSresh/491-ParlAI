@@ -21,26 +21,15 @@ export default function Header() {
           <Link to="/games" className="hover:text-sb-blue-light">
             Games
           </Link>
-          <Link to="/players" className="hover:text-sb-blue-light">
-            Players
-          </Link>
           <Link to="/bets" className="hover:text-sb-blue-light">
             My Bets
           </Link>
           <Link to="/how-to-play" className="hover:text-sb-blue-light">
             How to Play
           </Link>
-          <Link to="/support" className="hover:text-sb-blue-light">
-            Support
-          </Link>
 
           {user ? (
             <>
-              {user.onboardingStage > 0 && (
-                <Link to="/dashboard" className="hover:text-sb-blue-light">
-                  Dashboard
-                </Link>
-              )}
               {user.onboardingStage > 0 && (
                 <Link to="/profile" className="hover:text-sb-blue-light">
                   Profile

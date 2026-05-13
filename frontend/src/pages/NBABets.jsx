@@ -10,6 +10,67 @@ import {
   isBettingClosed,
 } from '../utils/betPayload.js';
 
+const NBA_FUTURES = [
+  {
+    key: 'championship',
+    title: '🏆 NBA Championship',
+    picks: [
+      { id: 'nba-fut-champ-bos', label: 'Boston Celtics', odds: 3.50 },
+      { id: 'nba-fut-champ-okc', label: 'Oklahoma City Thunder', odds: 4.50 },
+      { id: 'nba-fut-champ-cle', label: 'Cleveland Cavaliers', odds: 6.00 },
+      { id: 'nba-fut-champ-den', label: 'Denver Nuggets', odds: 7.50 },
+      { id: 'nba-fut-champ-mil', label: 'Milwaukee Bucks', odds: 9.00 },
+      { id: 'nba-fut-champ-gsw', label: 'Golden State Warriors', odds: 12.00 },
+      { id: 'nba-fut-champ-nyk', label: 'New York Knicks', odds: 14.00 },
+    ],
+  },
+  {
+    key: 'mvp',
+    title: '⭐ NBA MVP',
+    picks: [
+      { id: 'nba-fut-mvp-jokic', label: 'Nikola Jokić', odds: 3.00 },
+      { id: 'nba-fut-mvp-sga', label: 'Shai Gilgeous-Alexander', odds: 3.50 },
+      { id: 'nba-fut-mvp-giannis', label: 'Giannis Antetokounmpo', odds: 5.50 },
+      { id: 'nba-fut-mvp-tatum', label: 'Jayson Tatum', odds: 8.00 },
+      { id: 'nba-fut-mvp-luka', label: 'Luka Dončić', odds: 9.00 },
+      { id: 'nba-fut-mvp-edwards', label: 'Anthony Edwards', odds: 11.00 },
+    ],
+  },
+  {
+    key: 'dpoy',
+    title: '🛡️ Defensive Player of the Year',
+    picks: [
+      { id: 'nba-fut-dpoy-wemby', label: 'Victor Wembanyama', odds: 2.50 },
+      { id: 'nba-fut-dpoy-bam', label: 'Bam Adebayo', odds: 5.00 },
+      { id: 'nba-fut-dpoy-gobert', label: 'Rudy Gobert', odds: 6.00 },
+      { id: 'nba-fut-dpoy-jjj', label: 'Jaren Jackson Jr.', odds: 7.00 },
+      { id: 'nba-fut-dpoy-lopez', label: 'Brook Lopez', odds: 10.00 },
+    ],
+  },
+  {
+    key: 'roy',
+    title: '🌟 Rookie of the Year',
+    picks: [
+      { id: 'nba-fut-roy-risacher', label: 'Zaccharie Risacher', odds: 3.00 },
+      { id: 'nba-fut-roy-sarr', label: 'Alexandre Sarr', odds: 4.50 },
+      { id: 'nba-fut-roy-castle', label: 'Stephon Castle', odds: 5.00 },
+      { id: 'nba-fut-roy-sheppard', label: 'Reed Sheppard', odds: 7.00 },
+      { id: 'nba-fut-roy-clingan', label: 'Donovan Clingan', odds: 9.00 },
+    ],
+  },
+  {
+    key: 'smoy',
+    title: '💡 Sixth Man of the Year',
+    picks: [
+      { id: 'nba-fut-smoy-powell', label: 'Norman Powell', odds: 3.50 },
+      { id: 'nba-fut-smoy-monk', label: 'Malik Monk', odds: 5.00 },
+      { id: 'nba-fut-smoy-pritchard', label: 'Payton Pritchard', odds: 6.00 },
+      { id: 'nba-fut-smoy-clarkson', label: 'Jordan Clarkson', odds: 8.00 },
+      { id: 'nba-fut-smoy-hyland', label: 'Bones Hyland', odds: 12.00 },
+    ],
+  },
+];
+
 /** Demo prices until a real odds feed is wired (decimal odds). */
 const DEMO_ODDS = {
   moneyline: 1.91,
@@ -149,10 +210,6 @@ function GameCard({ game, onToggleBet, selectedBets, bettingClosed }) {
             ? `Clock: ${game.status.clock}`
             : 'Tip-off clock not provided'}
         </div>
-        <p className="text-sb-muted text-[0.65rem] mt-2 mb-0">
-          Lines below are placeholders for slip checkout until a real odds API
-          is connected.
-        </p>
       </div>
 
       <div className="p-4 flex flex-col gap-4">
@@ -456,7 +513,7 @@ export default function NBABets() {
   }, [filteredGames]);
 
   return (
-    <div className={`text-sb-text ${tab === 'games' ? 'pb-48' : ''}`}>
+    <div className="text-sb-text pb-48">
       <div className="flex items-center gap-3 mb-6 flex-wrap">
         <h1 className="text-3xl font-extrabold tracking-wide">🏀 NBA</h1>
         <span className="text-[0.7rem] font-bold tracking-widest uppercase border border-sb-blue/50 text-sb-blue px-3 py-1.5 rounded-full bg-sb-bg/60">
@@ -569,15 +626,48 @@ export default function NBABets() {
       )}
 
       {tab === 'futures' && (
-        <div className="rounded-xl border border-sb-border bg-sb-bg/60 p-5">
-          <h2 className="text-lg font-extrabold text-sb-text m-0">
-            Futures & awards
-          </h2>
-          <p className="text-sb-muted text-sm mt-2 m-0">
-            ESPN's NBA scoreboard endpoint provides matchups and scores, but it
-            doesn't include futures/awards markets. Connect your existing odds
-            API (or futures endpoint) and we'll render them here.
-          </p>
+        <div className="flex flex-col gap-8">
+          {NBA_FUTURES.map((category) => (
+            <section key={category.key}>
+              <h2 className="text-sm font-extrabold tracking-widest uppercase text-sb-muted border-b border-sb-border pb-2 mb-4">
+                {category.title}
+              </h2>
+              <div className="flex flex-wrap gap-2">
+                {category.picks.map((pick) => {
+                  const isSelected = selections.some(
+                    (s) => s.selectionId === pick.id,
+                  );
+                  return (
+                    <button
+                      key={pick.id}
+                      type="button"
+                      className={pickButtonClass(isSelected, false)}
+                      onClick={() =>
+                        toggleSelection({
+                          gameId: `nba-futures-${category.key}`,
+                          leagueId: 'nba',
+                          sport: 'basketball',
+                          marketKey: `futures_${category.key}`,
+                          selectionId: pick.id,
+                          outcomeLabel: pick.label,
+                          odds: pick.odds,
+                          lineValue: null,
+                          gameName: category.title,
+                          betType: 'Futures',
+                          betTeam: pick.label,
+                        })
+                      }
+                    >
+                      <span className="block">{pick.label}</span>
+                      <span className="block text-sb-blue">
+                        {pick.odds.toFixed(2)}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          ))}
         </div>
       )}
     </div>

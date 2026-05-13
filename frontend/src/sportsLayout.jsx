@@ -5,6 +5,7 @@ import { Outlet } from 'react-router-dom';
 import { useGlobalBetSlip } from './context/BetSlipContext';
 import { useAuth } from './context/AuthContext';
 import BetSlipFooter from './components/BetSlipFooter';
+import { apiFetch } from './api.js';
 
 // This layout wraps all sports pages and includes the global bet slip footer.
 const GlobalBetSlipFooter = () => {
@@ -43,11 +44,9 @@ const GlobalBetSlipFooter = () => {
 
     //Place bet(s) through backend function
     try {
-      const response = await fetch('/api/bets/place', {
+      const response = await apiFetch('/api/bets/place', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 
@@ -62,7 +61,7 @@ const GlobalBetSlipFooter = () => {
 
       // After placing the bet, get updated balance and pass it to the bet slip footer.
       try {
-        const balanceRes = await fetch('/api/user/balance');
+        const balanceRes = await apiFetch('/api/user/balance');
         const balanceData = await balanceRes.json();
 
         if (balanceRes.ok) {
