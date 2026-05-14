@@ -61,13 +61,9 @@ export default function Profile() {
       username: user?.email?.split('@')[0] ?? 'user',
       tier: 'Silver',
       memberSince: '2026',
-      balance: 124.75,
-      bonus: 20.0,
-      winRate: 0.54,
-      totalWagered: 840.25,
-      netProfit: 72.4,
+      balance: user?.balance ?? 0,
     }),
-    [user?.name, user?.email],
+    [user?.name, user?.email, user?.balance],
   );
 
   const [activeTab, setActiveTab] = useState('activity');
@@ -148,12 +144,6 @@ export default function Profile() {
                   {formatMoney(profileUser.balance)}
                 </div>
               </div>
-              <div className="min-w-[160px] p-3 rounded-xl border border-sb-border bg-sb-bg/80">
-                <div className="text-sb-muted text-xs">Bonus</div>
-                <div className="text-sb-text font-extrabold text-lg mt-1">
-                  {formatMoney(profileUser.bonus)}
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -206,97 +196,23 @@ export default function Profile() {
               desc="Wager limits & responsible play"
               to="/settings"
             />
-            <ActionCard
-              title="Notifications"
-              desc="Odds alerts & promos"
-              to="/settings"
-            />
           </div>
         </section>
 
-        {/* Tabs panel */}
-        <section className="rounded-xl border border-sb-border bg-sb-card p-4 overflow-hidden">
-          <div className="flex gap-2 pb-3 border-b border-sb-border mb-3 flex-wrap">
-            <Tab
-              active={activeTab === 'activity'}
-              onClick={() => setActiveTab('activity')}
-            >
-              Recent activity
-            </Tab>
-            <Tab
-              active={activeTab === 'rewards'}
-              onClick={() => setActiveTab('rewards')}
-            >
-              Rewards
-            </Tab>
-          </div>
-
-          {activeTab === 'activity' && (
-            <div className="flex flex-col gap-2.5">
-              {activity.map((a) => (
-                <div
-                  key={a.id}
-                  className="flex gap-3 items-center justify-between border border-sb-border rounded-xl p-3 bg-sb-bg/80 flex-wrap"
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="font-extrabold text-sb-text">{a.title}</div>
-                    <div className="flex gap-2 items-center flex-wrap mt-1.5 text-sb-muted text-xs">
-                      <span>{a.subtitle}</span>
-                      <span className="w-1 h-1 rounded-full bg-sb-muted" />
-                      <span>{a.status}</span>
-                      <span className="w-1 h-1 rounded-full bg-sb-muted" />
-                      <span>{a.time}</span>
-                    </div>
-                  </div>
-                  <div className="flex items-end gap-2.5 flex-shrink-0 flex-col sm:flex-row">
-                    <div
-                      className={
-                        a.amount >= 0
-                          ? 'font-extrabold text-sm text-sb-blue'
-                          : 'font-extrabold text-sm text-sb-error'
-                      }
-                    >
-                      {a.amount >= 0 ? '+' : '-'}
-                      {formatMoney(Math.abs(a.amount))}
-                    </div>
-                    <button
-                      type="button"
-                      className="rounded-lg px-2.5 py-1.5 text-xs font-bold bg-sb-bg border border-sb-border text-sb-text hover:border-sb-blue"
-                    >
-                      Details
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {activeTab === 'rewards' && (
-            <div className="py-2">
-              <div className="font-extrabold text-sb-text text-base mb-1">
-                Rewards (stub)
-              </div>
-              <p className="text-sb-muted text-sm m-0">
-                Later you can show tier progress, points, promos, and rewards
-                history.
-              </p>
-              <div className="mt-4 border border-sb-border rounded-xl p-3 bg-sb-bg/80 flex flex-col gap-2.5">
-                <div>
-                  <div className="text-sb-muted text-xs">Tier Progress</div>
-                  <div className="font-extrabold text-sb-text mt-1">
-                    Silver → Gold
-                  </div>
-                </div>
-                <div className="h-2.5 rounded-full border border-sb-border bg-sb-bg overflow-hidden">
-                  <div
-                    className="h-full bg-sb-blue rounded-full w-[42%]"
-                    aria-hidden
-                  />
-                </div>
-                <div className="text-sb-muted text-xs">42% complete</div>
-              </div>
-            </div>
-          )}
+        {/* Recent Activity */}
+        <section className="rounded-xl border border-sb-border bg-sb-card p-4">
+          <h2 className="text-sm uppercase tracking-wider text-sb-text font-semibold mb-3">
+            Recent Activity
+          </h2>
+          <p className="text-sb-muted text-sm mb-4">
+            View your full betting history and track your results.
+          </p>
+          <Link
+            to="/bets"
+            className="rounded-xl bg-sb-blue text-sb-dark px-4 py-2 text-sm font-extrabold no-underline hover:opacity-90 inline-block"
+          >
+            View My Bets →
+          </Link>
         </section>
       </div>
     </div>
