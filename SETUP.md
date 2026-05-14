@@ -6,7 +6,7 @@ Step 2: Install npm
 	- cd ../frontend && npm install
 
 Step 3: Change local.settings.json
-	- cp backend/local.settings.example.json backend/local.settings.json
+	- cp local.settings.example.json local.settings.json
 	- Change file so that it matches:
 	
 {
