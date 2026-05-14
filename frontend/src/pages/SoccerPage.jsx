@@ -5,6 +5,7 @@ import LoadingScreen from '../components/LoadingScreen';
 import { useGlobalBetSlip } from '../context/BetSlipContext';
 import { getSoccerGames } from '../hooks/getSoccerGames.js';
 import { isBettingClosed } from '../utils/betPayload.js';
+import { classifyGameFromGame } from '../utils/gameStatus.js';
 
 const STATUS_FILTERS = ['all', 'live', 'upcoming', 'finished'];
 
@@ -14,18 +15,25 @@ const SoccerPage = () => {
   const { games, loading } = getSoccerGames(pruneSelectionsForGames);
   const [statusFilter, setStatusFilter] = useState('all');
 
-  const liveCount = useMemo(
-    () => games.filter((g) => g.status === 'in_progress').length,
+  const classified = useMemo(
+    () =>
+      games.map((g) => ({
+        g,
+        cls: classifyGameFromGame({ ...g, sport: 'soccer' }),
+      })),
     [games],
   );
 
+  const liveCount = useMemo(
+    () => classified.filter(({ cls }) => cls === 'live').length,
+    [classified],
+  );
+
   const filtered = useMemo(() => {
-    if (statusFilter === 'all') return games;
-    if (statusFilter === 'live') return games.filter((g) => g.status === 'in_progress');
-    if (statusFilter === 'upcoming') return games.filter((g) => g.status === 'scheduled');
-    if (statusFilter === 'finished') return games.filter((g) => g.status === 'completed');
-    return games;
-  }, [games, statusFilter]);
+    return classified
+      .filter(({ cls }) => statusFilter === 'all' || statusFilter === cls)
+      .map(({ g }) => g);
+  }, [classified, statusFilter]);
 
   return (
     <div className="flex flex-col min-h-screen bg-[#0d0f14] relative">

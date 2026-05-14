@@ -1,7 +1,21 @@
 import { useState, useEffect } from 'react';
 import { fetchMlbGamesFromEspn } from '../api/mlb/mlbBetsClient';
+import { classifyGame } from '../utils/gameStatus.js';
 
 const MLB_LEAGUE_ID = 703;
+
+// Stale `scheduled` rows (game already started or finished but the scores timer
+// is behind) are normalized down to a real status using the shared classifier.
+function reconcileStatus(rawStatus, startTimeIso) {
+  const cls = classifyGame({
+    rawStatus,
+    startTime: startTimeIso,
+    sport: 'mlb',
+  });
+  if (cls === 'live') return 'in_progress';
+  if (cls === 'finished') return 'completed';
+  return 'scheduled';
+}
 
 function matchTeams(name1, name2) {
   if (!name1 || !name2) return false;
@@ -13,7 +27,7 @@ function matchTeams(name1, name2) {
 
 async function fetchFromDb() {
   const start = new Date();
-  start.setDate(start.getDate() - 2);
+  start.setDate(start.getDate() - 3);
   const end = new Date();
   end.setDate(end.getDate() + 14);
 
@@ -68,6 +82,7 @@ async function fetchFromDb() {
 
     return {
       id: dbGame.apiId || String(dbGame.id),
+      apiId: dbGame.apiId,
       dbId: dbGame.id,
       leagueId,
       sport: sport?.toLowerCase() || 'mlb',
@@ -82,7 +97,7 @@ async function fetchFromDb() {
       homeScore: dbGame.scores?.home,
       awayScore: dbGame.scores?.away,
       startTime: dbGame.startTime,
-      status: dbGame.status,
+      status: reconcileStatus(dbGame.status, dbGame.startTime),
       gameName: `${dbGame.awayTeam} @ ${dbGame.homeTeam}`,
       h2hPicks,
       totalsPicks,
@@ -97,31 +112,52 @@ export const getMLBGames = (pruneSelectionsForGames) => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    let cancelled = false;
+
     const fetchGames = async () => {
       try {
-        // DB has real Odds API data — prefer it over ESPN's fake seeded odds
-        const dbGames = await fetchFromDb();
-        if (dbGames.length > 0) {
-          setGames(dbGames);
-          if (pruneSelectionsForGames) pruneSelectionsForGames(dbGames);
-          setLoading(false);
-          return;
-        }
-        // DB empty — fall back to ESPN (seeded odds)
-        const espnGames = await fetchMlbGamesFromEspn();
-        setGames(espnGames);
-        if (pruneSelectionsForGames) pruneSelectionsForGames(espnGames);
+        // Pull DB (real Odds API odds, mostly recent/live) and ESPN (real
+        // pickcenter odds + upcoming schedule) in parallel, then merge — DB
+        // wins on overlapping events.
+        const [dbGames, espnGames] = await Promise.all([
+          fetchFromDb().catch(() => []),
+          fetchMlbGamesFromEspn().catch(() => []),
+        ]);
+
+        const dbApiIds = new Set(dbGames.map((g) => String(g.apiId ?? g.id)));
+        const espnNormalized = espnGames.map((g) => ({
+          ...g,
+          status: reconcileStatus(g.status, g.startTime),
+        }));
+        const merged = [
+          ...dbGames,
+          ...espnNormalized.filter((g) => !dbApiIds.has(String(g.apiId ?? g.id))),
+        ];
+
+        const order = { in_progress: 0, scheduled: 1, completed: 2 };
+        merged.sort(
+          (a, b) =>
+            (order[a.status] ?? 3) - (order[b.status] ?? 3) ||
+            new Date(a.startTime) - new Date(b.startTime),
+        );
+
+        if (cancelled) return;
+        setGames(merged);
+        if (pruneSelectionsForGames) pruneSelectionsForGames(merged);
       } catch (err) {
         console.error('Failed to fetch MLB games:', err);
-        setError(err.message);
+        if (!cancelled) setError(err.message);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
     fetchGames();
     const intervalId = window.setInterval(fetchGames, 300000);
-    return () => window.clearInterval(intervalId);
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+    };
   }, [pruneSelectionsForGames]);
 
   return { games, loading, error };

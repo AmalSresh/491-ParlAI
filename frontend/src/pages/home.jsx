@@ -3,11 +3,9 @@ import { useAuth } from '../context/AuthContext';
 
 const SPORTS = [
   { emoji: '🏀', name: 'NBA', path: '/nba', desc: 'Basketball' },
-  { emoji: '🏈', name: 'NFL', path: '/nfl', desc: 'American Football' },
   { emoji: '⚾', name: 'MLB', path: '/mlb', desc: 'Baseball' },
   { emoji: '🏒', name: 'NHL', path: '/hockey', desc: 'Hockey' },
   { emoji: '⚽', name: 'Soccer', path: '/soccer', desc: 'Football' },
-  { emoji: '🥊', name: 'UFC', path: '/ufc', desc: 'MMA' },
 ];
 
 function formatMoney(n) {
@@ -67,7 +65,7 @@ export default function Home() {
         <h2 className="text-xs font-bold uppercase tracking-widest text-sb-muted mb-4">
           Choose a sport
         </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {SPORTS.map((s) => (
             <Link
               key={s.name}

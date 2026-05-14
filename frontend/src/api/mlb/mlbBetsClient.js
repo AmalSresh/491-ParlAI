@@ -1,21 +1,38 @@
+import { fetchMlbOdds } from '../../utils/espnOdds.js';
+
 const ESPN_MLB_SCOREBOARD =
   'https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard';
 
-function generateOdds(espnId, homeAway) {
-  const seed = [...espnId].reduce((a, c) => a + c.charCodeAt(0), 0) / 10000;
-  const base =
-    homeAway === 'home' ? 1.4 + seed * 0.8 : 1.4 + (1 - seed) * 0.8;
-  return parseFloat(Math.max(1.25, Math.min(2.8, base)).toFixed(4));
+function fmtDate(d) {
+  return [
+    d.getFullYear(),
+    String(d.getMonth() + 1).padStart(2, '0'),
+    String(d.getDate()).padStart(2, '0'),
+  ].join('');
 }
 
 export async function fetchMlbGamesFromEspn() {
-  const res = await fetch(ESPN_MLB_SCOREBOARD);
+  // Fetch −2 to +10 days so users see recent finals plus a healthy upcoming slate.
+  const today = new Date();
+  const start = new Date(today);
+  start.setDate(today.getDate() - 2);
+  const end = new Date(today);
+  end.setDate(today.getDate() + 10);
+  const dateRange = `${fmtDate(start)}-${fmtDate(end)}`;
+
+  const res = await fetch(
+    `${ESPN_MLB_SCOREBOARD}?dates=${dateRange}&limit=300`,
+  );
   if (!res.ok) throw new Error(`ESPN MLB scoreboard failed (${res.status})`);
   const data = await res.json();
 
   const events = data.events ?? [];
+  const oddsList = await Promise.all(
+    events.map((event) => fetchMlbOdds(event.id).catch(() => null)),
+  );
+
   return events
-    .map((event) => {
+    .map((event, i) => {
       const comp = event.competitions?.[0];
       const home = comp?.competitors?.find((c) => c.homeAway === 'home');
       const away = comp?.competitors?.find((c) => c.homeAway === 'away');
@@ -30,9 +47,6 @@ export async function fetchMlbGamesFromEspn() {
           ? 'in_progress'
           : 'scheduled';
 
-      const homeOdds = generateOdds(espnId, 'home');
-      const awayOdds = generateOdds(espnId, 'away');
-
       const homeScore =
         home.score !== undefined && home.score !== ''
           ? parseInt(home.score, 10)
@@ -42,8 +56,16 @@ export async function fetchMlbGamesFromEspn() {
           ? parseInt(away.score, 10)
           : null;
 
+      const realOdds = oddsList[i];
+      const homeOdds = realOdds?.moneyHome ?? null;
+      const awayOdds = realOdds?.moneyAway ?? null;
+      const totalLine = realOdds?.overUnder ?? null;
+      const overOdds = realOdds?.overOdds ?? null;
+      const underOdds = realOdds?.underOdds ?? null;
+
       return {
         id: espnId,
+        apiId: espnId,
         leagueId: 703,
         sport: 'mlb',
         homeTeam: home.team.displayName,
@@ -56,22 +78,32 @@ export async function fetchMlbGamesFromEspn() {
         status: dbStatus,
         gameName: `${away.team.displayName} @ ${home.team.displayName}`,
         h2hPicks: {
-          home: {
-            id: `${espnId}-h2h-home`,
-            label: home.team.displayName,
-            odds: homeOdds,
-          },
-          away: {
-            id: `${espnId}-h2h-away`,
-            label: away.team.displayName,
-            odds: awayOdds,
-          },
+          home: homeOdds
+            ? {
+                id: `${espnId}-h2h-home`,
+                label: home.team.displayName,
+                odds: homeOdds,
+              }
+            : null,
+          away: awayOdds
+            ? {
+                id: `${espnId}-h2h-away`,
+                label: away.team.displayName,
+                odds: awayOdds,
+              }
+            : null,
         },
         totalsPicks: {
-          over: { id: `${espnId}-totals-over`, odds: 1.91, lineValue: 8.5 },
-          under: { id: `${espnId}-totals-under`, odds: 1.91, lineValue: 8.5 },
+          over:
+            totalLine != null && overOdds != null
+              ? { id: `${espnId}-totals-over`, odds: overOdds, lineValue: totalLine }
+              : null,
+          under:
+            totalLine != null && underOdds != null
+              ? { id: `${espnId}-totals-under`, odds: underOdds, lineValue: totalLine }
+              : null,
         },
-        totalLine: 8.5,
+        totalLine,
       };
     })
     .filter(Boolean);

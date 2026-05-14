@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useGlobalBetSlip } from '../context/BetSlipContext';
 import { getMLBGames } from '../hooks/getMLBGames';
 import { isBettingClosed } from '../utils/betPayload';
+import { classifyGameFromGame } from '../utils/gameStatus.js';
 
 // ── SKELETON ──────────────────────────────────────────────────────────────────
 function SkeletonCard() {
@@ -140,8 +141,9 @@ function OddsButton({ sublabel, odds, isSelected, onClick, disabled }) {
 
 // ── GAME CARD ─────────────────────────────────────────────────────────────────
 function GameCard({ game, selections, onToggleBet, bettingClosed }) {
-  const isLive = game.status === 'in_progress';
-  const isFinished = game.status === 'completed';
+  const cls = classifyGameFromGame({ ...game, sport: 'mlb' });
+  const isLive = cls === 'live';
+  const isFinished = cls === 'finished';
 
   const homeColor = '#00f6ff';
   const awayColor = '#00f6ff';
@@ -241,7 +243,7 @@ function GameCard({ game, selections, onToggleBet, bettingClosed }) {
               LIVE
             </span>
           )}
-          {game.status === 'scheduled' && (
+          {cls === 'upcoming' && (
             <span style={{ fontSize: '0.75rem', color: '#9ca3af' }}>
               {new Date(game.startTime).toLocaleString('en-US', {
                 weekday: 'short',
@@ -498,25 +500,22 @@ export default function MLBBets() {
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
 
-  const liveCount = games.filter((g) => g.status === 'in_progress').length;
+  const classified = games.map((g) => ({
+    g,
+    cls: classifyGameFromGame({ ...g, sport: 'mlb' }),
+  }));
+  const liveCount = classified.filter(({ cls }) => cls === 'live').length;
 
-  const filtered = games.filter((g) => {
-    const matchesFilter =
-      filter === 'live'
-        ? g.status === 'in_progress'
-        : filter === 'upcoming'
-          ? g.status === 'scheduled'
-          : filter === 'finished'
-            ? g.status === 'completed'
-            : true;
-
-    const matchesSearch =
-      search === '' ||
-      g.homeTeam?.toLowerCase().includes(search.toLowerCase()) ||
-      g.awayTeam?.toLowerCase().includes(search.toLowerCase());
-
-    return matchesFilter && matchesSearch;
-  });
+  const filtered = classified
+    .filter(({ g, cls }) => {
+      const matchesFilter = filter === 'all' || filter === cls;
+      const matchesSearch =
+        search === '' ||
+        g.homeTeam?.toLowerCase().includes(search.toLowerCase()) ||
+        g.awayTeam?.toLowerCase().includes(search.toLowerCase());
+      return matchesFilter && matchesSearch;
+    })
+    .map(({ g }) => g);
 
   return (
     <div className="text-sb-text">

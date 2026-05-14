@@ -9,6 +9,7 @@ import {
   formatSpreadLine,
   isBettingClosed,
 } from '../utils/betPayload.js';
+import { classifyGameFromGame } from '../utils/gameStatus.js';
 
 const NBA_FUTURES = [
   {
@@ -71,20 +72,25 @@ const NBA_FUTURES = [
   },
 ];
 
-function seedGameOdds(gameId, homeAway) {
-  const s = ([...String(gameId)].reduce((a, c) => a + c.charCodeAt(0), 0)) / 10000;
-  const base = homeAway === 'home' ? 1.4 + s * 0.8 : 1.4 + (1 - s) * 0.8;
-  return parseFloat(Math.max(1.25, Math.min(2.8, base)).toFixed(2));
+// Layered odds source for NBA matchups:
+//   1. game.odds.* — DraftKings via ESPN pickcenter (preferred, real-book odds)
+//   2. game.odds.moneyHome/moneyAway — derived from ESPN's matchup predictor
+//      (real ESPN model output with 4% house margin) for games where DraftKings
+//      hasn't posted lines yet.
+//   3. Deterministic per-game fallback below — varies per matchup so every game
+//      has bettable markets even before bookmaker lines drop.
+function seedH2h(gameId, side) {
+  const s = [...String(gameId)].reduce((a, c) => a + c.charCodeAt(0), 0) % 100 / 100;
+  const base = side === 'home' ? 1.35 + s * 1.2 : 1.35 + (1 - s) * 1.2;
+  return parseFloat(Math.max(1.25, Math.min(2.75, base)).toFixed(2));
 }
-
-function seedTotal(gameId) {
-  const s = ([...String(gameId)].reduce((a, c) => a + c.charCodeAt(0), 0));
-  return 210 + (s % 31); // 210–240, realistic NBA range
+function seedNbaSpread(gameId) {
+  const sum = [...String(gameId)].reduce((a, c) => a + c.charCodeAt(0), 0);
+  return 1.5 + (sum % 11);
 }
-
-function seedSpread(gameId) {
-  const s = ([...String(gameId)].reduce((a, c) => a + c.charCodeAt(0), 0));
-  return (1 + (s % 12)) + 0.5; // 1.5–12.5
+function seedNbaTotal(gameId) {
+  const sum = [...String(gameId)].reduce((a, c) => a + c.charCodeAt(0), 0);
+  return 210 + (sum % 31);
 }
 
 function formatKickoff(iso) {
@@ -142,8 +148,9 @@ function pickButtonClass(selected, disabled) {
 function GameCard({ game, onToggleBet, selectedBets, bettingClosed }) {
   const homeScore = game.home.score ?? null;
   const awayScore = game.away.score ?? null;
-  const isFinal = game.status?.typeState === 'post';
-  const closed = bettingClosed || isFinal;
+  const cls = classifyGameFromGame(game);
+  const isFinal = cls === 'finished';
+  const closed = bettingClosed || cls !== 'upcoming';
 
   const isSel = (marketKey, outcomeLabel) =>
     selectedBets.some(
@@ -158,255 +165,310 @@ function GameCard({ game, onToggleBet, selectedBets, bettingClosed }) {
     onToggleBet(payload);
   };
 
-  const homeOdds = seedGameOdds(game.id, 'home');
-  const awayOdds = seedGameOdds(game.id, 'away');
-  const sideOdds = 1.91; // standard -110 juice for spread/totals
+  const realOdds = game.odds || null;
+  // Layered fallback (see comment above): pickcenter → predictor → deterministic per-game.
+  const homeOdds = realOdds?.moneyHome ?? seedH2h(game.id, 'home');
+  const awayOdds = realOdds?.moneyAway ?? seedH2h(game.id, 'away');
   const awayMlLabel = game.away.abbr;
   const homeMlLabel = game.home.abbr;
-  const spreadVal = seedSpread(game.id);
-  const awaySpreadLine = spreadVal;
-  const homeSpreadLine = -spreadVal;
-  const totalLine = seedTotal(game.id);
+  const seededSpread = seedNbaSpread(game.id);
+  const awaySpreadLine = realOdds?.awaySpread ?? seededSpread;
+  const homeSpreadLine = realOdds?.homeSpread ?? -seededSpread;
+  const spreadAwayOdds = realOdds?.spreadAwayOdds ?? 1.91;
+  const spreadHomeOdds = realOdds?.spreadHomeOdds ?? 1.91;
+  const totalLine = realOdds?.overUnder ?? seedNbaTotal(game.id);
+  const overOdds = realOdds?.overOdds ?? 1.91;
+  const underOdds = realOdds?.underOdds ?? 1.91;
+  const hasMl = true;
+  const hasSpread = true;
+  const hasTotal = true;
+
+  const isLive = cls === 'live';
+  const period = game.status?.period;
+  const clock = game.status?.clock;
+  const liveLabel = period
+    ? `Q${period}${clock && clock !== '0:00' ? ` ${clock}` : ''}`
+    : 'LIVE';
 
   return (
-    <div className="rounded-xl border border-sb-border bg-sb-bg/60 overflow-hidden">
-      <div className="p-4 border-b border-sb-border flex items-start justify-between gap-4 flex-wrap">
-        <div className="min-w-0 flex-1">
-          <div className="text-xs uppercase tracking-widest text-sb-muted font-bold">
-            {game.league} • {game.seasonDisplay}
-          </div>
-          <div className="text-sb-text font-extrabold text-lg mt-1">
-            {game.away.abbr} @ {game.home.abbr}
-          </div>
-          <div className="text-sb-muted text-sm mt-1">
-            {formatKickoff(game.startDate)} •{' '}
-            {getStatusLabel(game.status?.typeState)}
-          </div>
-        </div>
-
-        <div className="flex items-center gap-6">
-          <div className="text-right">
-            <div className="text-sb-muted text-xs font-bold">
-              {game.home.abbr}
-            </div>
-            <div
-              className={`text-2xl font-extrabold ${isFinal ? 'text-sb-text' : 'text-sb-blue'}`}
-            >
-              {homeScore !== null ? homeScore : '—'}
-            </div>
-          </div>
-          <div className="text-left">
-            <div className="text-sb-muted text-xs font-bold">
-              {game.away.abbr}
-            </div>
-            <div
-              className={`text-2xl font-extrabold ${isFinal ? 'text-sb-text' : 'text-sb-blue'}`}
-            >
-              {awayScore !== null ? awayScore : '—'}
-            </div>
-          </div>
-        </div>
+    <div
+      className={`rounded-xl border overflow-hidden ${
+        isLive
+          ? 'border-[#00f6ff44] bg-[#050e14] shadow-[0_0_20px_rgba(0,246,255,0.08)]'
+          : 'border-sb-border bg-sb-bg/60'
+      } ${isFinal ? 'opacity-80' : ''}`}
+    >
+      <div className="px-4 pt-3 pb-2 flex items-center justify-between border-b border-sb-border/60">
+        <span className="text-[0.65rem] uppercase tracking-widest text-sb-muted font-bold">
+          🏀 {game.league} • {game.seasonDisplay}
+        </span>
+        {isLive ? (
+          <span className="flex items-center gap-1.5 text-[0.65rem] font-bold text-green-400 bg-green-400/10 px-2 py-0.5 rounded-full border border-green-400/30">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+            {liveLabel}
+          </span>
+        ) : isFinal ? (
+          <span className="text-[0.65rem] font-bold text-sb-muted">FINAL</span>
+        ) : (
+          <span className="text-[0.7rem] text-sb-muted">
+            {formatKickoff(game.startDate)}
+          </span>
+        )}
       </div>
 
-      <div className="p-4 border-b border-sb-border/80">
-        <div className="text-sb-text font-extrabold text-sm">
-          {game.away.name} vs {game.home.name}
+      <div className="p-4 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+        <div className="flex items-center gap-2.5 min-w-0">
+          {game.away.logo ? (
+            <img
+              src={game.away.logo}
+              alt={game.away.name}
+              className="w-9 h-9 object-contain flex-shrink-0"
+            />
+          ) : (
+            <div className="w-9 h-9 rounded-full bg-sb-blue/10 border border-sb-blue/30 flex items-center justify-center text-[0.6rem] font-extrabold text-sb-blue">
+              {game.away.abbr}
+            </div>
+          )}
+          <div className="min-w-0">
+            <div className="text-sb-text font-extrabold text-sm truncate">
+              {game.away.name}
+            </div>
+            <div className="text-[0.65rem] text-sb-muted">Away</div>
+          </div>
         </div>
-        <div className="text-sb-muted text-xs mt-1">
-          {game.status?.clock
-            ? `Clock: ${game.status.clock}`
-            : 'Tip-off clock not provided'}
+
+        <div className="text-center px-2">
+          {isLive || isFinal ? (
+            <div
+              className={`text-3xl font-black tracking-tight ${
+                isLive ? 'text-sb-blue' : 'text-sb-text'
+              }`}
+            >
+              {awayScore ?? '—'}
+              <span className="text-sb-muted mx-1.5 text-2xl">–</span>
+              {homeScore ?? '—'}
+            </div>
+          ) : (
+            <div className="text-sb-muted font-bold text-sm">VS</div>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2.5 min-w-0 justify-end text-right">
+          <div className="min-w-0">
+            <div className="text-sb-text font-extrabold text-sm truncate">
+              {game.home.name}
+            </div>
+            <div className="text-[0.65rem] text-sb-muted">Home</div>
+          </div>
+          {game.home.logo ? (
+            <img
+              src={game.home.logo}
+              alt={game.home.name}
+              className="w-9 h-9 object-contain flex-shrink-0"
+            />
+          ) : (
+            <div className="w-9 h-9 rounded-full bg-sb-blue/10 border border-sb-blue/30 flex items-center justify-center text-[0.6rem] font-extrabold text-sb-blue">
+              {game.home.abbr}
+            </div>
+          )}
         </div>
       </div>
 
       <div className="p-4 flex flex-col gap-4">
-        <div className="flex flex-col gap-2">
-          <span className="text-[0.65rem] font-bold text-sb-muted tracking-widest uppercase">
-            Moneyline
-          </span>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              className={pickButtonClass(
-                isSel(MARKET_KEYS.H2H, awayMlLabel),
-                closed,
-              )}
-              disabled={closed}
-              onClick={() =>
-                fire({
-                  gameId: String(game.id),
-                  leagueId: 'nba',
-                  sport: 'basketball',
-                  marketKey: MARKET_KEYS.H2H,
-                  selectionId: `nba-${game.id}-h2h-away`,
-                  outcomeLabel: awayMlLabel,
-                  odds: awayOdds,
-                  lineValue: null,
-                  gameName: `${game.away.abbr} @ ${game.home.abbr}`,
-                  betType: 'Moneyline',
-                  betTeam: game.away.name,
-                })
-              }
-            >
-              <span className="block">{awayMlLabel}</span>
-              <span className="block text-sb-blue">{awayOdds}</span>
-            </button>
-            <button
-              type="button"
-              className={pickButtonClass(
-                isSel(MARKET_KEYS.H2H, homeMlLabel),
-                closed,
-              )}
-              disabled={closed}
-              onClick={() =>
-                fire({
-                  gameId: String(game.id),
-                  leagueId: 'nba',
-                  sport: 'basketball',
-                  marketKey: MARKET_KEYS.H2H,
-                  selectionId: `nba-${game.id}-h2h-home`,
-                  outcomeLabel: homeMlLabel,
-                  odds: homeOdds,
-                  lineValue: null,
-                  gameName: `${game.away.abbr} @ ${game.home.abbr}`,
-                  betType: 'Moneyline',
-                  betTeam: game.home.name,
-                })
-              }
-            >
-              <span className="block">{homeMlLabel}</span>
-              <span className="block text-sb-blue">{homeOdds}</span>
-            </button>
+        {hasMl && (
+          <div className="flex flex-col gap-2">
+            <span className="text-[0.65rem] font-bold text-sb-muted tracking-widest uppercase">
+              Moneyline
+            </span>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                className={pickButtonClass(
+                  isSel(MARKET_KEYS.H2H, awayMlLabel),
+                  closed,
+                )}
+                disabled={closed}
+                onClick={() =>
+                  fire({
+                    gameId: String(game.id),
+                    leagueId: 'nba',
+                    sport: 'basketball',
+                    marketKey: MARKET_KEYS.H2H,
+                    selectionId: `nba-${game.id}-h2h-away`,
+                    outcomeLabel: awayMlLabel,
+                    odds: awayOdds,
+                    lineValue: null,
+                    gameName: `${game.away.abbr} @ ${game.home.abbr}`,
+                    betType: 'Moneyline',
+                    betTeam: game.away.name,
+                  })
+                }
+              >
+                <span className="block">{awayMlLabel}</span>
+                <span className="block text-sb-blue">{awayOdds}</span>
+              </button>
+              <button
+                type="button"
+                className={pickButtonClass(
+                  isSel(MARKET_KEYS.H2H, homeMlLabel),
+                  closed,
+                )}
+                disabled={closed}
+                onClick={() =>
+                  fire({
+                    gameId: String(game.id),
+                    leagueId: 'nba',
+                    sport: 'basketball',
+                    marketKey: MARKET_KEYS.H2H,
+                    selectionId: `nba-${game.id}-h2h-home`,
+                    outcomeLabel: homeMlLabel,
+                    odds: homeOdds,
+                    lineValue: null,
+                    gameName: `${game.away.abbr} @ ${game.home.abbr}`,
+                    betType: 'Moneyline',
+                    betTeam: game.home.name,
+                  })
+                }
+              >
+                <span className="block">{homeMlLabel}</span>
+                <span className="block text-sb-blue">{homeOdds}</span>
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
-        <div className="flex flex-col gap-2">
-          <span className="text-[0.65rem] font-bold text-sb-muted tracking-widest uppercase">
-            Spread
-          </span>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              className={pickButtonClass(
-                isSel(
-                  MARKET_KEYS.SPREADS,
-                  `${game.away.abbr} ${formatSpreadLine(awaySpreadLine)}`,
-                ),
-                closed,
-              )}
-              disabled={closed}
-              onClick={() =>
-                fire({
-                  gameId: String(game.id),
-                  leagueId: 'nba',
-                  sport: 'basketball',
-                  marketKey: MARKET_KEYS.SPREADS,
-                  selectionId: `nba-${game.id}-spreads-away`,
-                  outcomeLabel: `${game.away.abbr} ${formatSpreadLine(awaySpreadLine)}`,
-                  odds: sideOdds,
-                  lineValue: awaySpreadLine,
-                  gameName: `${game.away.abbr} @ ${game.home.abbr}`,
-                  betType: 'Spread',
-                  betTeam: game.away.name,
-                })
-              }
-            >
-              <span className="block">{game.away.abbr}</span>
-              <span className="block">{formatSpreadLine(awaySpreadLine)}</span>
-              <span className="block text-sb-blue">{sideOdds}</span>
-            </button>
-            <button
-              type="button"
-              className={pickButtonClass(
-                isSel(
-                  MARKET_KEYS.SPREADS,
-                  `${game.home.abbr} ${formatSpreadLine(homeSpreadLine)}`,
-                ),
-                closed,
-              )}
-              disabled={closed}
-              onClick={() =>
-                fire({
-                  gameId: String(game.id),
-                  leagueId: 'nba',
-                  sport: 'basketball',
-                  marketKey: MARKET_KEYS.SPREADS,
-                  selectionId: `nba-${game.id}-spreads-home`,
-                  outcomeLabel: `${game.home.abbr} ${formatSpreadLine(homeSpreadLine)}`,
-                  odds: sideOdds,
-                  lineValue: homeSpreadLine,
-                  gameName: `${game.away.abbr} @ ${game.home.abbr}`,
-                  betType: 'Spread',
-                  betTeam: game.home.name,
-                })
-              }
-            >
-              <span className="block">{game.home.abbr}</span>
-              <span className="block">{formatSpreadLine(homeSpreadLine)}</span>
-              <span className="block text-sb-blue">{sideOdds}</span>
-            </button>
+        {hasSpread && (
+          <div className="flex flex-col gap-2">
+            <span className="text-[0.65rem] font-bold text-sb-muted tracking-widest uppercase">
+              Spread
+            </span>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                className={pickButtonClass(
+                  isSel(
+                    MARKET_KEYS.SPREADS,
+                    `${game.away.abbr} ${formatSpreadLine(awaySpreadLine)}`,
+                  ),
+                  closed,
+                )}
+                disabled={closed}
+                onClick={() =>
+                  fire({
+                    gameId: String(game.id),
+                    leagueId: 'nba',
+                    sport: 'basketball',
+                    marketKey: MARKET_KEYS.SPREADS,
+                    selectionId: `nba-${game.id}-spreads-away`,
+                    outcomeLabel: `${game.away.abbr} ${formatSpreadLine(awaySpreadLine)}`,
+                    odds: spreadAwayOdds,
+                    lineValue: awaySpreadLine,
+                    gameName: `${game.away.abbr} @ ${game.home.abbr}`,
+                    betType: 'Spread',
+                    betTeam: game.away.name,
+                  })
+                }
+              >
+                <span className="block">{game.away.abbr}</span>
+                <span className="block">{formatSpreadLine(awaySpreadLine)}</span>
+                <span className="block text-sb-blue">{spreadAwayOdds}</span>
+              </button>
+              <button
+                type="button"
+                className={pickButtonClass(
+                  isSel(
+                    MARKET_KEYS.SPREADS,
+                    `${game.home.abbr} ${formatSpreadLine(homeSpreadLine)}`,
+                  ),
+                  closed,
+                )}
+                disabled={closed}
+                onClick={() =>
+                  fire({
+                    gameId: String(game.id),
+                    leagueId: 'nba',
+                    sport: 'basketball',
+                    marketKey: MARKET_KEYS.SPREADS,
+                    selectionId: `nba-${game.id}-spreads-home`,
+                    outcomeLabel: `${game.home.abbr} ${formatSpreadLine(homeSpreadLine)}`,
+                    odds: spreadHomeOdds,
+                    lineValue: homeSpreadLine,
+                    gameName: `${game.away.abbr} @ ${game.home.abbr}`,
+                    betType: 'Spread',
+                    betTeam: game.home.name,
+                  })
+                }
+              >
+                <span className="block">{game.home.abbr}</span>
+                <span className="block">{formatSpreadLine(homeSpreadLine)}</span>
+                <span className="block text-sb-blue">{spreadHomeOdds}</span>
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
-        <div className="flex flex-col gap-2">
-          <span className="text-[0.65rem] font-bold text-sb-muted tracking-widest uppercase">
-            Total ({totalLine})
-          </span>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              className={pickButtonClass(
-                isSel(MARKET_KEYS.TOTALS, `Over ${totalLine}`),
-                closed,
-              )}
-              disabled={closed}
-              onClick={() =>
-                fire({
-                  gameId: String(game.id),
-                  leagueId: 'nba',
-                  sport: 'basketball',
-                  marketKey: MARKET_KEYS.TOTALS,
-                  selectionId: `nba-${game.id}-totals-over`,
-                  outcomeLabel: `Over ${totalLine}`,
-                  odds: sideOdds,
-                  lineValue: totalLine,
-                  gameName: `${game.away.abbr} @ ${game.home.abbr}`,
-                  betType: 'Over/Under',
-                  betTeam: '',
-                })
-              }
-            >
-              <span className="block">Over</span>
-              <span className="block text-sb-blue">{sideOdds}</span>
-            </button>
-            <button
-              type="button"
-              className={pickButtonClass(
-                isSel(MARKET_KEYS.TOTALS, `Under ${totalLine}`),
-                closed,
-              )}
-              disabled={closed}
-              onClick={() =>
-                fire({
-                  gameId: String(game.id),
-                  leagueId: 'nba',
-                  sport: 'basketball',
-                  marketKey: MARKET_KEYS.TOTALS,
-                  selectionId: `nba-${game.id}-totals-under`,
-                  outcomeLabel: `Under ${totalLine}`,
-                  odds: sideOdds,
-                  lineValue: totalLine,
-                  gameName: `${game.away.abbr} @ ${game.home.abbr}`,
-                  betType: 'Over/Under',
-                  betTeam: '',
-                })
-              }
-            >
-              <span className="block">Under</span>
-              <span className="block text-sb-blue">{sideOdds}</span>
-            </button>
+        {hasTotal && (
+          <div className="flex flex-col gap-2">
+            <span className="text-[0.65rem] font-bold text-sb-muted tracking-widest uppercase">
+              Total ({totalLine})
+            </span>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                className={pickButtonClass(
+                  isSel(MARKET_KEYS.TOTALS, `Over ${totalLine}`),
+                  closed,
+                )}
+                disabled={closed}
+                onClick={() =>
+                  fire({
+                    gameId: String(game.id),
+                    leagueId: 'nba',
+                    sport: 'basketball',
+                    marketKey: MARKET_KEYS.TOTALS,
+                    selectionId: `nba-${game.id}-totals-over`,
+                    outcomeLabel: `Over ${totalLine}`,
+                    odds: overOdds,
+                    lineValue: totalLine,
+                    gameName: `${game.away.abbr} @ ${game.home.abbr}`,
+                    betType: 'Over/Under',
+                    betTeam: '',
+                  })
+                }
+              >
+                <span className="block">Over</span>
+                <span className="block text-sb-blue">{overOdds}</span>
+              </button>
+              <button
+                type="button"
+                className={pickButtonClass(
+                  isSel(MARKET_KEYS.TOTALS, `Under ${totalLine}`),
+                  closed,
+                )}
+                disabled={closed}
+                onClick={() =>
+                  fire({
+                    gameId: String(game.id),
+                    leagueId: 'nba',
+                    sport: 'basketball',
+                    marketKey: MARKET_KEYS.TOTALS,
+                    selectionId: `nba-${game.id}-totals-under`,
+                    outcomeLabel: `Under ${totalLine}`,
+                    odds: underOdds,
+                    lineValue: totalLine,
+                    gameName: `${game.away.abbr} @ ${game.home.abbr}`,
+                    betType: 'Over/Under',
+                    betTeam: '',
+                  })
+                }
+              >
+                <span className="block">Under</span>
+                <span className="block text-sb-blue">{underOdds}</span>
+              </button>
+            </div>
           </div>
-        </div>
+        )}
+
       </div>
     </div>
   );
@@ -448,8 +510,8 @@ export default function NBABets() {
 
   useEffect(() => {
     let alive = true;
-    async function load() {
-      setLoading(true);
+    async function load(isInitial) {
+      if (isInitial) setLoading(true);
       setError('');
       try {
         const result = await fetchNbaScoreboardWeek();
@@ -458,16 +520,17 @@ export default function NBABets() {
       } catch (e) {
         console.error(e);
         if (!alive) return;
-        setError('Failed to load NBA matchups from ESPN.');
+        if (isInitial) setError('Failed to load NBA matchups from ESPN.');
       } finally {
-        if (alive) {
-          setLoading(false);
-        }
+        if (alive && isInitial) setLoading(false);
       }
     }
-    load();
+    load(true);
+    // Live scores + status refresh every 60s
+    const id = window.setInterval(() => load(false), 60000);
     return () => {
       alive = false;
+      window.clearInterval(id);
     };
   }, []);
 
@@ -477,29 +540,32 @@ export default function NBABets() {
     }
   }, [games, pruneSelectionsForGames]);
 
-  const liveCount = useMemo(
-    () => games.filter((g) => g.status?.typeState === 'in').length,
+  const classifiedGames = useMemo(
+    () => games.map((g) => ({ game: g, cls: classifyGameFromGame(g) })),
     [games],
+  );
+
+  const liveCount = useMemo(
+    () => classifiedGames.filter(({ cls }) => cls === 'live').length,
+    [classifiedGames],
   );
 
   const filteredGames = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return games.filter((g) => {
-      const ts = g.status?.typeState;
-      const matchesStatus =
-        statusFilter === 'all' ||
-        (statusFilter === 'live' && ts === 'in') ||
-        (statusFilter === 'upcoming' && ts === 'pre') ||
-        (statusFilter === 'finished' && ts === 'post');
-      const matchesSearch =
-        !q ||
-        g.home.abbr.toLowerCase().includes(q) ||
-        g.away.abbr.toLowerCase().includes(q) ||
-        g.home.name.toLowerCase().includes(q) ||
-        g.away.name.toLowerCase().includes(q);
-      return matchesStatus && matchesSearch;
-    });
-  }, [games, search, statusFilter]);
+    return classifiedGames
+      .filter(({ game, cls }) => {
+        const matchesStatus =
+          statusFilter === 'all' || statusFilter === cls;
+        const matchesSearch =
+          !q ||
+          game.home.abbr.toLowerCase().includes(q) ||
+          game.away.abbr.toLowerCase().includes(q) ||
+          game.home.name.toLowerCase().includes(q) ||
+          game.away.name.toLowerCase().includes(q);
+        return matchesStatus && matchesSearch;
+      })
+      .map(({ game }) => game);
+  }, [classifiedGames, search, statusFilter]);
 
   const gamesByDay = useMemo(() => {
     const sections = [];
@@ -536,7 +602,7 @@ export default function NBABets() {
       <div className="flex items-center gap-3 mb-6 flex-wrap">
         <h1 className="text-3xl font-extrabold tracking-wide">🏀 NBA</h1>
         <span className="text-[0.7rem] font-bold tracking-widest uppercase border border-sb-blue/50 text-sb-blue px-3 py-1.5 rounded-full bg-sb-bg/60">
-          🔄 This week (Sun–Sat) • ESPN
+          🔄 Live games & odds • ESPN + DraftKings
         </span>
         {weekRangeLabel ? (
           <span className="text-sb-muted text-sm font-semibold">
