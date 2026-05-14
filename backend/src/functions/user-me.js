@@ -24,12 +24,14 @@ app.http('user-me', {
         'RAW CLIENT PRINCIPAL:',
         JSON.stringify(clientPrincipal, null, 2),
       );
-      context.log('finalUserId:', finalUserId);
-      context.log('userDetails:', userDetails);
+      
       const { userId, userDetails, claims } = clientPrincipal;
 
       let finalUserId = userId;
 
+      context.log('finalUserId:', finalUserId);
+      context.log('userDetails:', userDetails);
+      
       // If userId is null, try to find it in the raw claims array
       if (!finalUserId && claims) {
         const nameIdClaim = claims.find(
