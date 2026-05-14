@@ -69,6 +69,10 @@ app.http('user-me', {
 
       // IF NEW USER: Insert them into the database automatically!
       if (!dbUser) {
+        // Guard: never insert if finalUserId is null
+        if (!finalUserId) {
+          return { status: 400, jsonBody: { error: 'Cannot create user: missing ID', debug: clientPrincipal } };
+        }
         const startingBalance = 1000.0;
 
         // Create the request
