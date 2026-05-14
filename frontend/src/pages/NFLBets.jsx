@@ -43,6 +43,13 @@ const TEAM_COLORS = {
   CLE: '#FF3C00',
 };
 
+// ── ODDS CONVERTER ────────────────────────────────────────────────────────────
+function americanToDecimal(str) {
+  const n = parseFloat(str);
+  if (!n || isNaN(n)) return 2.0;
+  return n > 0 ? +(n / 100 + 1).toFixed(4) : +(100 / Math.abs(n) + 1).toFixed(4);
+}
+
 // ── PROP LINE CALCULATOR ──────────────────────────────────────────────────────
 function calcPropLine(value) {
   if (!value) return null;
@@ -544,7 +551,7 @@ function FuturesTable({ category, data, onBet }) {
                           marketKey: 'futures',
                           selectionId: `future_${item.label.replace(/\s/g, '_')}`,
                           outcomeLabel: item.label,
-                          odds: parseFloat(item.odds),
+                          odds: americanToDecimal(item.odds),
                           lineValue: null,
                           gameName: title,
                           betType: 'Futures',

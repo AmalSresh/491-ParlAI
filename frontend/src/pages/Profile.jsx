@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { apiFetch } from '../api.js';
 
 function Stat({ label, value }) {
   return (
@@ -13,104 +14,86 @@ function Stat({ label, value }) {
   );
 }
 
-function ActionCard({ title, desc, to }) {
-  const content = (
-    <>
-      <div className="font-extrabold text-sb-text">{title}</div>
-      <div className="mt-1.5 text-sb-muted text-xs leading-snug">{desc}</div>
-    </>
-  );
-  const className =
-    'text-left rounded-xl border border-sb-border bg-sb-bg/80 p-3 text-sb-text hover:border-sb-blue transition-colors cursor-pointer block w-full';
-  if (to) {
-    return (
-      <Link to={to} className={className}>
-        {content}
-      </Link>
-    );
-  }
-  return (
-    <button type="button" className={className}>
-      {content}
-    </button>
-  );
+function formatMoney(n) {
+  return Number(n).toLocaleString(undefined, { style: 'currency', currency: 'USD' });
 }
 
-function Tab({ active, onClick, children }) {
+function formatDate(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+
+function StatusBadge({ status }) {
+  const s = (status ?? '').toUpperCase();
+  const cls =
+    s === 'WON'
+      ? 'text-sb-blue border-sb-blue bg-sb-blue/10'
+      : s === 'LOST'
+        ? 'text-sb-error border-sb-error bg-sb-error/10'
+        : 'text-sb-muted border-sb-border bg-sb-bg/80';
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={
-        active
-          ? 'rounded-full px-3 py-2 text-xs font-extrabold bg-sb-blue text-sb-dark border border-sb-blue'
-          : 'rounded-full px-3 py-2 text-xs font-extrabold bg-sb-bg/80 text-sb-text border border-sb-border hover:border-sb-blue/60'
-      }
-    >
-      {children}
-    </button>
+    <span className={`text-[0.65rem] font-bold uppercase px-2 py-0.5 rounded-full border ${cls}`}>
+      {status ?? 'Pending'}
+    </span>
   );
 }
 
 export default function Profile() {
   const { user } = useAuth();
+  const [bets, setBets] = useState([]);
+  const [betsLoading, setBetsLoading] = useState(true);
 
-  const profileUser = useMemo(
-    () => ({
-      name: user?.name ?? 'Guest',
-      username: user?.email?.split('@')[0] ?? 'user',
-      tier: 'Silver',
-      memberSince: '2026',
-      balance: 124.75,
-      bonus: 20.0,
-      winRate: 0.54,
-      totalWagered: 840.25,
-      netProfit: 72.4,
-    }),
-    [user?.name, user?.email],
-  );
+  useEffect(() => {
+    let alive = true;
+    apiFetch('/api/bets?limit=200')
+      .then((r) => r.json())
+      .then((data) => {
+        if (!alive) return;
+        setBets(data.bets ?? []);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (alive) setBetsLoading(false);
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
-  const [activeTab, setActiveTab] = useState('activity');
+  const stats = useMemo(() => {
+    const won = bets.filter((b) => (b.status ?? '').toUpperCase() === 'WON').length;
+    const settled = bets.filter((b) =>
+      ['WON', 'LOST'].includes((b.status ?? '').toUpperCase()),
+    ).length;
+    const openBets = bets.filter((b) => (b.status ?? '').toUpperCase() === 'PENDING').length;
+    const totalWagered = bets.reduce((s, b) => s + Number(b.stake ?? 0), 0);
+    const netProfit = bets.reduce((s, b) => {
+      const status = (b.status ?? '').toUpperCase();
+      if (status === 'WON') return s + (Number(b.potentialPayout) - Number(b.stake));
+      if (status === 'LOST') return s - Number(b.stake);
+      return s;
+    }, 0);
+    return {
+      winRate: settled > 0 ? won / settled : null,
+      totalWagered,
+      netProfit,
+      openBets,
+    };
+  }, [bets]);
 
-  const activity = useMemo(
-    () => [
-      {
-        id: 'a1',
-        title: 'Warriors vs Lakers',
-        subtitle: 'Moneyline • GSW',
-        amount: -10.0,
-        status: 'Settled',
-        time: 'Today • 11:04 AM',
-      },
-      {
-        id: 'a2',
-        title: 'Chelsea vs Arsenal',
-        subtitle: 'Over 2.5 Goals',
-        amount: 18.5,
-        status: 'Won',
-        time: 'Yesterday • 7:22 PM',
-      },
-      {
-        id: 'a3',
-        title: 'NFL Sunday Parlay',
-        subtitle: '3-leg • +420',
-        amount: -5.0,
-        status: 'Lost',
-        time: 'Feb 10 • 3:11 PM',
-      },
-    ],
-    [],
-  );
-
-  const formatMoney = (n) =>
-    n.toLocaleString(undefined, { style: 'currency', currency: 'USD' });
-
-  const initials = profileUser.name
+  const initials = (user?.name ?? user?.email ?? 'U')
     .split(' ')
     .slice(0, 2)
     .map((s) => s[0])
     .join('')
     .toUpperCase();
+
+  const username = user?.name ?? user?.email?.split('@')[0] ?? 'user';
 
   return (
     <div className="w-full min-w-0">
@@ -129,29 +112,33 @@ export default function Profile() {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2.5 flex-wrap">
               <h1 className="text-2xl leading-tight text-sb-text m-0 font-semibold">
-                {profileUser.name}
+                {user?.name ?? username}
               </h1>
               <span className="text-xs px-2.5 py-1.5 rounded-full border border-sb-border bg-sb-bg/80 text-sb-text">
-                {profileUser.tier} Tier
+                Member
               </span>
             </div>
             <div className="flex items-center gap-2.5 flex-wrap mt-1.5 text-sb-muted text-sm">
-              <span>@{profileUser.username}</span>
-              <span className="w-1 h-1 rounded-full bg-sb-muted" />
-              <span>Member since {profileUser.memberSince}</span>
+              <span>@{username}</span>
+              {user?.provider && (
+                <>
+                  <span className="w-1 h-1 rounded-full bg-sb-muted" />
+                  <span className="capitalize">{user.provider}</span>
+                </>
+              )}
             </div>
 
             <div className="flex gap-3 items-stretch flex-wrap mt-4">
               <div className="min-w-[160px] p-3 rounded-xl border border-sb-border bg-sb-bg/80">
                 <div className="text-sb-muted text-xs">Balance</div>
                 <div className="text-sb-text font-extrabold text-lg mt-1">
-                  {formatMoney(profileUser.balance)}
+                  {formatMoney(user?.balance ?? 0)}
                 </div>
               </div>
               <div className="min-w-[160px] p-3 rounded-xl border border-sb-border bg-sb-bg/80">
-                <div className="text-sb-muted text-xs">Bonus</div>
+                <div className="text-sb-muted text-xs">Total bets placed</div>
                 <div className="text-sb-text font-extrabold text-lg mt-1">
-                  {formatMoney(profileUser.bonus)}
+                  {betsLoading ? '…' : bets.length}
                 </div>
               </div>
             </div>
@@ -166,137 +153,135 @@ export default function Profile() {
             <h2 className="text-sm uppercase tracking-wider text-sb-text font-semibold m-0">
               Performance
             </h2>
-            <span
-              className={
-                profileUser.netProfit >= 0
-                  ? 'text-xs px-2.5 py-1.5 rounded-full border border-sb-blue bg-sb-blue/10 text-sb-blue'
-                  : 'text-xs px-2.5 py-1.5 rounded-full border border-sb-error bg-sb-error-bg text-sb-error'
-              }
-            >
-              {profileUser.netProfit >= 0 ? 'Net +' : 'Net '}
-              {formatMoney(profileUser.netProfit)}
-            </span>
+            {!betsLoading && (
+              <span
+                className={
+                  stats.netProfit >= 0
+                    ? 'text-xs px-2.5 py-1.5 rounded-full border border-sb-blue bg-sb-blue/10 text-sb-blue'
+                    : 'text-xs px-2.5 py-1.5 rounded-full border border-sb-error bg-sb-error/10 text-sb-error'
+                }
+              >
+                {stats.netProfit >= 0 ? 'Net +' : 'Net '}
+                {formatMoney(stats.netProfit)}
+              </span>
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             <Stat
               label="Win rate"
-              value={`${Math.round(profileUser.winRate * 100)}%`}
+              value={
+                betsLoading
+                  ? '…'
+                  : stats.winRate !== null
+                    ? `${Math.round(stats.winRate * 100)}%`
+                    : '—'
+              }
             />
             <Stat
               label="Total wagered"
-              value={formatMoney(profileUser.totalWagered)}
+              value={betsLoading ? '…' : formatMoney(stats.totalWagered)}
             />
-            <Stat label="Tier" value={profileUser.tier} />
+            <Stat
+              label="Open Bets"
+              value={betsLoading ? '…' : stats.openBets}
+            />
           </div>
 
-          <div className="h-px bg-sb-border my-4" />
-
-          <div className="text-xs uppercase tracking-widest text-sb-muted mb-2.5">
-            Quick actions
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            <ActionCard
-              title="Account"
-              desc="Update info, email, and 2FA"
-              to="/settings"
-            />
-            <ActionCard
-              title="Limits"
-              desc="Wager limits & responsible play"
-              to="/settings"
-            />
-            <ActionCard
-              title="Notifications"
-              desc="Odds alerts & promos"
-              to="/settings"
-            />
-          </div>
         </section>
 
         {/* Tabs panel */}
         <section className="rounded-xl border border-sb-border bg-sb-card p-4 overflow-hidden">
-          <div className="flex gap-2 pb-3 border-b border-sb-border mb-3 flex-wrap">
-            <Tab
-              active={activeTab === 'activity'}
-              onClick={() => setActiveTab('activity')}
-            >
+          <div className="pb-3 border-b border-sb-border mb-3">
+            <span className="text-sm uppercase tracking-wider text-sb-text font-semibold">
               Recent activity
-            </Tab>
-            <Tab
-              active={activeTab === 'rewards'}
-              onClick={() => setActiveTab('rewards')}
-            >
-              Rewards
-            </Tab>
+            </span>
           </div>
 
-          {activeTab === 'activity' && (
-            <div className="flex flex-col gap-2.5">
-              {activity.map((a) => (
-                <div
-                  key={a.id}
-                  className="flex gap-3 items-center justify-between border border-sb-border rounded-xl p-3 bg-sb-bg/80 flex-wrap"
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="font-extrabold text-sb-text">{a.title}</div>
-                    <div className="flex gap-2 items-center flex-wrap mt-1.5 text-sb-muted text-xs">
-                      <span>{a.subtitle}</span>
-                      <span className="w-1 h-1 rounded-full bg-sb-muted" />
-                      <span>{a.status}</span>
-                      <span className="w-1 h-1 rounded-full bg-sb-muted" />
-                      <span>{a.time}</span>
-                    </div>
-                  </div>
-                  <div className="flex items-end gap-2.5 flex-shrink-0 flex-col sm:flex-row">
-                    <div
-                      className={
-                        a.amount >= 0
-                          ? 'font-extrabold text-sm text-sb-blue'
-                          : 'font-extrabold text-sm text-sb-error'
-                      }
-                    >
-                      {a.amount >= 0 ? '+' : '-'}
-                      {formatMoney(Math.abs(a.amount))}
-                    </div>
-                    <button
-                      type="button"
-                      className="rounded-lg px-2.5 py-1.5 text-xs font-bold bg-sb-bg border border-sb-border text-sb-text hover:border-sb-blue"
-                    >
-                      Details
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {activeTab === 'rewards' && (
-            <div className="py-2">
-              <div className="font-extrabold text-sb-text text-base mb-1">
-                Rewards (stub)
-              </div>
-              <p className="text-sb-muted text-sm m-0">
-                Later you can show tier progress, points, promos, and rewards
-                history.
-              </p>
-              <div className="mt-4 border border-sb-border rounded-xl p-3 bg-sb-bg/80 flex flex-col gap-2.5">
-                <div>
-                  <div className="text-sb-muted text-xs">Tier Progress</div>
-                  <div className="font-extrabold text-sb-text mt-1">
-                    Silver → Gold
-                  </div>
-                </div>
-                <div className="h-2.5 rounded-full border border-sb-border bg-sb-bg overflow-hidden">
+          <div className="flex flex-col gap-2.5">
+              {betsLoading ? (
+                Array.from({ length: 3 }).map((_, i) => (
                   <div
-                    className="h-full bg-sb-blue rounded-full w-[42%]"
-                    aria-hidden
+                    key={i}
+                    className="rounded-xl border border-sb-border bg-sb-bg/60 p-3 h-16 animate-pulse"
                   />
+                ))
+              ) : bets.length === 0 ? (
+                <div className="text-sb-muted text-sm py-4 text-center">
+                  No bets placed yet.{' '}
+                  <Link to="/nba" className="text-sb-blue hover:underline">
+                    Start betting →
+                  </Link>
                 </div>
-                <div className="text-sb-muted text-xs">42% complete</div>
-              </div>
+              ) : (
+                bets.slice(0, 5).map((bet) => {
+                  const leg = bet.legs?.[0];
+                  const title =
+                    leg?.event
+                      ? `${leg.event.homeTeam} vs ${leg.event.awayTeam}`
+                      : leg?.gameName ?? leg?.outcomeLabel ?? `Bet #${bet.id}`;
+                  const subtitle = [
+                    leg?.event?.sport ?? leg?.event?.leagueName,
+                    leg?.marketKey,
+                  ]
+                    .filter(Boolean)
+                    .join(' • ');
+                  const betStatus = (bet.status ?? '').toUpperCase();
+                  const pnl =
+                    betStatus === 'WON'
+                      ? bet.potentialPayout - bet.stake
+                      : betStatus === 'LOST'
+                        ? -bet.stake
+                        : null;
+
+                  return (
+                    <div
+                      key={bet.id}
+                      className="flex gap-3 items-center justify-between border border-sb-border rounded-xl p-3 bg-sb-bg/80 flex-wrap"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="font-extrabold text-sb-text truncate">
+                          {title}
+                        </div>
+                        <div className="flex gap-2 items-center flex-wrap mt-1.5 text-sb-muted text-xs">
+                          {subtitle && <span>{subtitle}</span>}
+                          {subtitle && <span className="w-1 h-1 rounded-full bg-sb-muted" />}
+                          <StatusBadge status={bet.status} />
+                          <span className="w-1 h-1 rounded-full bg-sb-muted" />
+                          <span>{formatDate(bet.placedAt)}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-end gap-2.5 flex-shrink-0 flex-col sm:flex-row">
+                        {pnl !== null ? (
+                          <div
+                            className={
+                              pnl >= 0
+                                ? 'font-extrabold text-sm text-sb-blue'
+                                : 'font-extrabold text-sm text-sb-error'
+                            }
+                          >
+                            {pnl >= 0 ? '+' : '-'}
+                            {formatMoney(Math.abs(pnl))}
+                          </div>
+                        ) : (
+                          <div className="font-extrabold text-sm text-sb-muted">
+                            {formatMoney(bet.stake)}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+              {bets.length > 5 && (
+                <Link
+                  to="/bets"
+                  className="text-center text-xs text-sb-blue hover:underline py-2"
+                >
+                  View all {bets.length} bets →
+                </Link>
+              )}
             </div>
-          )}
         </section>
       </div>
     </div>

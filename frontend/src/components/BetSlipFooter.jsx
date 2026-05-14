@@ -2,6 +2,26 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
+function formatOdds(decimal, format) {
+  const d = Number(decimal);
+  if (!d || isNaN(d)) return String(decimal);
+  if (format === 'american') {
+    if (d >= 2.0) return `+${Math.round((d - 1) * 100)}`;
+    return String(Math.round(-100 / (d - 1)));
+  }
+  if (format === 'fractional') {
+    const num = d - 1;
+    let bestN = 1, bestD = 1, bestErr = Infinity;
+    for (let den = 1; den <= 20; den++) {
+      const numer = Math.round(num * den);
+      const err = Math.abs(numer / den - num);
+      if (err < bestErr) { bestErr = err; bestN = numer; bestD = den; }
+    }
+    return `${bestN}/${bestD}`;
+  }
+  return d.toFixed(2);
+}
+
 const BetSlipFooter = ({
   selections,
   slipWarning,
@@ -10,7 +30,8 @@ const BetSlipFooter = ({
   onCheckout,
   clearSlip,
 }) => {
-  const [stake, setStake] = useState('');
+  const [stake, setStake] = useState(() => localStorage.getItem('pref_defaultStake') || '');
+  const [oddsFormat] = useState(() => localStorage.getItem('pref_oddsFormat') || 'american');
   const [isConfirming, setIsConfirming] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const { user, setUser } = useAuth();
@@ -128,7 +149,7 @@ const BetSlipFooter = ({
               </div>
 
               <div className="flex-shrink-0 text-right">
-                <p className="text-lg font-black text-[#00f6ff]">{sel.odds}</p>
+                <p className="text-lg font-black text-[#00f6ff]">{formatOdds(sel.odds, oddsFormat)}</p>
               </div>
             </div>
           );
@@ -177,7 +198,7 @@ const BetSlipFooter = ({
               type="button"
               onClick={() => {
                 setIsSuccess(false);
-                setStake('');
+                setStake(localStorage.getItem('pref_defaultStake') || '');
                 clearSlip();
               }}
               className="bg-gray-700 text-white font-bold px-6 py-2.5 rounded-md hover:bg-gray-600 active:scale-95 transition-all text-sm uppercase tracking-wider cursor-pointer shadow-md"

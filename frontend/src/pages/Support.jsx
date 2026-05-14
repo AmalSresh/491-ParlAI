@@ -4,13 +4,13 @@ import { useAuth } from '../context/AuthContext';
 const ISSUE_TYPES = [
   'Bug Report',
   'Account Issue',
-  'Prediction Error',
+  'Betting Issue',
   'General Question',
 ];
 
 const UPLOAD_TYPES = new Set([
   'Bug Report',
-  'Prediction Error',
+  'Betting Issue',
   'Account Issue',
 ]);
 

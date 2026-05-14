@@ -4,6 +4,7 @@ import {
   fetchUfcFightsWeek,
   getUfcWeekDateKeys,
 } from '../api/ufc/ufcBetsClient';
+import { useGlobalBetSlip } from '../context/BetSlipContext';
 
 function formatStart(iso) {
   if (!iso) return '—';
@@ -47,10 +48,35 @@ function getStatusLabel(state) {
   }
 }
 
-function FightCard({ fight }) {
+const DEMO_ML_ODDS = 1.91;
+
+function FightCard({ fight, onToggleBet, selectedBets }) {
   const isFinal = fight.status?.typeState === 'post';
   const leftHighlight = isFinal && fight.winnerSide === 'away';
   const rightHighlight = isFinal && fight.winnerSide === 'home';
+
+  const awaySelId = `ufc-${fight.id}-h2h-away`;
+  const homeSelId = `ufc-${fight.id}-h2h-home`;
+  const awaySelected = selectedBets?.some((b) => String(b.gameId) === String(fight.id) && b.selectionId === awaySelId);
+  const homeSelected = selectedBets?.some((b) => String(b.gameId) === String(fight.id) && b.selectionId === homeSelId);
+
+  const handleMoneyline = (side) => {
+    if (isFinal || !onToggleBet) return;
+    const isAway = side === 'away';
+    onToggleBet({
+      gameId: String(fight.id),
+      leagueId: 'ufc',
+      sport: 'mma',
+      marketKey: 'h2h',
+      selectionId: isAway ? awaySelId : homeSelId,
+      outcomeLabel: isAway ? fight.away.abbr : fight.home.abbr,
+      odds: DEMO_ML_ODDS,
+      lineValue: null,
+      gameName: `${fight.away.abbr} vs ${fight.home.abbr}`,
+      betType: 'Moneyline',
+      betTeam: isAway ? fight.away.name : fight.home.name,
+    });
+  };
 
   return (
     <div className="rounded-xl border border-sb-border bg-sb-bg/60 overflow-hidden">
@@ -145,31 +171,42 @@ function FightCard({ fight }) {
           ) : null}
         </div>
 
-        <div className="flex gap-2">
-          <button
-            type="button"
-            className="rounded-lg border border-sb-border bg-sb-bg px-3 py-2 text-xs font-extrabold text-sb-text hover:border-sb-blue hover:text-sb-blue transition-colors cursor-pointer"
-            disabled
-            title="Connect odds to enable moneyline."
-          >
-            Moneyline
-          </button>
-          <button
-            type="button"
-            className="rounded-lg border border-sb-border bg-sb-bg px-3 py-2 text-xs font-extrabold text-sb-text hover:border-sb-blue hover:text-sb-blue transition-colors cursor-pointer"
-            disabled
-            title="Connect odds to enable props."
-          >
-            Spread
-          </button>
-          <button
-            type="button"
-            className="rounded-lg border border-sb-border bg-sb-bg px-3 py-2 text-xs font-extrabold text-sb-text hover:border-sb-blue hover:text-sb-blue transition-colors cursor-pointer"
-            disabled
-            title="Connect odds to enable totals."
-          >
-            Total
-          </button>
+        <div className="flex gap-2 flex-wrap">
+          <div className="flex flex-col gap-1">
+            <span className="text-[0.6rem] text-sb-muted uppercase tracking-widest font-bold">Moneyline</span>
+            <div className="flex gap-1">
+              <button
+                type="button"
+                disabled={isFinal}
+                onClick={() => handleMoneyline('away')}
+                className={`rounded-lg border px-3 py-2 text-xs font-extrabold transition-colors min-w-[5rem] ${
+                  awaySelected
+                    ? 'border-sb-blue bg-sb-blue/15 text-sb-blue ring-1 ring-sb-blue cursor-pointer'
+                    : isFinal
+                      ? 'border-sb-border bg-sb-bg/40 text-sb-muted cursor-not-allowed opacity-50'
+                      : 'border-sb-border bg-sb-bg text-sb-text hover:border-sb-blue hover:text-sb-blue cursor-pointer'
+                }`}
+              >
+                <span className="block">{fight.away.abbr}</span>
+                <span className="block text-sb-blue">{DEMO_ML_ODDS}</span>
+              </button>
+              <button
+                type="button"
+                disabled={isFinal}
+                onClick={() => handleMoneyline('home')}
+                className={`rounded-lg border px-3 py-2 text-xs font-extrabold transition-colors min-w-[5rem] ${
+                  homeSelected
+                    ? 'border-sb-blue bg-sb-blue/15 text-sb-blue ring-1 ring-sb-blue cursor-pointer'
+                    : isFinal
+                      ? 'border-sb-border bg-sb-bg/40 text-sb-muted cursor-not-allowed opacity-50'
+                      : 'border-sb-border bg-sb-bg text-sb-text hover:border-sb-blue hover:text-sb-blue cursor-pointer'
+                }`}
+              >
+                <span className="block">{fight.home.abbr}</span>
+                <span className="block text-sb-blue">{DEMO_ML_ODDS}</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -238,6 +275,7 @@ function RankingsView({ data, error, loading }) {
 }
 
 export default function UFCBets() {
+  const { toggleSelection, selections } = useGlobalBetSlip();
   const [fights, setFights] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -443,10 +481,10 @@ export default function UFCBets() {
               ))}
             </div>
           ) : filteredFights.length === 0 ? (
-            <p className="text-sb-muted">
-              No matchups in this week’s window, or the schedule is not
-              published yet.
-            </p>
+            <div className="rounded-xl border border-sb-border bg-sb-bg/60 p-8 text-center">
+              <p className="text-sb-muted text-sm">No UFC events are scheduled this week.</p>
+              <p className="text-sb-muted text-xs mt-1">Check back soon — upcoming fight cards will appear here.</p>
+            </div>
           ) : (
             <div className="flex flex-col gap-8">
               {fightsByDay.map(({ dayKey, heading, fights: dayFights }) => (
@@ -456,7 +494,7 @@ export default function UFCBets() {
                   </h2>
                   <div className="grid grid-cols-1 gap-4 max-w-4xl">
                     {dayFights.map((fight) => (
-                      <FightCard key={fight.id} fight={fight} />
+                      <FightCard key={fight.id} fight={fight} onToggleBet={toggleSelection} selectedBets={selections} />
                     ))}
                   </div>
                 </section>

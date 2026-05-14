@@ -1,0 +1,11 @@
+# Ignore the specific log file that caused the warning
+backend/.azurite/
+
+# Ignore the other Azurite local data files in your root
+__azurite_db_*.json
+__blobstorage__/
+
+# Standard ignores (if not already handled)
+node_modules/
+.env
+.DS_Store

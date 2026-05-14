@@ -1,0 +1,14 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "node",
+    "DB_SERVER": "<copy from SETUP.md>",
+    "DB_NAME": "<copy from SETUP.md>",
+    "DB_USER": "<copy from SETUP.md>",
+    "DB_PASSWORD": "<copy from SETUP.md>",
+    "SOCCER_ODDS_API": "optional-odds-api-key",
+    "ODDS_API_KEY": "optional-odds-api-key",
+    "JWT_SECRET": "any-random-string-for-local-dev"
+  }
+}

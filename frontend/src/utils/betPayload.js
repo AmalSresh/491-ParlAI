@@ -1,3 +1,5 @@
+import { classifyGameFromGame } from './gameStatus.js';
+
 /**
  * Cross-sport bet placement payload (extend per sport on the backend with the same envelope).
  */
@@ -11,49 +13,11 @@ export const MARKET_KEYS = {
   PLAYER_GOAL_SCORER_ANYTIME: 'player_goal_scorer_anytime',
 };
 
-// This is used for setting the betting status of a game to a disabled state
+// Bets close as soon as a game leaves the 'upcoming' state. Single source of
+// truth lives in `gameStatus.js` so every sport disables buttons consistently.
 export function isBettingClosed(game) {
   if (!game) return true;
-
-  // ESPN site scoreboard shape (NBA / similar): { status: { typeState }, startDate }
-  if (
-    game.status &&
-    typeof game.status === 'object' &&
-    game.status.typeState != null
-  ) {
-    const ts = String(game.status.typeState || '').toLowerCase();
-    if (ts === 'post' || ts === 'in') return true;
-    const startIso = game.startDate || game.startTime;
-    if (startIso) {
-      const kick = new Date(startIso).getTime();
-      if (!Number.isNaN(kick) && kick <= Date.now() && ts === 'pre') {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  const status = String(game.status || '').toLowerCase();
-
-  // These statuses are standard across almost all sports
-  if (
-    [
-      'completed',
-      'finished',
-      'cancelled',
-      'postponed',
-      'in_progress',
-      'live',
-    ].includes(status)
-  ) {
-    return true;
-  }
-
-  if (!game.startTime) return false;
-  const kickoff = new Date(game.startTime);
-  if (Number.isNaN(kickoff.getTime())) return false;
-
-  return kickoff.getTime() <= Date.now();
+  return classifyGameFromGame(game) !== 'upcoming';
 }
 
 // Adds more context to the spread if the line value is 0
@@ -117,6 +81,7 @@ export function buildBetPlacePayload({
     selectionId: s.selectionId,
     marketKey: s.marketKey,
     outcomeLabel: s.outcomeLabel,
+    gameName: s.gameName ?? null,
     odds: s.odds,
     lineValue: s.lineValue ?? null,
   }));

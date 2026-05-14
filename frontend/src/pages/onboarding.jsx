@@ -118,7 +118,7 @@ const Onboarding = () => {
 
       await checkAuth();
 
-      navigate('/dashboard');
+      navigate('/');
     } catch (error) {
       console.error('Network error:', error);
       setError('Network error. Please check your connection.');
@@ -131,7 +131,7 @@ const Onboarding = () => {
   return (
     <div className="max-w-md mx-auto mt-10 p-6 bg-black border rounded-lg shadow-md">
       <h1 className="text-2xl font-bold mb-6 text-center text-sb-blue">
-        Welcome to ParlAI!
+        Welcome to Parl!
       </h1>
 
       {error && (

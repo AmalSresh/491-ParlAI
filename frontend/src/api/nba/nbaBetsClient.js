@@ -1,3 +1,5 @@
+import { enrichGamesWithEspnOdds, fetchNbaOdds } from '../../utils/espnOdds.js';
+
 const API_BASE = '/api';
 const ENV_API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').trim();
 const RESOLVED_API_BASE = ENV_API_BASE_URL || API_BASE;
@@ -38,6 +40,7 @@ function parseNbaScoreboard(payload) {
 
       if (!home || !away) return null;
 
+      const status = comp?.status || event?.status || {};
       return {
         id: String(
           event?.id ??
@@ -48,18 +51,22 @@ function parseNbaScoreboard(payload) {
         seasonDisplay,
         startDate: comp?.startDate || event?.date || null,
         status: {
-          typeState:
-            comp?.status?.type?.state || comp?.status?.type?.id || null,
-          clock: comp?.status?.displayClock || null,
+          typeState: status?.type?.state || status?.type?.id || null,
+          completed: status?.type?.completed ?? false,
+          clock: status?.displayClock || null,
+          period: status?.period ?? null,
+          shortDetail: status?.type?.shortDetail || null,
         },
         home: {
           abbr: safeTeamAbbr(home.team),
           name: safeGetTeamName(home.team),
+          logo: home.team?.logo || null,
           score: normalizeScore(home.score),
         },
         away: {
           abbr: safeTeamAbbr(away.team),
           name: safeGetTeamName(away.team),
+          logo: away.team?.logo || null,
           score: normalizeScore(away.score),
         },
       };
@@ -113,11 +120,13 @@ export async function fetchNbaScoreboard({ date } = {}) {
 }
 
 /**
- * All games scheduled Sun–Sat for the week containing `refDate`, de-duped and sorted by tip time.
+ * All games scheduled in a window around `refDate` (default −5 to +7 days), de-duped
+ * and sorted by tip time. Each game is enriched with real DraftKings odds from
+ * ESPN's pickcenter (`game.odds`).
  */
 export async function fetchNbaScoreboardWeek({ refDate } = {}) {
-  // Fetch the current local Sun–Sat week, plus a small rolling buffer window so
-  // late-night games never disappear.
+  // Fetch the current local Sun–Sat week, plus a wider rolling window so we
+  // get recent finished games (history) and upcoming matches together.
   const base = refDate ?? new Date();
   const weekKeys = getNbaWeekDateKeys(base);
 
@@ -127,7 +136,7 @@ export async function fetchNbaScoreboardWeek({ refDate } = {}) {
   const anchor = new Date(Date.UTC(localY, localM, localD, 12, 0, 0, 0));
 
   const bufferKeys = [];
-  for (let i = -2; i <= 2; i++) {
+  for (let i = -5; i <= 7; i++) {
     const d = new Date(anchor);
     d.setUTCDate(anchor.getUTCDate() + i);
     bufferKeys.push(toYYYYMMDDUtc(d));
@@ -143,11 +152,13 @@ export async function fetchNbaScoreboardWeek({ refDate } = {}) {
       if (!byId.has(g.id)) byId.set(g.id, g);
     }
   }
-  return Array.from(byId.values()).sort((a, b) => {
+  const games = Array.from(byId.values()).sort((a, b) => {
     const ta = a.startDate ? new Date(a.startDate).getTime() : 0;
     const tb = b.startDate ? new Date(b.startDate).getTime() : 0;
     return tb - ta;
   });
+
+  return enrichGamesWithEspnOdds(games, fetchNbaOdds);
 }
 
 export async function placeNbaBet(bet) {
