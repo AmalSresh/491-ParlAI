@@ -59,9 +59,37 @@ const FILTERS = [
 ];
 
 const TABS = [
+  { key: 'games', label: 'Games' },
   { key: 'props', label: 'Player Props' },
-  { key: 'scores', label: 'Live Scores' },
 ];
+
+function seedNHLOdds(gameId, homeAway) {
+  const s = [...String(gameId)].reduce((a, c) => a + c.charCodeAt(0), 0) / 10000;
+  const base = homeAway === 'home' ? 1.4 + s * 0.8 : 1.4 + (1 - s) * 0.8;
+  return parseFloat(Math.max(1.25, Math.min(3.0, base)).toFixed(2));
+}
+
+async function fetchNHLWeek() {
+  const today = new Date();
+  const dates = Array.from({ length: 8 }, (_, i) => {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i - 3); // -3 to +4
+    return [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('');
+  });
+  const results = await Promise.all(
+    dates.map(date =>
+      fetch(`https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard?dates=${date}`)
+        .then(r => r.json()).then(d => d.events ?? []).catch(() => [])
+    )
+  );
+  const byId = new Map();
+  for (const events of results) {
+    for (const ev of events) {
+      if (!byId.has(ev.id)) byId.set(ev.id, ev);
+    }
+  }
+  return Array.from(byId.values()).sort((a, b) => new Date(b.date) - new Date(a.date));
+}
 
 // ── STAT DISPLAY HELPER ───────────────────────────────────────────────────────
 function getDisplayStat(player, filter) {
@@ -360,108 +388,191 @@ function SkeletonCard() {
   );
 }
 
-// ── LIVE SCORES TAB ───────────────────────────────────────────────────────────
+// ── GAMES TAB ─────────────────────────────────────────────────────────────────
 const ESPN_NHL_SCOREBOARD =
   'https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard';
 
-function LiveScores() {
-  const [games, setGames] = useState([]);
+function GamesTab({ onToggleBet, selections }) {
+  const [allGames, setAllGames] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [statusFilter, setStatusFilter] = useState('all');
 
   useEffect(() => {
-    async function load() {
-      try {
-        const res = await fetch(ESPN_NHL_SCOREBOARD);
-        if (!res.ok) throw new Error('Failed to fetch');
-        const data = await res.json();
-        setGames(data.events ?? []);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
+    fetchNHLWeek()
+      .then(setAllGames)
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <p className="text-sb-muted">Loading scores...</p>;
+  const liveCount = allGames.filter((g) => g.status?.type?.state === 'in').length;
+
+  const filtered = allGames.filter((g) => {
+    const state = g.status?.type?.state;
+    if (statusFilter === 'live') return state === 'in';
+    if (statusFilter === 'upcoming') return state === 'pre';
+    if (statusFilter === 'finished') return state === 'post';
+    return true;
+  });
+
+  if (loading) return <p className="text-sb-muted">Loading games…</p>;
   if (error) return <p className="text-sb-error">{error}</p>;
-  if (games.length === 0)
-    return <p className="text-sb-muted">No games scheduled today.</p>;
 
   return (
-    <div className="space-y-3">
-      {games.map((game) => {
-        const comp = game.competitions?.[0];
-        const home = comp?.competitors?.find((c) => c.homeAway === 'home');
-        const away = comp?.competitors?.find((c) => c.homeAway === 'away');
-        if (!home || !away) return null;
-        const isLive = game.status?.type?.state === 'in';
-        const isFinished = game.status?.type?.state === 'post';
-
-        return (
-          <div
-            key={game.id}
-            className={`rounded-xl border p-4 ${isLive ? 'border-[#00f6ff44] bg-[#050e14]' : 'border-[#1a2535] bg-[#060c12]'} ${isFinished ? 'opacity-60' : ''}`}
+    <>
+      {/* Filter pills */}
+      <div className="flex flex-wrap gap-2 mb-5">
+        {['all', 'live', 'upcoming', 'finished'].map((f) => (
+          <button
+            key={f}
+            type="button"
+            onClick={() => setStatusFilter(f)}
+            style={{
+              padding: '0.4rem 1rem',
+              borderRadius: '20px',
+              cursor: 'pointer',
+              border: statusFilter === f ? '1px solid #00f6ff' : '1px solid #404040',
+              background: statusFilter === f ? 'rgba(0,246,255,0.1)' : '#11131a',
+              color: statusFilter === f ? '#00f6ff' : '#9ca3af',
+              fontSize: '0.82rem',
+              fontWeight: 600,
+              transition: 'all 0.18s',
+              textTransform: 'capitalize',
+            }}
           >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3 flex-1">
-                {away.team.logo && (
-                  <img
-                    src={away.team.logo}
-                    alt={away.team.displayName}
-                    className="w-8 h-8 object-contain"
-                  />
+            {f === 'live' && liveCount > 0 ? `Live (${liveCount})` : f.charAt(0).toUpperCase() + f.slice(1)}
+          </button>
+        ))}
+        <span className="ml-auto text-sb-muted text-sm self-center">
+          {filtered.length} game{filtered.length !== 1 ? 's' : ''}
+        </span>
+      </div>
+
+      {filtered.length === 0 ? (
+        <div className="text-center py-16 text-sb-muted border border-dashed border-sb-border rounded-xl">
+          <div className="text-4xl mb-3">🏒</div>
+          <p>No {statusFilter === 'all' ? '' : statusFilter} games right now.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filtered.map((game) => {
+            const comp = game.competitions?.[0];
+            const home = comp?.competitors?.find((c) => c.homeAway === 'home');
+            const away = comp?.competitors?.find((c) => c.homeAway === 'away');
+            if (!home || !away) return null;
+            const state = game.status?.type?.state;
+            const isLive = state === 'in';
+            const isFinished = state === 'post';
+            const bettingClosed = isLive || isFinished;
+
+            const awaySelId = `nhl-${game.id}-h2h-away`;
+            const homeSelId = `nhl-${game.id}-h2h-home`;
+            const awaySelected = selections?.some((s) => s.selectionId === awaySelId);
+            const homeSelected = selections?.some((s) => s.selectionId === homeSelId);
+            const homeOdds = seedNHLOdds(game.id, 'home');
+            const awayOdds = seedNHLOdds(game.id, 'away');
+
+            const handleBet = (side) => {
+              if (bettingClosed || !onToggleBet) return;
+              const isAway = side === 'away';
+              onToggleBet({
+                gameId: String(game.id),
+                leagueId: 'nhl',
+                sport: 'nhl',
+                marketKey: 'h2h',
+                selectionId: isAway ? awaySelId : homeSelId,
+                outcomeLabel: isAway ? away.team.abbreviation : home.team.abbreviation,
+                odds: isAway ? awayOdds : homeOdds,
+                lineValue: null,
+                gameName: `${away.team.abbreviation} @ ${home.team.abbreviation}`,
+                betType: 'Moneyline',
+                betTeam: isAway ? away.team.displayName : home.team.displayName,
+              });
+            };
+
+            return (
+              <div
+                key={game.id}
+                className={`rounded-xl border p-4 ${isLive ? 'border-[#00f6ff44] bg-[#050e14]' : 'border-[#1a2535] bg-[#060c12]'} ${isFinished ? 'opacity-60' : ''}`}
+              >
+                {/* Teams & Score */}
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3 flex-1">
+                    {away.team.logo && (
+                      <img src={away.team.logo} alt={away.team.displayName} className="w-8 h-8 object-contain" />
+                    )}
+                    <span className="font-bold text-sb-text text-sm">{away.team.displayName}</span>
+                  </div>
+                  <div className="text-center px-4">
+                    {isLive || isFinished ? (
+                      <span className="text-xl font-black text-white">{away.score} – {home.score}</span>
+                    ) : (
+                      <span className="text-sb-muted text-sm">
+                        {new Date(game.date).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3 flex-1 justify-end">
+                    <span className="font-bold text-sb-text text-sm">{home.team.displayName}</span>
+                    {home.team.logo && (
+                      <img src={home.team.logo} alt={home.team.displayName} className="w-8 h-8 object-contain" />
+                    )}
+                  </div>
+                </div>
+
+                {/* Status badge */}
+                {isLive && (
+                  <div className="flex justify-center mb-3">
+                    <span className="flex items-center gap-1.5 text-xs font-bold text-green-400 bg-green-400/10 px-2 py-0.5 rounded-full border border-green-400/20">
+                      <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                      LIVE · P{game.status?.period} {game.status?.displayClock}
+                    </span>
+                  </div>
                 )}
-                <span className="font-bold text-sb-text text-sm">
-                  {away.team.displayName}
-                </span>
-              </div>
-              <div className="text-center px-4">
-                {isLive || isFinished ? (
-                  <span className="text-xl font-black text-white">
-                    {away.score} – {home.score}
-                  </span>
-                ) : (
-                  <span className="text-sb-muted text-sm">
-                    {new Date(game.date).toLocaleTimeString('en-US', {
-                      hour: 'numeric',
-                      minute: '2-digit',
-                    })}
-                  </span>
+                {isFinished && (
+                  <div className="flex justify-center mb-3">
+                    <span className="text-xs text-sb-muted font-bold">FINAL</span>
+                  </div>
+                )}
+
+                {/* Moneyline buttons */}
+                {!bettingClosed && (
+                  <div className="border-t border-[#1a2535] pt-3">
+                    <div className="text-[0.65rem] text-sb-muted uppercase tracking-widest mb-2 font-bold">Moneyline</div>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleBet('away')}
+                        className={`flex-1 rounded-lg border py-2 text-xs font-extrabold transition-colors ${
+                          awaySelected
+                            ? 'border-sb-blue bg-sb-blue/15 text-sb-blue ring-1 ring-sb-blue'
+                            : 'border-sb-border bg-sb-bg text-sb-text hover:border-sb-blue hover:text-sb-blue'
+                        }`}
+                      >
+                        <span className="block">{away.team.abbreviation}</span>
+                        <span className="block text-sb-blue">{awayOdds}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleBet('home')}
+                        className={`flex-1 rounded-lg border py-2 text-xs font-extrabold transition-colors ${
+                          homeSelected
+                            ? 'border-sb-blue bg-sb-blue/15 text-sb-blue ring-1 ring-sb-blue'
+                            : 'border-sb-border bg-sb-bg text-sb-text hover:border-sb-blue hover:text-sb-blue'
+                        }`}
+                      >
+                        <span className="block">{home.team.abbreviation}</span>
+                        <span className="block text-sb-blue">{homeOdds}</span>
+                      </button>
+                    </div>
+                  </div>
                 )}
               </div>
-              <div className="flex items-center gap-3 flex-1 justify-end">
-                <span className="font-bold text-sb-text text-sm">
-                  {home.team.displayName}
-                </span>
-                {home.team.logo && (
-                  <img
-                    src={home.team.logo}
-                    alt={home.team.displayName}
-                    className="w-8 h-8 object-contain"
-                  />
-                )}
-              </div>
-            </div>
-            {isLive && (
-              <div className="mt-2 flex justify-center">
-                <span className="flex items-center gap-1.5 text-xs font-bold text-green-400 bg-green-400/10 px-2 py-0.5 rounded-full border border-green-400/20">
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
-                  LIVE · P{game.status?.period} {game.status?.displayClock}
-                </span>
-              </div>
-            )}
-            {isFinished && (
-              <div className="mt-2 flex justify-center">
-                <span className="text-xs text-sb-muted font-bold">FINAL</span>
-              </div>
-            )}
-          </div>
-        );
-      })}
-    </div>
+            );
+          })}
+        </div>
+      )}
+    </>
   );
 }
 
@@ -473,7 +584,7 @@ export default function Hockey() {
   const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
-  const [tab, setTab] = useState('props');
+  const [tab, setTab] = useState('games');
 
   useEffect(() => {
     async function loadPlayers() {
@@ -680,8 +791,10 @@ export default function Hockey() {
         </>
       )}
 
-      {/* Live Scores Tab */}
-      {tab === 'scores' && <LiveScores />}
+      {/* Games Tab */}
+      {tab === 'games' && (
+        <GamesTab onToggleBet={toggleSelection} selections={selections} />
+      )}
     </div>
   );
 }

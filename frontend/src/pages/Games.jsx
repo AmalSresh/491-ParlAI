@@ -9,24 +9,17 @@ const SPORTS = [
     source: 'Live',
   },
   {
-    emoji: '🏈',
-    name: 'NFL',
-    path: '/nfl',
-    desc: 'American Football — futures & player props',
-    source: 'Futures',
-  },
-  {
     emoji: '⚾',
     name: 'MLB',
     path: '/mlb',
-    desc: 'Baseball — upcoming games',
+    desc: 'Baseball — live games & scores',
     source: 'Live',
   },
   {
     emoji: '🏒',
     name: 'NHL',
     path: '/hockey',
-    desc: 'Hockey — player props',
+    desc: 'Hockey — live games & player props',
     source: 'Live',
   },
   {
@@ -34,13 +27,6 @@ const SPORTS = [
     name: 'Soccer',
     path: '/soccer',
     desc: 'Soccer — leagues worldwide',
-    source: 'Live',
-  },
-  {
-    emoji: '🥊',
-    name: 'UFC',
-    path: '/ufc',
-    desc: 'MMA — upcoming fight cards',
     source: 'Live',
   },
 ];

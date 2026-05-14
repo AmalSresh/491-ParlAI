@@ -99,20 +99,21 @@ export const getMLBGames = (pruneSelectionsForGames) => {
   useEffect(() => {
     const fetchGames = async () => {
       try {
-        // Try ESPN directly first — works without DB being populated
+        // DB has real Odds API data — prefer it over ESPN's fake seeded odds
+        const dbGames = await fetchFromDb();
+        if (dbGames.length > 0) {
+          setGames(dbGames);
+          if (pruneSelectionsForGames) pruneSelectionsForGames(dbGames);
+          setLoading(false);
+          return;
+        }
+        // DB empty — fall back to ESPN (seeded odds)
         const espnGames = await fetchMlbGamesFromEspn();
         setGames(espnGames);
         if (pruneSelectionsForGames) pruneSelectionsForGames(espnGames);
-      } catch (espnErr) {
-        // Fall back to DB-backed API if ESPN fails
-        try {
-          const dbGames = await fetchFromDb();
-          setGames(dbGames);
-          if (pruneSelectionsForGames) pruneSelectionsForGames(dbGames);
-        } catch (dbErr) {
-          console.error('Failed to fetch MLB games:', dbErr);
-          setError(dbErr.message);
-        }
+      } catch (err) {
+        console.error('Failed to fetch MLB games:', err);
+        setError(err.message);
       } finally {
         setLoading(false);
       }

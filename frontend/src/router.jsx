@@ -7,13 +7,11 @@ import Onboarding from './pages/onboarding';
 import Settings from './pages/Settings';
 import Profile from './pages/Profile';
 import ProtectedRoute from './components/ProtectedRoute';
-import NFLBets from './pages/NFLBets';
 import MLBBets from './pages/MLBBets';
 import SoccerPage from './pages/SoccerPage';
 import Games from './pages/Games';
 import MyBets from './pages/MyBets';
 import NBABets from './pages/NBABets';
-import UFCBets from './pages/UFCBets';
 import NotFound from './pages/NotFound';
 import Hockey from './pages/Hockey';
 import SportsLayout from './sportsLayout';
@@ -30,9 +28,7 @@ const router = createBrowserRouter([
         element: <SportsLayout />,
         children: [
           { path: 'soccer', element: <SoccerPage /> },
-          { path: 'nfl', element: <NFLBets /> },
           { path: 'nba', element: <NBABets /> },
-          { path: 'ufc', element: <UFCBets /> },
           { path: 'hockey', element: <Hockey /> },
           { path: 'mlb', element: <MLBBets /> },
         ],

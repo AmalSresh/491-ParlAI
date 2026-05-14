@@ -71,18 +71,21 @@ const NBA_FUTURES = [
   },
 ];
 
-/** Demo prices until a real odds feed is wired (decimal odds). */
-const DEMO_ODDS = {
-  moneyline: 1.91,
-  side: 1.91,
-};
+function seedGameOdds(gameId, homeAway) {
+  const s = ([...String(gameId)].reduce((a, c) => a + c.charCodeAt(0), 0)) / 10000;
+  const base = homeAway === 'home' ? 1.4 + s * 0.8 : 1.4 + (1 - s) * 0.8;
+  return parseFloat(Math.max(1.25, Math.min(2.8, base)).toFixed(2));
+}
 
-/** Demo lines (static). */
-const DEMO_LINES = {
-  spreadAway: 5.5,
-  spreadHome: -5.5,
-  total: 224.5,
-};
+function seedTotal(gameId) {
+  const s = ([...String(gameId)].reduce((a, c) => a + c.charCodeAt(0), 0));
+  return 210 + (s % 31); // 210–240, realistic NBA range
+}
+
+function seedSpread(gameId) {
+  const s = ([...String(gameId)].reduce((a, c) => a + c.charCodeAt(0), 0));
+  return (1 + (s % 12)) + 0.5; // 1.5–12.5
+}
 
 function formatKickoff(iso) {
   if (!iso) return '—';
@@ -155,11 +158,15 @@ function GameCard({ game, onToggleBet, selectedBets, bettingClosed }) {
     onToggleBet(payload);
   };
 
+  const homeOdds = seedGameOdds(game.id, 'home');
+  const awayOdds = seedGameOdds(game.id, 'away');
+  const sideOdds = 1.91; // standard -110 juice for spread/totals
   const awayMlLabel = game.away.abbr;
   const homeMlLabel = game.home.abbr;
-  const awaySpreadLine = DEMO_LINES.spreadAway;
-  const homeSpreadLine = DEMO_LINES.spreadHome;
-  const totalLine = DEMO_LINES.total;
+  const spreadVal = seedSpread(game.id);
+  const awaySpreadLine = spreadVal;
+  const homeSpreadLine = -spreadVal;
+  const totalLine = seedTotal(game.id);
 
   return (
     <div className="rounded-xl border border-sb-border bg-sb-bg/60 overflow-hidden">
@@ -233,7 +240,7 @@ function GameCard({ game, onToggleBet, selectedBets, bettingClosed }) {
                   marketKey: MARKET_KEYS.H2H,
                   selectionId: `nba-${game.id}-h2h-away`,
                   outcomeLabel: awayMlLabel,
-                  odds: DEMO_ODDS.moneyline,
+                  odds: awayOdds,
                   lineValue: null,
                   gameName: `${game.away.abbr} @ ${game.home.abbr}`,
                   betType: 'Moneyline',
@@ -242,7 +249,7 @@ function GameCard({ game, onToggleBet, selectedBets, bettingClosed }) {
               }
             >
               <span className="block">{awayMlLabel}</span>
-              <span className="block text-sb-blue">{DEMO_ODDS.moneyline}</span>
+              <span className="block text-sb-blue">{awayOdds}</span>
             </button>
             <button
               type="button"
@@ -259,7 +266,7 @@ function GameCard({ game, onToggleBet, selectedBets, bettingClosed }) {
                   marketKey: MARKET_KEYS.H2H,
                   selectionId: `nba-${game.id}-h2h-home`,
                   outcomeLabel: homeMlLabel,
-                  odds: DEMO_ODDS.moneyline,
+                  odds: homeOdds,
                   lineValue: null,
                   gameName: `${game.away.abbr} @ ${game.home.abbr}`,
                   betType: 'Moneyline',
@@ -268,7 +275,7 @@ function GameCard({ game, onToggleBet, selectedBets, bettingClosed }) {
               }
             >
               <span className="block">{homeMlLabel}</span>
-              <span className="block text-sb-blue">{DEMO_ODDS.moneyline}</span>
+              <span className="block text-sb-blue">{homeOdds}</span>
             </button>
           </div>
         </div>
@@ -296,7 +303,7 @@ function GameCard({ game, onToggleBet, selectedBets, bettingClosed }) {
                   marketKey: MARKET_KEYS.SPREADS,
                   selectionId: `nba-${game.id}-spreads-away`,
                   outcomeLabel: `${game.away.abbr} ${formatSpreadLine(awaySpreadLine)}`,
-                  odds: DEMO_ODDS.side,
+                  odds: sideOdds,
                   lineValue: awaySpreadLine,
                   gameName: `${game.away.abbr} @ ${game.home.abbr}`,
                   betType: 'Spread',
@@ -306,7 +313,7 @@ function GameCard({ game, onToggleBet, selectedBets, bettingClosed }) {
             >
               <span className="block">{game.away.abbr}</span>
               <span className="block">{formatSpreadLine(awaySpreadLine)}</span>
-              <span className="block text-sb-blue">{DEMO_ODDS.side}</span>
+              <span className="block text-sb-blue">{sideOdds}</span>
             </button>
             <button
               type="button"
@@ -326,7 +333,7 @@ function GameCard({ game, onToggleBet, selectedBets, bettingClosed }) {
                   marketKey: MARKET_KEYS.SPREADS,
                   selectionId: `nba-${game.id}-spreads-home`,
                   outcomeLabel: `${game.home.abbr} ${formatSpreadLine(homeSpreadLine)}`,
-                  odds: DEMO_ODDS.side,
+                  odds: sideOdds,
                   lineValue: homeSpreadLine,
                   gameName: `${game.away.abbr} @ ${game.home.abbr}`,
                   betType: 'Spread',
@@ -336,7 +343,7 @@ function GameCard({ game, onToggleBet, selectedBets, bettingClosed }) {
             >
               <span className="block">{game.home.abbr}</span>
               <span className="block">{formatSpreadLine(homeSpreadLine)}</span>
-              <span className="block text-sb-blue">{DEMO_ODDS.side}</span>
+              <span className="block text-sb-blue">{sideOdds}</span>
             </button>
           </div>
         </div>
@@ -361,7 +368,7 @@ function GameCard({ game, onToggleBet, selectedBets, bettingClosed }) {
                   marketKey: MARKET_KEYS.TOTALS,
                   selectionId: `nba-${game.id}-totals-over`,
                   outcomeLabel: `Over ${totalLine}`,
-                  odds: DEMO_ODDS.side,
+                  odds: sideOdds,
                   lineValue: totalLine,
                   gameName: `${game.away.abbr} @ ${game.home.abbr}`,
                   betType: 'Over/Under',
@@ -370,7 +377,7 @@ function GameCard({ game, onToggleBet, selectedBets, bettingClosed }) {
               }
             >
               <span className="block">Over</span>
-              <span className="block text-sb-blue">{DEMO_ODDS.side}</span>
+              <span className="block text-sb-blue">{sideOdds}</span>
             </button>
             <button
               type="button"
@@ -387,7 +394,7 @@ function GameCard({ game, onToggleBet, selectedBets, bettingClosed }) {
                   marketKey: MARKET_KEYS.TOTALS,
                   selectionId: `nba-${game.id}-totals-under`,
                   outcomeLabel: `Under ${totalLine}`,
-                  odds: DEMO_ODDS.side,
+                  odds: sideOdds,
                   lineValue: totalLine,
                   gameName: `${game.away.abbr} @ ${game.home.abbr}`,
                   betType: 'Over/Under',
@@ -396,7 +403,7 @@ function GameCard({ game, onToggleBet, selectedBets, bettingClosed }) {
               }
             >
               <span className="block">Under</span>
-              <span className="block text-sb-blue">{DEMO_ODDS.side}</span>
+              <span className="block text-sb-blue">{sideOdds}</span>
             </button>
           </div>
         </div>
@@ -413,6 +420,7 @@ export default function NBABets() {
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [tab, setTab] = useState('games');
+  const [statusFilter, setStatusFilter] = useState('all');
   const weekRangeLabel = useMemo(() => {
     const keys = getNbaWeekDateKeys(new Date());
     if (keys.length < 2) return '';
@@ -469,18 +477,29 @@ export default function NBABets() {
     }
   }, [games, pruneSelectionsForGames]);
 
+  const liveCount = useMemo(
+    () => games.filter((g) => g.status?.typeState === 'in').length,
+    [games],
+  );
+
   const filteredGames = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return games;
     return games.filter((g) => {
-      return (
+      const ts = g.status?.typeState;
+      const matchesStatus =
+        statusFilter === 'all' ||
+        (statusFilter === 'live' && ts === 'in') ||
+        (statusFilter === 'upcoming' && ts === 'pre') ||
+        (statusFilter === 'finished' && ts === 'post');
+      const matchesSearch =
+        !q ||
         g.home.abbr.toLowerCase().includes(q) ||
         g.away.abbr.toLowerCase().includes(q) ||
         g.home.name.toLowerCase().includes(q) ||
-        g.away.name.toLowerCase().includes(q)
-      );
+        g.away.name.toLowerCase().includes(q);
+      return matchesStatus && matchesSearch;
     });
-  }, [games, search]);
+  }, [games, search, statusFilter]);
 
   const gamesByDay = useMemo(() => {
     const sections = [];
@@ -577,10 +596,33 @@ export default function NBABets() {
               onChange={(e) => setSearch(e.target.value)}
               className="bg-sb-bg border border-sb-border rounded-xl px-4 py-2 text-sb-text text-sm outline-none focus:border-sb-blue focus:ring-1 focus:ring-sb-blue w-[260px]"
             />
-
             <div className="ml-auto text-sb-muted text-sm">
               {filteredGames.length} game{filteredGames.length === 1 ? '' : 's'}
             </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2 mb-6">
+            {['all', 'live', 'upcoming', 'finished'].map((f) => (
+              <button
+                key={f}
+                type="button"
+                onClick={() => setStatusFilter(f)}
+                style={{
+                  padding: '0.4rem 1rem',
+                  borderRadius: '20px',
+                  cursor: 'pointer',
+                  border: statusFilter === f ? '1px solid #00f6ff' : '1px solid #404040',
+                  background: statusFilter === f ? 'rgba(0,246,255,0.1)' : '#11131a',
+                  color: statusFilter === f ? '#00f6ff' : '#9ca3af',
+                  fontSize: '0.82rem',
+                  fontWeight: 600,
+                  transition: 'all 0.18s',
+                  textTransform: 'capitalize',
+                }}
+              >
+                {f === 'live' && liveCount > 0 ? `Live (${liveCount})` : f.charAt(0).toUpperCase() + f.slice(1)}
+              </button>
+            ))}
           </div>
 
           {error && <p className="text-sb-error">{error}</p>}
