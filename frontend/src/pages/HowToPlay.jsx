@@ -1,7 +1,7 @@
 const STEPS = [
   {
     title: 'Pick a League',
-    body: 'Choose from NBA, NFL, MLB, NHL, Soccer, or UFC to see all upcoming matchups and betting markets for that league.',
+    body: 'Choose from NBA, NFL, or Soccer to see all upcoming matchups and betting markets for that league.',
   },
   {
     title: 'Browse the Matchups',
