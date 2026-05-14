@@ -47,7 +47,10 @@ app.http('user-me', {
       if (!finalUserId) {
         return {
           status: 400,
-          jsonBody: { error: 'Missing User ID from auth provider' },
+          jsonBody: { 
+            error: 'Missing User ID from auth provider',
+            debug: clientPrincipal 
+          },
         };
       }
 
