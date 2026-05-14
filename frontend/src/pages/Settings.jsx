@@ -50,7 +50,7 @@ export default function Settings() {
       setBetsError('');
       try {
         // silently refresh balance on settings open
-        const balRes = await fetch('/api/users/balance');
+        const balRes = await fetch('/api/user/balance');
         const bal = await balRes.json();
         if (alive && balRes.ok && bal?.balance != null) {
           setUser((prev) => ({ ...prev, balance: bal.balance }));
