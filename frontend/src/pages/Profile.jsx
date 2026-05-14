@@ -14,30 +14,6 @@ function Stat({ label, value }) {
   );
 }
 
-function ActionCard({ title, desc, to }) {
-  const content = (
-    <>
-      <div className="font-extrabold text-sb-text">{title}</div>
-      <div className="mt-1.5 text-sb-muted text-xs leading-snug">{desc}</div>
-    </>
-  );
-  const className =
-    'text-left rounded-xl border border-sb-border bg-sb-bg/80 p-3 text-sb-text hover:border-sb-blue transition-colors cursor-pointer block w-full';
-  if (to) {
-    return (
-      <Link to={to} className={className}>
-        {content}
-      </Link>
-    );
-  }
-  return (
-    <button type="button" className={className}>
-      {content}
-    </button>
-  );
-}
-
-
 function formatMoney(n) {
   return Number(n).toLocaleString(undefined, { style: 'currency', currency: 'USD' });
 }
@@ -212,18 +188,6 @@ export default function Profile() {
             />
           </div>
 
-          <div className="h-px bg-sb-border my-4" />
-
-          <div className="text-xs uppercase tracking-widest text-sb-muted mb-2.5">
-            Quick actions
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            <ActionCard
-              title="Account"
-              desc="Settings and Info."
-              to="/settings"
-            />
-          </div>
         </section>
 
         {/* Tabs panel */}

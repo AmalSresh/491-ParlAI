@@ -18,9 +18,6 @@ export default function Header() {
           <Link to="/" className="hover:text-sb-blue-light">
             Home
           </Link>
-          <Link to="/games" className="hover:text-sb-blue-light">
-            Games
-          </Link>
           <Link to="/bets" className="hover:text-sb-blue-light">
             My Bets
           </Link>

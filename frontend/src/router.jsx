@@ -9,7 +9,6 @@ import Profile from './pages/Profile';
 import ProtectedRoute from './components/ProtectedRoute';
 import MLBBets from './pages/MLBBets';
 import SoccerPage from './pages/SoccerPage';
-import Games from './pages/Games';
 import MyBets from './pages/MyBets';
 import NBABets from './pages/NBABets';
 import NotFound from './pages/NotFound';
@@ -37,7 +36,6 @@ const router = createBrowserRouter([
       { path: 'login', element: <Login /> },
       { path: 'onboarding', element: <Onboarding /> },
       { path: 'how-to-play', element: <HowToPlay /> },
-      { path: 'games', element: <Games /> },
       { path: 'bets', element: <MyBets /> },
 
       {
