@@ -31,11 +31,6 @@ export default function Header() {
           {user ? (
             <>
               {user.onboardingStage > 0 && (
-                <Link to="/dashboard" className="hover:text-sb-blue-light">
-                  Dashboard
-                </Link>
-              )}
-              {user.onboardingStage > 0 && (
                 <Link to="/profile" className="hover:text-sb-blue-light">
                   Profile
                 </Link>
