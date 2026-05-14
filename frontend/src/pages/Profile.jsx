@@ -74,7 +74,7 @@ export default function Profile() {
 
   useEffect(() => {
     let alive = true;
-    apiFetch('/api/bets?limit=10')
+    apiFetch('/api/bets?limit=200')
       .then((r) => r.json())
       .then((data) => {
         if (!alive) return;
@@ -94,6 +94,7 @@ export default function Profile() {
     const settled = bets.filter((b) =>
       ['WON', 'LOST'].includes((b.status ?? '').toUpperCase()),
     ).length;
+    const openBets = bets.filter((b) => (b.status ?? '').toUpperCase() === 'PENDING').length;
     const totalWagered = bets.reduce((s, b) => s + Number(b.stake ?? 0), 0);
     const netProfit = bets.reduce((s, b) => {
       const status = (b.status ?? '').toUpperCase();
@@ -105,6 +106,7 @@ export default function Profile() {
       winRate: settled > 0 ? won / settled : null,
       totalWagered,
       netProfit,
+      openBets,
     };
   }, [bets]);
 
@@ -115,7 +117,7 @@ export default function Profile() {
     .join('')
     .toUpperCase();
 
-  const username = user?.email?.split('@')[0] ?? 'user';
+  const username = user?.name ?? user?.email?.split('@')[0] ?? 'user';
 
   return (
     <div className="w-full min-w-0">
@@ -205,8 +207,8 @@ export default function Profile() {
               value={betsLoading ? '…' : formatMoney(stats.totalWagered)}
             />
             <Stat
-              label="Balance"
-              value={formatMoney(user?.balance ?? 0)}
+              label="Open Bets"
+              value={betsLoading ? '…' : stats.openBets}
             />
           </div>
 
@@ -253,7 +255,7 @@ export default function Profile() {
                   const title =
                     leg?.event
                       ? `${leg.event.homeTeam} vs ${leg.event.awayTeam}`
-                      : leg?.outcomeLabel ?? `Bet #${bet.id}`;
+                      : leg?.gameName ?? leg?.outcomeLabel ?? `Bet #${bet.id}`;
                   const subtitle = [
                     leg?.event?.sport ?? leg?.event?.leagueName,
                     leg?.marketKey,

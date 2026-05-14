@@ -34,7 +34,7 @@ function StatusBadge({ status }) {
   );
 }
 
-const FILTERS = ['All', 'PENDING', 'WON', 'LOST', 'SETTLED'];
+const FILTERS = ['All', 'PENDING', 'WON', 'LOST'];
 
 export default function MyBets() {
   const { isAuthenticated, loading: authLoading } = useAuth();
@@ -143,7 +143,7 @@ export default function MyBets() {
             const gameName =
               leg?.event
                 ? `${leg.event.homeTeam} vs ${leg.event.awayTeam}`
-                : leg?.outcomeLabel ?? `Bet #${bet.id}`;
+                : leg?.gameName ?? leg?.outcomeLabel ?? `Bet #${bet.id}`;
             const sport = leg?.event?.sport ?? leg?.event?.leagueName ?? '';
             const betStatus = (bet.status ?? '').toUpperCase();
             const pnl =

@@ -12,8 +12,8 @@ const SPORTS = [
     emoji: '🏈',
     name: 'NFL',
     path: '/nfl',
-    desc: 'Football — matchups & futures',
-    source: 'Live',
+    desc: 'American Football — futures & player props',
+    source: 'Futures',
   },
   {
     emoji: '⚾',
@@ -26,14 +26,14 @@ const SPORTS = [
     emoji: '🏒',
     name: 'NHL',
     path: '/hockey',
-    desc: 'Hockey — scheduled matchups',
+    desc: 'Hockey — player props',
     source: 'Live',
   },
   {
     emoji: '⚽',
     name: 'Soccer',
     path: '/soccer',
-    desc: 'Football — leagues worldwide',
+    desc: 'Soccer — leagues worldwide',
     source: 'Live',
   },
   {
@@ -68,7 +68,7 @@ export default function Games() {
                 <span className="font-extrabold text-sb-text text-lg group-hover:text-sb-blue transition-colors">
                   {s.name}
                 </span>
-                <span className="text-[0.6rem] font-bold uppercase px-2 py-0.5 rounded-full border border-sb-blue/40 text-sb-blue bg-sb-blue/10">
+                <span className={`text-[0.6rem] font-bold uppercase px-2 py-0.5 rounded-full border ${s.source === 'Live' ? 'border-sb-blue/40 text-sb-blue bg-sb-blue/10' : 'border-amber-500/40 text-amber-400 bg-amber-500/10'}`}>
                   {s.source}
                 </span>
               </div>

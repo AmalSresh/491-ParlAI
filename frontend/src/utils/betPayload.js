@@ -117,6 +117,7 @@ export function buildBetPlacePayload({
     selectionId: s.selectionId,
     marketKey: s.marketKey,
     outcomeLabel: s.outcomeLabel,
+    gameName: s.gameName ?? null,
     odds: s.odds,
     lineValue: s.lineValue ?? null,
   }));

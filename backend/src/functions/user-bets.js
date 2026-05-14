@@ -46,9 +46,10 @@ app.http('user-bets', {
           bl.selection_id AS leg_selection_id,
           bl.odds AS leg_odds,
           bl.status AS leg_status,
-          s.label AS selection_label,
+          bl.game_name AS leg_game_name,
+          COALESCE(s.label, bl.outcome_label) AS selection_label,
           s.line_value AS selection_line_value,
-          m.type AS market_key,
+          COALESCE(m.type, bl.market_key) AS market_key,
           e.start_time AS event_start_time,
           e.status AS event_status,
           ht.name AS home_team,
@@ -96,6 +97,7 @@ app.http('user-bets', {
             status: row.leg_status,
             marketKey: row.market_key || null,
             outcomeLabel: row.selection_label || null,
+            gameName: row.leg_game_name || null,
             lineValue: row.selection_line_value ?? null,
             event:
               row.home_team && row.away_team

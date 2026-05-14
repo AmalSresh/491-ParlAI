@@ -481,10 +481,10 @@ export default function UFCBets() {
               ))}
             </div>
           ) : filteredFights.length === 0 ? (
-            <p className="text-sb-muted">
-              No matchups in this week’s window, or the schedule is not
-              published yet.
-            </p>
+            <div className="rounded-xl border border-sb-border bg-sb-bg/60 p-8 text-center">
+              <p className="text-sb-muted text-sm">No UFC events are scheduled this week.</p>
+              <p className="text-sb-muted text-xs mt-1">Check back soon — upcoming fight cards will appear here.</p>
+            </div>
           ) : (
             <div className="flex flex-col gap-8">
               {fightsByDay.map(({ dayKey, heading, fights: dayFights }) => (

@@ -67,28 +67,28 @@ const TABS = [
 function getDisplayStat(player, filter) {
   if (filter === 'goals')
     return player.goals
-      ? { val: calcPropLine(player.goals), raw: player.goals, lbl: '2025 Goals', statType: 'goals' }
+      ? { val: calcPropLine(player.goals), raw: player.goals, lbl: 'Season Goals', statType: 'goals' }
       : null;
   if (filter === 'assists')
     return player.assists
-      ? { val: calcPropLine(player.assists), raw: player.assists, lbl: '2025 Assists', statType: 'assists' }
+      ? { val: calcPropLine(player.assists), raw: player.assists, lbl: 'Season Assists', statType: 'assists' }
       : null;
   if (filter === 'points')
     return player.points
-      ? { val: calcPropLine(player.points), raw: player.points, lbl: '2025 Points', statType: 'points' }
+      ? { val: calcPropLine(player.points), raw: player.points, lbl: 'Season Points', statType: 'points' }
       : null;
 
   if (player.position === 'G')
     return player.goals
-      ? { val: calcPropLine(player.goals), raw: player.goals, lbl: '2025 Goals', statType: 'goals' }
+      ? { val: calcPropLine(player.goals), raw: player.goals, lbl: 'Season Goals', statType: 'goals' }
       : null;
 
   if (player.points)
-    return { val: calcPropLine(player.points), raw: player.points, lbl: '2025 Points', statType: 'points' };
+    return { val: calcPropLine(player.points), raw: player.points, lbl: 'Season Points', statType: 'points' };
   if (player.goals)
-    return { val: calcPropLine(player.goals), raw: player.goals, lbl: '2025 Goals', statType: 'goals' };
+    return { val: calcPropLine(player.goals), raw: player.goals, lbl: 'Season Goals', statType: 'goals' };
   if (player.assists)
-    return { val: calcPropLine(player.assists), raw: player.assists, lbl: '2025 Assists', statType: 'assists' };
+    return { val: calcPropLine(player.assists), raw: player.assists, lbl: 'Season Assists', statType: 'assists' };
 
   return null;
 }
@@ -96,11 +96,11 @@ function getDisplayStat(player, filter) {
 // ── EXTRA STATS HELPER ────────────────────────────────────────────────────────
 function getExtraStats(player, mainLbl) {
   const extras = [];
-  if (player.goals && mainLbl !== '2025 Goals')
+  if (player.goals && mainLbl !== 'Season Goals')
     extras.push({ val: calcPropLine(player.goals), lbl: 'Goals' });
-  if (player.assists && mainLbl !== '2025 Assists')
+  if (player.assists && mainLbl !== 'Season Assists')
     extras.push({ val: calcPropLine(player.assists), lbl: 'Assists' });
-  if (player.points && mainLbl !== '2025 Points')
+  if (player.points && mainLbl !== 'Season Points')
     extras.push({ val: calcPropLine(player.points), lbl: 'Points' });
   if (player.shots)
     extras.push({ val: calcPropLine(player.shots), lbl: 'Shots' });

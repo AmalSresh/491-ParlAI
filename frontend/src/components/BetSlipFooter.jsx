@@ -31,7 +31,7 @@ const BetSlipFooter = ({
   clearSlip,
 }) => {
   const [stake, setStake] = useState(() => localStorage.getItem('pref_defaultStake') || '');
-  const [oddsFormat] = useState(() => localStorage.getItem('pref_oddsFormat') || 'decimal');
+  const [oddsFormat] = useState(() => localStorage.getItem('pref_oddsFormat') || 'american');
   const [isConfirming, setIsConfirming] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const { user, setUser } = useAuth();

@@ -65,9 +65,12 @@ app.http('place-bet', {
             legReq.input('selectionId', sql.BigInt, parsedSelId);
             legReq.input('odds', sql.Decimal(10, 4), leg.odds);
             legReq.input('status', sql.NVarChar, 'PENDING');
+            legReq.input('outcomeLabel', sql.NVarChar(500), leg.outcomeLabel || null);
+            legReq.input('marketKey', sql.NVarChar(100), leg.marketKey || null);
+            legReq.input('gameName', sql.NVarChar(500), leg.gameName || null);
             await legReq.query(`
-              INSERT INTO bet_legs (bet_id, event_id, selection_id, odds, status)
-              VALUES (@betId, @eventId, @selectionId, @odds, @status)
+              INSERT INTO bet_legs (bet_id, event_id, selection_id, odds, status, outcome_label, market_key, game_name)
+              VALUES (@betId, @eventId, @selectionId, @odds, @status, @outcomeLabel, @marketKey, @gameName)
             `);
           }
 
@@ -105,9 +108,12 @@ app.http('place-bet', {
             legReq.input('selectionId', sql.BigInt, parsedSelId);
             legReq.input('odds', sql.Decimal(10, 4), leg.odds);
             legReq.input('status', sql.NVarChar, 'PENDING');
+            legReq.input('outcomeLabel', sql.NVarChar(500), leg.outcomeLabel || null);
+            legReq.input('marketKey', sql.NVarChar(100), leg.marketKey || null);
+            legReq.input('gameName', sql.NVarChar(500), leg.gameName || null);
             await legReq.query(`
-              INSERT INTO bet_legs (bet_id, event_id, selection_id, odds, status)
-              VALUES (@betId, @eventId, @selectionId, @odds, @status)
+              INSERT INTO bet_legs (bet_id, event_id, selection_id, odds, status, outcome_label, market_key, game_name)
+              VALUES (@betId, @eventId, @selectionId, @odds, @status, @outcomeLabel, @marketKey, @gameName)
             `);
 
             const ledgerReq = new sql.Request(transaction);
