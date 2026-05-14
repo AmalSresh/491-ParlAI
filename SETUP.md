@@ -1,13 +1,13 @@
 Step 1: Clone Repo 
-	- git clone --branch sprint4-group6-demo --single-branch git@github.com:AmalSresh/491-ParlAI.git
+- git clone --branch sprint4-group6-demo --single-branch git@github.com:AmalSresh/491-ParlAI.git
 
 Step 2: Install npm
-	- cd backend && npm install
-	- cd ../frontend && npm install
+- cd backend && npm install
+- cd ../frontend && npm install
 
 Step 3: Change local.settings.json
-	- cp local.settings.example.json local.settings.json
-	- Change file so that it matches:
+- cp local.settings.example.json local.settings.json
+- Change file so that it matches:
 	
 {
     "IsEncrypted": false,
