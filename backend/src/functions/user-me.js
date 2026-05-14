@@ -24,7 +24,8 @@ app.http('user-me', {
         'RAW CLIENT PRINCIPAL:',
         JSON.stringify(clientPrincipal, null, 2),
       );
-
+      context.log('finalUserId:', finalUserId);
+      context.log('userDetails:', userDetails);
       const { userId, userDetails, claims } = clientPrincipal;
 
       let finalUserId = userId;
