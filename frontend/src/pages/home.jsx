@@ -4,7 +4,6 @@ import { useAuth } from '../context/AuthContext';
 const SPORTS = [
   { emoji: '🏀', name: 'NBA', path: '/nba', desc: 'Basketball' },
   { emoji: '🏈', name: 'NFL', path: '/nfl', desc: 'American Football' },
-  { emoji: '⚾', name: 'MLB', path: '/mlb', desc: 'Baseball' },
   { emoji: '⚽', name: 'Soccer', path: '/soccer', desc: 'Football' },
 ];
 
