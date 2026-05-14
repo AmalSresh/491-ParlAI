@@ -58,10 +58,11 @@ app.http('place-bet', {
           const betId = betRes.recordset[0].id;
 
           for (const leg of payload.legs) {
+            const parsedSelId = (leg.selectionId != null && Number.isFinite(Number(leg.selectionId))) ? Number(leg.selectionId) : null;
             const legReq = new sql.Request(transaction);
             legReq.input('betId', sql.Int, betId);
             legReq.input('eventId', sql.NVarChar, leg.eventId);
-            legReq.input('selectionId', sql.NVarChar, leg.selectionId);
+            legReq.input('selectionId', sql.BigInt, parsedSelId);
             legReq.input('odds', sql.Decimal(10, 4), leg.odds);
             legReq.input('status', sql.NVarChar, 'PENDING');
             await legReq.query(`
@@ -97,10 +98,11 @@ app.http('place-bet', {
             `);
             const betId = betRes.recordset[0].id;
 
+            const parsedSelId = (leg.selectionId != null && Number.isFinite(Number(leg.selectionId))) ? Number(leg.selectionId) : null;
             const legReq = new sql.Request(transaction);
             legReq.input('betId', sql.Int, betId);
             legReq.input('eventId', sql.NVarChar, leg.eventId);
-            legReq.input('selectionId', sql.NVarChar, leg.selectionId);
+            legReq.input('selectionId', sql.BigInt, parsedSelId);
             legReq.input('odds', sql.Decimal(10, 4), leg.odds);
             legReq.input('status', sql.NVarChar, 'PENDING');
             await legReq.query(`

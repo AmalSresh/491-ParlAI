@@ -13,7 +13,7 @@ const SoccerPage = () => {
 
   return (
     <div className="flex flex-col min-h-screen bg-[#0d0f14] relative">
-      <SoccerHeader selectionCount={selections.length} />
+      <SoccerHeader />
 
       {loading ? (
         <LoadingScreen />

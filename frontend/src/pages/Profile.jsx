@@ -218,12 +218,7 @@ export default function Profile() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             <ActionCard
               title="Account"
-              desc="Update info, email, and 2FA"
-              to="/settings"
-            />
-            <ActionCard
-              title="Limits"
-              desc="Wager limits & responsible play"
+              desc="Settings and Info."
               to="/settings"
             />
           </div>

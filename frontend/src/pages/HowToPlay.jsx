@@ -1,23 +1,19 @@
 const STEPS = [
   {
     title: 'Pick a League',
-    body: 'Choose from NBA, NFL, MLB, NHL, Soccer, or UFC to see all upcoming and live matchups for that league.',
+    body: 'Choose from NBA, NFL, MLB, NHL, Soccer, or UFC to see all upcoming matchups and betting markets for that league.',
   },
   {
     title: 'Browse the Matchups',
-    body: 'Each game card shows the two competing teams, the scheduled tip-off or game time, and live scores once the game is underway.',
+    body: 'Each game card shows the two competing teams, the scheduled game time, and available betting lines.',
   },
   {
     title: 'Select a Bet',
-    body: 'Pick a market — Moneyline (who wins), Spread (win by how much), or Over/Under (total score) — and tap the odds button to add it to your bet slip.',
-  },
-  {
-    title: 'Build Your Bet Slip',
-    body: 'Add multiple team picks to create a parlay, or keep it to a single game for a straight bet. The potential payout updates automatically as you add selections.',
+    body: 'Pick a market — Moneyline (who wins), Spread (win by how much), or Over/Under (total score) — and tap the odds button to add it to your selection.',
   },
   {
     title: 'Place Your Bet',
-    body: 'Enter your stake in the bet slip at the bottom of the screen and confirm. Your balance updates instantly and you can track all open and settled bets under My Bets.',
+    body: 'Enter your stake at the bottom of the screen and hit Confirm. Your virtual balance updates instantly and every bet you place is tracked under My Bets.',
   },
 ];
 
@@ -27,8 +23,7 @@ export default function HowToPlay() {
       <header className="mb-6">
         <h1 className="text-3xl font-bold tracking-tight">How to Play</h1>
         <p className="mt-2 text-slate-300">
-          A quick guide to using ParlAI predictions and understanding
-          confidence.
+          A quick guide to placing virtual bets on ParlAI.
         </p>
       </header>
 
@@ -49,8 +44,9 @@ export default function HowToPlay() {
       <div className="mt-6 rounded-xl border border-slate-700 bg-slate-900/60 p-4">
         <p className="text-sm text-slate-300">
           <span className="font-semibold text-slate-100">Disclaimer:</span>{' '}
-          ParlAI provides statistical insights for educational/entertainment
-          purposes. It is not financial or betting advice.
+          ParlAI is a virtual-currency sports betting simulator for
+          educational and entertainment purposes only. No real money is
+          involved. It is not financial or betting advice.
         </p>
       </div>
     </main>

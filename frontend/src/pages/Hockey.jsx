@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useGlobalBetSlip } from '../context/BetSlipContext';
 
 const API_BASE = '/api';
 
@@ -66,57 +67,28 @@ const TABS = [
 function getDisplayStat(player, filter) {
   if (filter === 'goals')
     return player.goals
-      ? {
-          val: calcPropLine(player.goals),
-          raw: player.goals,
-          lbl: '2025 Goals',
-        }
+      ? { val: calcPropLine(player.goals), raw: player.goals, lbl: '2025 Goals', statType: 'goals' }
       : null;
   if (filter === 'assists')
     return player.assists
-      ? {
-          val: calcPropLine(player.assists),
-          raw: player.assists,
-          lbl: '2025 Assists',
-        }
+      ? { val: calcPropLine(player.assists), raw: player.assists, lbl: '2025 Assists', statType: 'assists' }
       : null;
   if (filter === 'points')
     return player.points
-      ? {
-          val: calcPropLine(player.points),
-          raw: player.points,
-          lbl: '2025 Points',
-        }
+      ? { val: calcPropLine(player.points), raw: player.points, lbl: '2025 Points', statType: 'points' }
       : null;
 
-  // Default by position
   if (player.position === 'G')
     return player.goals
-      ? {
-          val: calcPropLine(player.goals),
-          raw: player.goals,
-          lbl: '2025 Goals',
-        }
+      ? { val: calcPropLine(player.goals), raw: player.goals, lbl: '2025 Goals', statType: 'goals' }
       : null;
 
   if (player.points)
-    return {
-      val: calcPropLine(player.points),
-      raw: player.points,
-      lbl: '2025 Points',
-    };
+    return { val: calcPropLine(player.points), raw: player.points, lbl: '2025 Points', statType: 'points' };
   if (player.goals)
-    return {
-      val: calcPropLine(player.goals),
-      raw: player.goals,
-      lbl: '2025 Goals',
-    };
+    return { val: calcPropLine(player.goals), raw: player.goals, lbl: '2025 Goals', statType: 'goals' };
   if (player.assists)
-    return {
-      val: calcPropLine(player.assists),
-      raw: player.assists,
-      lbl: '2025 Assists',
-    };
+    return { val: calcPropLine(player.assists), raw: player.assists, lbl: '2025 Assists', statType: 'assists' };
 
   return null;
 }
@@ -135,210 +107,10 @@ function getExtraStats(player, mainLbl) {
   return extras;
 }
 
-// ── TOAST ─────────────────────────────────────────────────────────────────────
-function Toast({ message, onDone }) {
-  useEffect(() => {
-    const t = window.setTimeout(onDone, 4000);
-    return () => window.clearTimeout(t);
-  }, [onDone]);
-
-  return (
-    <div
-      style={{
-        position: 'fixed',
-        bottom: '2rem',
-        right: '2rem',
-        zIndex: 999,
-        background: '#11131a',
-        border: '1px solid #00f6ff',
-        color: '#f3f4f6',
-        padding: '0.85rem 1.2rem',
-        borderRadius: '12px',
-        fontSize: '0.84rem',
-        lineHeight: 1.5,
-        whiteSpace: 'pre-line',
-        boxShadow: '0 0 24px rgba(0,246,255,0.2)',
-        maxWidth: '280px',
-      }}
-    >
-      {message}
-    </div>
-  );
-}
-
-// ── BET MODAL ─────────────────────────────────────────────────────────────────
-function BetModal({ bet, onClose, onConfirm }) {
-  const [stake, setStake] = useState(10);
-  const odds = 1.9;
-  const payout = (stake * odds).toFixed(2);
-
-  return (
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        background: 'rgba(0,0,0,0.7)',
-        zIndex: 1000,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      <div
-        style={{
-          background: '#11131a',
-          border: '1px solid #00f6ff',
-          borderRadius: '16px',
-          padding: '1.5rem',
-          width: '320px',
-          boxShadow: '0 0 40px rgba(0,246,255,0.2)',
-        }}
-      >
-        <h3
-          style={{
-            fontSize: '1.1rem',
-            fontWeight: 700,
-            marginBottom: '0.5rem',
-            color: '#f3f4f6',
-          }}
-        >
-          Place Bet
-        </h3>
-        <p
-          style={{
-            fontSize: '0.82rem',
-            color: '#9ca3af',
-            marginBottom: '0.4rem',
-          }}
-        >
-          {bet.playerName}
-        </p>
-        <p
-          style={{
-            fontSize: '0.9rem',
-            color: '#f3f4f6',
-            fontWeight: 600,
-            marginBottom: '1rem',
-          }}
-        >
-          {bet.direction === 'more' ? '↑ More' : '↓ Less'} than{' '}
-          <span style={{ color: '#00f6ff' }}>{bet.statValue}</span>{' '}
-          {bet.statLabel}
-        </p>
-
-        <p
-          style={{
-            fontSize: '0.7rem',
-            color: '#9ca3af',
-            marginBottom: '1rem',
-            background: '#0d0f14',
-            padding: '6px 10px',
-            borderRadius: '6px',
-          }}
-        >
-          📊 2024 actual: {Math.round(bet.rawValue)}{' '}
-          {bet.statLabel.replace('2025 ', '')}
-        </p>
-
-        <label
-          style={{
-            fontSize: '0.75rem',
-            color: '#9ca3af',
-            display: 'block',
-            marginBottom: '0.3rem',
-          }}
-        >
-          Stake ($)
-        </label>
-        <input
-          type="number"
-          min="1"
-          value={stake}
-          onChange={(e) => setStake(Number(e.target.value))}
-          style={{
-            width: '100%',
-            background: '#0d0f14',
-            border: '1px solid #404040',
-            borderRadius: '8px',
-            padding: '0.5rem 0.75rem',
-            color: '#f3f4f6',
-            fontSize: '1rem',
-            outline: 'none',
-            marginBottom: '0.8rem',
-            boxSizing: 'border-box',
-          }}
-        />
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            fontSize: '0.8rem',
-            color: '#9ca3af',
-            marginBottom: '0.6rem',
-          }}
-        >
-          <span>Odds</span>
-          <span style={{ color: '#00f6ff', fontWeight: 700 }}>
-            {odds} (~-110)
-          </span>
-        </div>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            fontSize: '0.8rem',
-            color: '#9ca3af',
-            marginBottom: '1.2rem',
-          }}
-        >
-          <span>Potential Payout</span>
-          <span style={{ color: '#00c853', fontWeight: 700 }}>${payout}</span>
-        </div>
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gap: '0.5rem',
-          }}
-        >
-          <button
-            onClick={onClose}
-            style={{
-              padding: '0.6rem',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              background: 'transparent',
-              border: '1px solid #404040',
-              color: '#9ca3af',
-              fontWeight: 600,
-              fontSize: '0.85rem',
-            }}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={() => onConfirm({ ...bet, stake })}
-            style={{
-              padding: '0.6rem',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              background: '#00f6ff',
-              border: 'none',
-              color: '#000',
-              fontWeight: 700,
-              fontSize: '0.85rem',
-            }}
-          >
-            Confirm Bet
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ── PLAYER CARD ───────────────────────────────────────────────────────────────
-function PlayerCard({ player, filter, onBet }) {
+const NHL_LEAGUE_ID = 'nhl';
+
+function PlayerCard({ player, filter, onToggleBet, selections }) {
   const stat = getDisplayStat(player, filter);
   if (!stat) return null;
 
@@ -349,6 +121,32 @@ function PlayerCard({ player, filter, onBet }) {
     .join('')
     .slice(0, 2);
   const extras = getExtraStats(player, stat.lbl);
+
+  const overId = `${player.id}_${stat.statType}_over`;
+  const underId = `${player.id}_${stat.statType}_under`;
+  const overSelected = selections.some(
+    (s) => s.gameId === String(player.id) && s.selectionId === overId,
+  );
+  const underSelected = selections.some(
+    (s) => s.gameId === String(player.id) && s.selectionId === underId,
+  );
+
+  const handleBet = (direction) => {
+    const selectionId = direction === 'more' ? overId : underId;
+    onToggleBet({
+      gameId: String(player.id),
+      leagueId: NHL_LEAGUE_ID,
+      sport: 'nhl',
+      marketKey: 'player_prop',
+      selectionId,
+      outcomeLabel: `${player.name} ${direction === 'more' ? 'Over' : 'Under'} ${stat.val} ${stat.lbl}`,
+      odds: 1.9,
+      lineValue: stat.val,
+      gameName: `${player.name} - ${stat.lbl}`,
+      betType: 'Player Prop',
+      betTeam: player.name,
+    });
+  };
 
   return (
     <div
@@ -480,62 +278,38 @@ function PlayerCard({ player, filter, onBet }) {
           }}
         >
           <button
-            onClick={() =>
-              onBet({
-                playerName: player.name,
-                statLabel: stat.lbl,
-                statValue: stat.val,
-                rawValue: stat.raw,
-                direction: 'less',
-              })
-            }
+            onClick={() => handleBet('less')}
             style={{
               padding: '0.5rem',
               borderRadius: '8px',
               cursor: 'pointer',
-              background: 'rgba(255,61,87,0.1)',
-              border: '1px solid rgba(255,61,87,0.3)',
+              background: underSelected ? 'rgba(255,61,87,0.25)' : 'rgba(255,61,87,0.1)',
+              border: underSelected ? '1px solid #ff3d57' : '1px solid rgba(255,61,87,0.3)',
               color: '#ff3d57',
               fontSize: '0.78rem',
               fontWeight: 700,
               transition: 'background 0.18s',
             }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.background = 'rgba(255,61,87,0.22)')
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.background = 'rgba(255,61,87,0.1)')
-            }
+            onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,61,87,0.22)')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = underSelected ? 'rgba(255,61,87,0.25)' : 'rgba(255,61,87,0.1)')}
           >
             ↓ Less
           </button>
           <button
-            onClick={() =>
-              onBet({
-                playerName: player.name,
-                statLabel: stat.lbl,
-                statValue: stat.val,
-                rawValue: stat.raw,
-                direction: 'more',
-              })
-            }
+            onClick={() => handleBet('more')}
             style={{
               padding: '0.5rem',
               borderRadius: '8px',
               cursor: 'pointer',
-              background: 'rgba(0,246,255,0.08)',
-              border: '1px solid rgba(0,246,255,0.3)',
+              background: overSelected ? 'rgba(0,246,255,0.2)' : 'rgba(0,246,255,0.08)',
+              border: overSelected ? '1px solid #00f6ff' : '1px solid rgba(0,246,255,0.3)',
               color: '#00f6ff',
               fontSize: '0.78rem',
               fontWeight: 700,
               transition: 'background 0.18s',
             }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.background = 'rgba(0,246,255,0.18)')
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.background = 'rgba(0,246,255,0.08)')
-            }
+            onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(0,246,255,0.18)')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = overSelected ? 'rgba(0,246,255,0.2)' : 'rgba(0,246,255,0.08)')}
           >
             ↑ More
           </button>
@@ -693,14 +467,13 @@ function LiveScores() {
 
 // ── MAIN COMPONENT ────────────────────────────────────────────────────────────
 export default function Hockey() {
+  const { selections, toggleSelection } = useGlobalBetSlip();
   const [players, setPlayers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
-  const [toast, setToast] = useState(null);
   const [tab, setTab] = useState('props');
-  const [pendingBet, setPendingBet] = useState(null);
 
   useEffect(() => {
     async function loadPlayers() {
@@ -722,28 +495,6 @@ export default function Hockey() {
     }
     loadPlayers();
   }, []);
-
-  async function handleConfirmBet(bet) {
-    try {
-      const res = await fetch(`${API_BASE}/nhl/bets`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(bet),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setToast(`❌ ${data.error || 'Failed to place bet'}`);
-      } else {
-        setToast(
-          `✅ Bet placed!\n${bet.playerName}\n${bet.direction === 'more' ? '↑ More' : '↓ Less'} ${bet.statValue} ${bet.statLabel}\nPayout: $${data.potentialPayout}\nBalance: $${data.newBalance}`,
-        );
-      }
-    } catch {
-      setToast('❌ Failed to place bet. Please try again.');
-    } finally {
-      setPendingBet(null);
-    }
-  }
 
   const filtered = players.filter((p) => {
     const matchesSearch =
@@ -920,7 +671,8 @@ export default function Hockey() {
                   key={p.id}
                   player={p}
                   filter={filter}
-                  onBet={setPendingBet}
+                  onToggleBet={toggleSelection}
+                  selections={selections}
                 />
               ))
             )}
@@ -930,17 +682,6 @@ export default function Hockey() {
 
       {/* Live Scores Tab */}
       {tab === 'scores' && <LiveScores />}
-
-      {/* Bet Modal */}
-      {pendingBet && (
-        <BetModal
-          bet={pendingBet}
-          onClose={() => setPendingBet(null)}
-          onConfirm={handleConfirmBet}
-        />
-      )}
-
-      {toast && <Toast message={toast} onDone={() => setToast(null)} />}
     </div>
   );
 }
