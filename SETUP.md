@@ -8,6 +8,7 @@ Step 2: Install npm
 Step 3: Change local.settings.json
 	- cp backend/local.settings.example.json backend/local.settings.json
 	- Change file so that it matches:
+	
 {
     "IsEncrypted": false,
     "Values": {
@@ -22,7 +23,8 @@ Step 3: Change local.settings.json
       "JWT_SECRET": "any-random-string-for-local-dev"
     }
   }
-	- Save and close
+  
+- Save and close
  
 Step 4: Verify Azure Functions Core Tools in installed
 - Run: 'func --version'
