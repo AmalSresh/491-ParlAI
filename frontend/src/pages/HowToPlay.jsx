@@ -23,7 +23,7 @@ export default function HowToPlay() {
       <header className="mb-6">
         <h1 className="text-3xl font-bold tracking-tight">How to Play</h1>
         <p className="mt-2 text-slate-300">
-          A quick guide to placing virtual bets on ParlAI.
+          A quick guide to placing virtual bets on Parl.
         </p>
       </header>
 
@@ -44,7 +44,7 @@ export default function HowToPlay() {
       <div className="mt-6 rounded-xl border border-slate-700 bg-slate-900/60 p-4">
         <p className="text-sm text-slate-300">
           <span className="font-semibold text-slate-100">Disclaimer:</span>{' '}
-          ParlAI is a virtual-currency sports betting simulator for
+          Parl is a virtual-currency sports betting simulator for
           educational and entertainment purposes only. No real money is
           involved. It is not financial or betting advice.
         </p>

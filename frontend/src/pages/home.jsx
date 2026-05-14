@@ -24,7 +24,7 @@ export default function Home() {
         <h1 className="text-3xl font-extrabold text-sb-text mb-1">
           {isAuthenticated
             ? `Welcome back, ${user?.name ?? user?.email?.split('@')[0]}`
-            : 'Welcome to ParlAI'}
+            : 'Welcome to Parl'}
         </h1>
         {isAuthenticated ? (
           <div className="flex items-center gap-4 mt-3 flex-wrap">
@@ -87,7 +87,7 @@ export default function Home() {
         <div>
           <div className="font-extrabold text-sb-text text-sm">New here?</div>
           <div className="text-sb-muted text-xs mt-1">
-            Learn how ParlAI virtual betting works.
+            Learn how Parl virtual betting works.
           </div>
         </div>
         <Link

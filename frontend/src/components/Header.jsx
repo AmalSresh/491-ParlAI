@@ -10,7 +10,7 @@ export default function Header() {
       <nav className="flex items-center justify-between px-6 py-4 bg-[#11131a] border-b border-[#1f2430] shadow-md">
         <h1 className="text-2xl font-extrabold tracking-wide text-sb-blue">
           <Link to="/" className="hover:text-sb-blue-light">
-            ParlAI Sports Betting App
+            Parl Sports Betting App
           </Link>
         </h1>
 
