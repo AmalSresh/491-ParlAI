@@ -77,7 +77,12 @@ app.http('auth-register', {
     } catch (error) {
       context.error('Registration error:', error);
       if (error.number === 2627) {
-        return { status: 409, jsonBody: { error: 'That nickname is already taken.' } };
+        const msg = String(error.message || '');
+        const isNickname = msg.toLowerCase().includes('nickname');
+        return {
+          status: 409,
+          jsonBody: { error: isNickname ? 'That display name is already taken.' : 'Registration failed due to a conflict.' },
+        };
       }
       return { status: 500, jsonBody: { error: 'Registration failed.' } };
     }

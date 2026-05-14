@@ -5,10 +5,9 @@ import {
   useEffect,
   useCallback,
 } from 'react';
+import { apiFetch, setToken, clearToken, getToken } from '../api.js';
 
 const AuthContext = createContext(null);
-
-const AUTH_ME_URL = '/.auth/me';
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -16,13 +15,31 @@ export function AuthProvider({ children }) {
 
   const checkAuth = useCallback(async () => {
     try {
-      const res = await fetch(AUTH_ME_URL, { cache: 'no-store' });
+      // Try JWT first
+      if (getToken()) {
+        const res = await apiFetch('/api/user/me');
+        if (res.ok) {
+          const dbUser = await res.json();
+          setUser({
+            id: dbUser.id,
+            name: dbUser.nickname,
+            email: dbUser.email,
+            provider: 'email',
+            onboardingStage: dbUser.onboardingStage,
+            balance: dbUser.balance,
+          });
+          setLoading(false);
+          return;
+        }
+        // Token invalid/expired — clear it
+        clearToken();
+      }
 
-      if (!res.ok) throw new Error();
-
-      const data = await res.json();
+      // Fall back to SWA Google OAuth
+      const swaRes = await fetch('/.auth/me', { cache: 'no-store' });
+      if (!swaRes.ok) throw new Error();
+      const data = await swaRes.json();
       const principal = data?.clientPrincipal;
-
       if (!principal) throw new Error();
 
       const userRes = await fetch('/api/user/me');
@@ -36,22 +53,54 @@ export function AuthProvider({ children }) {
         onboardingStage: dbUser.onboardingStage,
         balance: dbUser.balance,
       });
-
-      setLoading(false);
-      return;
     } catch {
       setUser(null);
+    } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    (async () => {
-      await checkAuth();
-    })();
+    checkAuth();
   }, [checkAuth]);
 
-  // SOCIAL LOGIN PROVIDERS
+  async function login(email, password) {
+    const res = await apiFetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Login failed.');
+    setToken(data.token);
+    setUser({
+      id: data.user.id,
+      name: data.user.nickname,
+      email: data.user.email,
+      provider: 'email',
+      onboardingStage: data.user.onboardingStage,
+      balance: data.user.balance,
+    });
+  }
+
+  async function register(email, password, nickname) {
+    const res = await apiFetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, nickname }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Registration failed.');
+    setToken(data.token);
+    setUser({
+      id: data.user.id,
+      name: data.user.nickname,
+      email: data.user.email,
+      provider: 'email',
+      onboardingStage: data.user.onboardingStage,
+      balance: data.user.balance,
+    });
+  }
 
   function loginWithGoogle() {
     window.location.href =
@@ -59,9 +108,14 @@ export function AuthProvider({ children }) {
       encodeURIComponent(window.location.origin + '/');
   }
 
-  // LOGOUT
   function logout() {
-    window.location.href = '/.auth/logout?post_logout_redirect_uri=/login';
+    if (getToken()) {
+      clearToken();
+      setUser(null);
+      window.location.href = '/login';
+    } else {
+      window.location.href = '/.auth/logout?post_logout_redirect_uri=/login';
+    }
   }
 
   const value = {
@@ -69,6 +123,8 @@ export function AuthProvider({ children }) {
     loading,
     isAuthenticated: !!user,
     setUser,
+    login,
+    register,
     loginWithGoogle,
     logout,
     checkAuth,
