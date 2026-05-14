@@ -24,10 +24,13 @@ app.http('user-me', {
         'RAW CLIENT PRINCIPAL:',
         JSON.stringify(clientPrincipal, null, 2),
       );
-
+      
       const { userId, userDetails, claims } = clientPrincipal;
 
       let finalUserId = userId;
+
+      context.log('finalUserId:', finalUserId);
+      context.log('userDetails:', userDetails);
 
       // If userId is null, try to find it in the raw claims array
       if (!finalUserId && claims) {
@@ -44,7 +47,10 @@ app.http('user-me', {
       if (!finalUserId) {
         return {
           status: 400,
-          jsonBody: { error: 'Missing User ID from auth provider' },
+          jsonBody: { 
+            error: 'Missing User ID from auth provider',
+            debug: clientPrincipal 
+          },
         };
       }
 
@@ -63,13 +69,17 @@ app.http('user-me', {
 
       // IF NEW USER: Insert them into the database automatically!
       if (!dbUser) {
+        // Guard: never insert if finalUserId is null
+        if (!finalUserId) {
+          return { status: 400, jsonBody: { error: 'Cannot create user: missing ID', debug: clientPrincipal } };
+        }
         const startingBalance = 1000.0;
 
         // Create the request
         const request = pool.request();
 
         request.input('azureUserId', sql.NVarChar, finalUserId);
-        request.input('email', sql.NVarChar, userDetails || '');
+        request.input('email', sql.NVarChar, userDetails || finalUserId);
         request.input('balance', sql.Decimal, startingBalance);
 
         const insertResult = await request.query(`
@@ -88,7 +98,7 @@ app.http('user-me', {
       };
     } catch (error) {
       context.error('Error fetching/creating user:', error);
-      return { status: 500, jsonBody: { error: 'Internal Server Error' } };
+      return { status: 500, jsonBody: { error: error.message } };
     }
   },
 });
