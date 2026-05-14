@@ -118,7 +118,7 @@ const Onboarding = () => {
 
       await checkAuth();
 
-      navigate('/dashboard');
+      navigate('/');
     } catch (error) {
       console.error('Network error:', error);
       setError('Network error. Please check your connection.');
