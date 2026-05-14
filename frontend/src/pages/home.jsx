@@ -4,10 +4,7 @@ import { useAuth } from '../context/AuthContext';
 const SPORTS = [
   { emoji: '🏀', name: 'NBA', path: '/nba', desc: 'Basketball' },
   { emoji: '🏈', name: 'NFL', path: '/nfl', desc: 'American Football' },
-  { emoji: '⚾', name: 'MLB', path: '/mlb', desc: 'Baseball' },
-  { emoji: '🏒', name: 'NHL', path: '/hockey', desc: 'Hockey' },
   { emoji: '⚽', name: 'Soccer', path: '/soccer', desc: 'Football' },
-  { emoji: '🥊', name: 'UFC', path: '/ufc', desc: 'MMA' },
 ];
 
 function formatMoney(n) {

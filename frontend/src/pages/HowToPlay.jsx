@@ -1,19 +1,19 @@
 const STEPS = [
   {
     title: 'Pick a League',
-    body: 'Choose NBA, NFL, or another supported League to see available games and player props.',
+    body: 'Choose from NBA, NFL, or Soccer to see all upcoming matchups and betting markets for that league.',
   },
   {
-    title: 'Find player or team',
-    body: 'Search or browse to pull up stats, trends , and upcoming matchups.',
+    title: 'Browse the Matchups',
+    body: 'Each game card shows the two competing teams, the scheduled game time, and available betting lines.',
   },
   {
-    title: 'Check the prediction',
-    body: ' How we check prediction is based off of historical plus recent perfomance data to predict what might happen next game.',
+    title: 'Select a Bet',
+    body: 'Pick a market — Moneyline (who wins), Spread (win by how much), or Over/Under (total score) — and tap the odds button to add it to your selection.',
   },
   {
-    title: 'The Risk of making money',
-    body: 'Predictions help yo make smarter choices, but not everything in this sports world is guarenteed.',
+    title: 'Place Your Bet',
+    body: 'Enter your stake at the bottom of the screen and hit Confirm. Your virtual balance updates instantly and every bet you place is tracked under My Bets.',
   },
 ];
 
@@ -23,8 +23,7 @@ export default function HowToPlay() {
       <header className="mb-6">
         <h1 className="text-3xl font-bold tracking-tight">How to Play</h1>
         <p className="mt-2 text-slate-300">
-          A quick guide to using ParlAI predictions and understanding
-          confidence.
+          A quick guide to placing virtual bets on Parl.
         </p>
       </header>
 
@@ -45,8 +44,9 @@ export default function HowToPlay() {
       <div className="mt-6 rounded-xl border border-slate-700 bg-slate-900/60 p-4">
         <p className="text-sm text-slate-300">
           <span className="font-semibold text-slate-100">Disclaimer:</span>{' '}
-          ParlAI provides statistical insights for educational/entertainment
-          purposes. It is not financial or betting advice.
+          Parl is a virtual-currency sports betting simulator for
+          educational and entertainment purposes only. No real money is
+          involved. It is not financial or betting advice.
         </p>
       </div>
     </main>

@@ -119,6 +119,7 @@ export function buildBetPlacePayload({
     outcomeLabel: s.outcomeLabel,
     odds: s.odds,
     lineValue: s.lineValue ?? null,
+    gameName: s.gameName ?? null,
   }));
 
   const base = {

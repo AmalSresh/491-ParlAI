@@ -72,6 +72,7 @@ app.http('user-bets', {
           bl.selection_id AS leg_selection_id,
           bl.odds AS leg_odds,
           bl.status AS leg_status,
+          bl.game_name AS leg_game_name,
           s.label AS selection_label,
           s.line_value AS selection_line_value,
           m.type AS market_key,
@@ -123,6 +124,7 @@ app.http('user-bets', {
             status: row.leg_status,
             marketKey: row.market_key || null,
             outcomeLabel: row.selection_label || null,
+            gameName: row.leg_game_name || null,
             lineValue: row.selection_line_value ?? null,
             event:
               row.home_team && row.away_team
