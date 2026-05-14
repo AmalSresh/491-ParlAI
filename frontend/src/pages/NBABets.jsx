@@ -11,67 +11,6 @@ import {
 } from '../utils/betPayload.js';
 import { classifyGameFromGame } from '../utils/gameStatus.js';
 
-const NBA_FUTURES = [
-  {
-    key: 'championship',
-    title: '🏆 NBA Championship',
-    picks: [
-      { id: 'nba-fut-champ-bos', label: 'Boston Celtics', odds: 3.50 },
-      { id: 'nba-fut-champ-okc', label: 'Oklahoma City Thunder', odds: 4.50 },
-      { id: 'nba-fut-champ-cle', label: 'Cleveland Cavaliers', odds: 6.00 },
-      { id: 'nba-fut-champ-den', label: 'Denver Nuggets', odds: 7.50 },
-      { id: 'nba-fut-champ-mil', label: 'Milwaukee Bucks', odds: 9.00 },
-      { id: 'nba-fut-champ-gsw', label: 'Golden State Warriors', odds: 12.00 },
-      { id: 'nba-fut-champ-nyk', label: 'New York Knicks', odds: 14.00 },
-    ],
-  },
-  {
-    key: 'mvp',
-    title: '⭐ NBA MVP',
-    picks: [
-      { id: 'nba-fut-mvp-jokic', label: 'Nikola Jokić', odds: 3.00 },
-      { id: 'nba-fut-mvp-sga', label: 'Shai Gilgeous-Alexander', odds: 3.50 },
-      { id: 'nba-fut-mvp-giannis', label: 'Giannis Antetokounmpo', odds: 5.50 },
-      { id: 'nba-fut-mvp-tatum', label: 'Jayson Tatum', odds: 8.00 },
-      { id: 'nba-fut-mvp-luka', label: 'Luka Dončić', odds: 9.00 },
-      { id: 'nba-fut-mvp-edwards', label: 'Anthony Edwards', odds: 11.00 },
-    ],
-  },
-  {
-    key: 'dpoy',
-    title: '🛡️ Defensive Player of the Year',
-    picks: [
-      { id: 'nba-fut-dpoy-wemby', label: 'Victor Wembanyama', odds: 2.50 },
-      { id: 'nba-fut-dpoy-bam', label: 'Bam Adebayo', odds: 5.00 },
-      { id: 'nba-fut-dpoy-gobert', label: 'Rudy Gobert', odds: 6.00 },
-      { id: 'nba-fut-dpoy-jjj', label: 'Jaren Jackson Jr.', odds: 7.00 },
-      { id: 'nba-fut-dpoy-lopez', label: 'Brook Lopez', odds: 10.00 },
-    ],
-  },
-  {
-    key: 'roy',
-    title: '🌟 Rookie of the Year',
-    picks: [
-      { id: 'nba-fut-roy-risacher', label: 'Zaccharie Risacher', odds: 3.00 },
-      { id: 'nba-fut-roy-sarr', label: 'Alexandre Sarr', odds: 4.50 },
-      { id: 'nba-fut-roy-castle', label: 'Stephon Castle', odds: 5.00 },
-      { id: 'nba-fut-roy-sheppard', label: 'Reed Sheppard', odds: 7.00 },
-      { id: 'nba-fut-roy-clingan', label: 'Donovan Clingan', odds: 9.00 },
-    ],
-  },
-  {
-    key: 'smoy',
-    title: '💡 Sixth Man of the Year',
-    picks: [
-      { id: 'nba-fut-smoy-powell', label: 'Norman Powell', odds: 3.50 },
-      { id: 'nba-fut-smoy-monk', label: 'Malik Monk', odds: 5.00 },
-      { id: 'nba-fut-smoy-pritchard', label: 'Payton Pritchard', odds: 6.00 },
-      { id: 'nba-fut-smoy-clarkson', label: 'Jordan Clarkson', odds: 8.00 },
-      { id: 'nba-fut-smoy-hyland', label: 'Bones Hyland', odds: 12.00 },
-    ],
-  },
-];
-
 // Layered odds source for NBA matchups:
 //   1. game.odds.* — DraftKings via ESPN pickcenter (preferred, real-book odds)
 //   2. game.odds.moneyHome/moneyAway — derived from ESPN's matchup predictor
@@ -120,17 +59,6 @@ function daySortKey(iso) {
   const dt = new Date(iso);
   if (Number.isNaN(dt.getTime())) return '';
   return dt.toDateString();
-}
-
-function getStatusLabel(state) {
-  switch (state) {
-    case 'pre':
-    case 'post':
-    case 'in':
-      return state.toUpperCase();
-    default:
-      return state ? String(state).toUpperCase() : '—';
-  }
 }
 
 function pickButtonClass(selected, disabled) {
@@ -481,7 +409,6 @@ export default function NBABets() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
-  const [tab, setTab] = useState('games');
   const [statusFilter, setStatusFilter] = useState('all');
   const weekRangeLabel = useMemo(() => {
     const keys = getNbaWeekDateKeys(new Date());
@@ -618,43 +545,14 @@ export default function NBABets() {
         ) : null}
       </div>
 
-      {tab === 'games' && (
-        <p className="text-sb-muted text-sm mb-4 m-0">
-          Tap <span className="text-sb-text font-semibold">Moneyline</span>,{' '}
-          <span className="text-sb-text font-semibold">Spread</span>, or{' '}
-          <span className="text-sb-text font-semibold">Total</span> on a game —
-          the bet slip opens at the bottom of the screen.
-        </p>
-      )}
+      <p className="text-sb-muted text-sm mb-4 m-0">
+        Tap <span className="text-sb-text font-semibold">Moneyline</span>,{' '}
+        <span className="text-sb-text font-semibold">Spread</span>, or{' '}
+        <span className="text-sb-text font-semibold">Total</span> on a game —
+        the bet slip opens at the bottom of the screen.
+      </p>
 
-      <div className="flex gap-2 mb-6 border-b border-sb-border flex-wrap">
-        <button
-          type="button"
-          onClick={() => setTab('games')}
-          className={
-            tab === 'games'
-              ? 'px-4 py-2 text-xs font-extrabold rounded-t-xl bg-sb-blue text-sb-dark border-x border-t border-sb-blue'
-              : 'px-4 py-2 text-xs font-extrabold rounded-t-xl bg-transparent text-sb-muted hover:text-sb-blue hover:border-t hover:border-sb-blue border border-transparent'
-          }
-        >
-          Matchups
-        </button>
-        <button
-          type="button"
-          onClick={() => setTab('futures')}
-          className={
-            tab === 'futures'
-              ? 'px-4 py-2 text-xs font-extrabold rounded-t-xl bg-sb-blue text-sb-dark border-x border-t border-sb-blue'
-              : 'px-4 py-2 text-xs font-extrabold rounded-t-xl bg-transparent text-sb-muted hover:text-sb-blue hover:border-t hover:border-sb-blue border border-transparent'
-          }
-        >
-          Futures
-        </button>
-      </div>
-
-      {tab === 'games' && (
-        <>
-          <div className="mb-4 flex items-center gap-3 flex-wrap">
+      <div className="mb-4 flex items-center gap-3 flex-wrap mt-6">
             <input
               type="text"
               placeholder="Search by team…"
@@ -730,54 +628,6 @@ export default function NBABets() {
               ))}
             </div>
           )}
-        </>
-      )}
-
-      {tab === 'futures' && (
-        <div className="flex flex-col gap-8">
-          {NBA_FUTURES.map((category) => (
-            <section key={category.key}>
-              <h2 className="text-sm font-extrabold tracking-widest uppercase text-sb-muted border-b border-sb-border pb-2 mb-4">
-                {category.title}
-              </h2>
-              <div className="flex flex-wrap gap-2">
-                {category.picks.map((pick) => {
-                  const isSelected = selections.some(
-                    (s) => s.selectionId === pick.id,
-                  );
-                  return (
-                    <button
-                      key={pick.id}
-                      type="button"
-                      className={pickButtonClass(isSelected, false)}
-                      onClick={() =>
-                        toggleSelection({
-                          gameId: `nba-futures-${category.key}`,
-                          leagueId: 'nba',
-                          sport: 'basketball',
-                          marketKey: `futures_${category.key}`,
-                          selectionId: pick.id,
-                          outcomeLabel: pick.label,
-                          odds: pick.odds,
-                          lineValue: null,
-                          gameName: category.title,
-                          betType: 'Futures',
-                          betTeam: pick.label,
-                        })
-                      }
-                    >
-                      <span className="block">{pick.label}</span>
-                      <span className="block text-sb-blue">
-                        {pick.odds.toFixed(2)}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
