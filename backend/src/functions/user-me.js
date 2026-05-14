@@ -31,7 +31,7 @@ app.http('user-me', {
 
       context.log('finalUserId:', finalUserId);
       context.log('userDetails:', userDetails);
-      
+
       // If userId is null, try to find it in the raw claims array
       if (!finalUserId && claims) {
         const nameIdClaim = claims.find(
@@ -91,7 +91,7 @@ app.http('user-me', {
       };
     } catch (error) {
       context.error('Error fetching/creating user:', error);
-      return { status: 500, jsonBody: { error: 'Internal Server Error' } };
+      return { status: 500, jsonBody: { error: error.message } };
     }
   },
 });
