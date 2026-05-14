@@ -69,7 +69,7 @@ app.http('user-me', {
         const request = pool.request();
 
         request.input('azureUserId', sql.NVarChar, finalUserId);
-        request.input('email', sql.NVarChar, userDetails || '');
+        request.input('email', sql.NVarChar, userDetails || finalUserId);
         request.input('balance', sql.Decimal, startingBalance);
 
         const insertResult = await request.query(`
