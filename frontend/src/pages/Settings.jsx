@@ -83,7 +83,7 @@ export default function Settings() {
     <div className="w-full min-w-0">
       <h1 className="text-2xl leading-tight text-sb-blue m-0 mb-1">Settings</h1>
       <p className="text-sb-muted text-[0.95rem] m-0 mb-6">
-        Manage your account, notifications, and betting preferences.
+        View your wallet balance, account details, betting history.
       </p>
 
       {/* Balance + bets */}
